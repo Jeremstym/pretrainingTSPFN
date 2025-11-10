@@ -1,0 +1,18 @@
+defaults:
+  - default
+  - iterator@patients_kwargs: orchid/patients
+
+_target_: dataprocessing.data.orchid.data_module.OrchidDataModule
+
+# num_workers: 0
+
+process_patient_kwargs:
+  time_series_attrs: null
+
+datapipes_kwargs:
+  cache: True
+
+subsets:
+  12ecg: ${oc.env:TSPFN_DATA_PATH}/12ECG_pretraining_data.csv
+  haptic: ${oc.env:TSPFN_DATA_PATH}/Haptics_dataset.csv
+  yoga: ${oc.env:TSPFN_DATA_PATH}/Yoga_dataset.csv
