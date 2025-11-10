@@ -10,32 +10,35 @@ Feel free to adapt `_load` in `TSPDataset` to match your on-disk format (CSV, on
 from __future__ import annotations
 
 import os
-from typing import Optional, Callable, Sequencex
+import sys
+from typing import Optional, Callable, Dict, Sequence, List, Union
+from pathlib import Path
 
 import torch
 import pytorch_lightning as pl
-from tspfn.torch_imports import DataLoader, Dataset, random_split
+from torch.utils.data import Dataset, DataLoader, random_split
+import numpy as np
+import pandas as pd
 
 
 class TSPDataset(Dataset):
     """Minimal dataset for TSP-style tensors.
 
     Loading rules (defaults):
-    - If `data_dir/<split>/` exists, load all `.pt`/`.pth` files inside.
-    - Else if `data_dir/<split>.pt` exists, load that file. If it contains a tensor/list, treat each element as a sample.
+    - If `data_dir/` exists, load all `.pt`/`.pth` files inside.
+    - Else if `data_dir.pt` exists, load that file. If it contains a tensor/list, treat each element as a sample.
     - Otherwise the dataset is empty.
     """
 
-    def __init__(self, data_dir: str, split: str = "train", transform: Optional[Callable] = None):
+    def __init__(self, data_dir: str, transform: Optional[Callable] = None):
         super().__init__()
         self.data_dir = data_dir
-        self.split = split
         self.transform = transform
         self.samples: Sequence = []
         self._load()
 
     def _load(self) -> None:
-        folder = os.path.join(self.data_dir, self.split)
+        folder = os.path.join(self.data_dir)
         if os.path.isdir(folder):
             files = sorted(os.listdir(folder))
             samples = []
@@ -51,8 +54,8 @@ class TSPDataset(Dataset):
             self.samples = samples
             return
 
-        # fallback to single file per split
-        path = os.path.join(self.data_dir, f"{self.split}.pt")
+        # fallback to single file
+        path = os.path.join(self.data_dir)
         if os.path.exists(path):
             loaded = torch.load(path)
             if isinstance(loaded, (list, tuple)):
@@ -86,19 +89,16 @@ class TSPDataModule(pl.LightningDataModule):
     Parameters
     - data_dir: root directory for data
     - batch_size, num_workers, pin_memory: DataLoader args
-    - val_split/test_split: fractions used when splitting an `all` dataset
     - transform: optional callable applied to samples
-    - seed: seed for deterministic splits
     """
 
     def __init__(
         self,
-        data_dir: str = "data",
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
         batch_size: int = 32,
-        num_workers: int = 4,
         pin_memory: bool = True,
-        val_split: float = 0.1,
-        test_split: float = 0.1,
         transform: Optional[Callable] = None,
         seed: int = 42,
     ) -> None:
@@ -107,26 +107,25 @@ class TSPDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.pin_memory = pin_memory
-        self.val_split = val_split
-        self.test_split = test_split
         self.transform = transform
         self.seed = seed
 
-        self.train_dataset: Optional[Dataset] = None
-        self.val_dataset: Optional[Dataset] = None
-        self.test_dataset: Optional[Dataset] = None
+        self.datasets: Dict[Dataset] = {}
 
-    def prepare_data(self) -> None:
-        """Download or prepare raw data if necessary. Left as a no-op by default."""
+    def prepare_data(self, df: pd.DataFrame) -> None:
+        """Convert dataframe into dictionary with separated labels (last column)."""
+        time_series = df.iloc[:, :-1].values
+        labels = df.iloc[:, -1].values
+        self.data_dict = {'data': time_series, 'labels': labels}
         return
 
     def setup(self, stage: Optional[str] = None) -> None:
-        """Create datasets and splits. Called on every process in distributed settings."""
+        """Create datasets. Called on every process in distributed settings."""
         if self.train_dataset is not None and self.val_dataset is not None and self.test_dataset is not None:
             return
 
         # Prefer single combined 'all' dataset if present
-        all_ds = TSPDataset(self.data_dir, split="all", transform=self.transform)
+        all_ds = TSPDataset(self.data_dir, transform=self.transform)
         n_all = len(all_ds)
         if n_all > 0:
             val_len = max(1, int(n_all * self.val_split)) if self.val_split > 0 else 0
