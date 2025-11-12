@@ -87,7 +87,7 @@ class TSPFNDataModule(pl.LightningDataModule):
         subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
         num_workers: int = 0,
         batch_size: int = 32,
-        pin_memory: bool = bool(num_workers),
+        pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
     ) -> None:
