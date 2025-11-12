@@ -1,32 +1,14 @@
-import functools
-import importlib
-import itertools
 import logging
-import math
-import pandas as pd
 from sklearn.model_selection import train_test_split
 from typing import Any, Callable, Dict, Literal, Optional, Sequence, Tuple, cast
 
 import hydra
-import torch
-from dataprocessing.data.orchid.config import OrchidTag, TimeSeriesAttribute
-from dataprocessing.data.orchid.datapipes import (
-    PatientData,
-    PatientDataTarget,
-    filter_time_series_attributes,
-)
-from dataprocessing.utils.decorators import auto_move_data
-from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
-
-# import dataprocessing
 from omegaconf import DictConfig
+import torch
+from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 from torch import Tensor, nn
-from torch.nn import Parameter, ParameterDict, init
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-from torchmetrics.functional import accuracy, auroc, average_precision, f1_score, mean_absolute_error
 from torchmetrics.classification import (
     BinaryAccuracy,
     BinaryAUROC,
@@ -40,7 +22,7 @@ from torchmetrics.classification import (
 from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError
 from torchmetrics import MetricCollection
 
-from didactic.utils.compliance import check_model_encoder
+from data.utils.decorators import auto_move_data
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +33,6 @@ class TSPFNPretraining(pl.LightningModule):
     def __init__(
         self,
         embed_dim: int,
-        time_series_attrs: Sequence[TimeSeriesAttribute],
         split_finetuning: float = 0.5,
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
         *args,
@@ -61,7 +42,6 @@ class TSPFNPretraining(pl.LightningModule):
 
         Args:
             embed_dim: Size of the tokens/embedding for all the modalities.
-            time_series_attrs: Time-series inputs to provide to the model.
             predict_losses: Supervised criteria to measure the error between the predicted attributes and their real
                 value.
             *args: Positional arguments to pass to the parent's constructor.
@@ -69,8 +49,6 @@ class TSPFNPretraining(pl.LightningModule):
         """
         # Ensure string tags are converted to their appropriate enum types
         # And do it before call to the parent's `init` so that the converted values are saved in `hparams`
-
-        print(f"length of time series, numbers of items: {time_series_attrs.shape[1], len(time_series_attrs)}")
 
         super().__init__(*args, **kwargs)
 
@@ -115,11 +93,6 @@ class TSPFNPretraining(pl.LightningModule):
         # Self-supervised losses and metrics
         # Initialize transformer encoder and self-supervised + prediction heads
         self.encoder, self.prediction_heads = self.configure_model()
-
-        # Configure tokenizers and extract relevant info about the models' architectures
-        self.nhead, self.separate_modality = check_model_encoder(self.encoder, self.hparams)
-
-        self.mask_token = None
 
         # Initialize inference storage tensors
         self.ts_train_for_inference = torch.Tensor().to(self.device)
@@ -317,7 +290,7 @@ class TSPFNPretraining(pl.LightningModule):
         )  # (N, S, E) -> (N, E)
 
     def _shared_step(self, batch: Tensor, batch_idx: int, dataloader_idx: int = 0) -> Dict[str, Tensor]:
-        # Extract time-series attributes from the batch
+        # Extract time-series inputs from the batch
         if dataloader_idx > 0 and not self.training:
             return {}
 
@@ -350,7 +323,7 @@ class TSPFNPretraining(pl.LightningModule):
             pred = prediction_head(prediction)
             predictions[attr] = pred
 
-        # Compute the loss/metrics for each target attribute, ignoring items for which targets are missing
+        # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
 
         target_batch = y_batch_query
