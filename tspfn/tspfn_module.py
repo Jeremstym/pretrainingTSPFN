@@ -10,13 +10,11 @@ from typing import Any, Callable, Dict, Literal, Optional, Sequence, Tuple, cast
 import hydra
 import torch
 from dataprocessing.data.orchid.config import OrchidTag, TimeSeriesAttribute
-from dataprocessing.data.orchid.config import View as ViewEnum
 from dataprocessing.data.orchid.datapipes import (
     PatientData,
     PatientDataTarget,
     filter_time_series_attributes,
 )
-from dataprocessing.tasks.generic import SharedStepsTask
 from dataprocessing.utils.decorators import auto_move_data
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 
@@ -44,10 +42,6 @@ from torchmetrics import MetricCollection
 
 from didactic.utils.compliance import check_model_encoder
 
-import didactic.models.transformer
-import didactic.models.fusionners
-import didactic.models.transformer
-
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +52,7 @@ class TSPFNPretraining(pl.LightningModule):
         self,
         embed_dim: int,
         time_series_attrs: Sequence[TimeSeriesAttribute],
-        views: Sequence[ViewEnum] = tuple(ViewEnum),
+        split_finetuning: float = 0.5,
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
         *args,
         **kwargs,
@@ -67,8 +61,7 @@ class TSPFNPretraining(pl.LightningModule):
 
         Args:
             embed_dim: Size of the tokens/embedding for all the modalities.
-            time_series_attrs: Time-series attributes to provide to the model.
-            views: Views from which to include time-series attributes.
+            time_series_attrs: Time-series inputs to provide to the model.
             predict_losses: Supervised criteria to measure the error between the predicted attributes and their real
                 value.
             *args: Positional arguments to pass to the parent's constructor.
@@ -76,19 +69,13 @@ class TSPFNPretraining(pl.LightningModule):
         """
         # Ensure string tags are converted to their appropriate enum types
         # And do it before call to the parent's `init` so that the converted values are saved in `hparams`
-        views = tuple(ViewEnum[e] for e in views)
-        time_series_attrs = tuple(TimeSeriesAttribute[e] for e in time_series_attrs)
 
-        print(f"number of time series attributes: {len(time_series_attrs)}")
-        print(f"number of views: {len(views)}")
+        print(f"length of time series, numbers of items: {time_series_attrs.shape[1], len(time_series_attrs)}")
 
         super().__init__(*args, **kwargs)
 
         # Add shortcut to lr to work with Lightning's learning rate finder
         self.hparams["lr"] = None
-
-        # Add shortcut to token labels to avoid downstream applications having to determine them from hyperparameters
-        self.token_tags = tuple("/".join([view, attr]) for view, attr in itertools.product(views, time_series_attrs))
 
         # Configure losses/metrics to compute at each train/val/test step
         self.metrics = nn.ModuleDict()
@@ -125,10 +112,6 @@ class TSPFNPretraining(pl.LightningModule):
             ]
         )
 
-        # Compute shapes relevant for defining the models' architectures
-        self.n_time_series_attrs = len(self.hparams["time_series_attrs"]) * len(self.hparams["views"])
-        self.sequence_length = self.n_time_series_attrs
-
         # Self-supervised losses and metrics
         # Initialize transformer encoder and self-supervised + prediction heads
         self.encoder, self.prediction_heads = self.configure_model()
@@ -143,20 +126,13 @@ class TSPFNPretraining(pl.LightningModule):
         self.y_train_for_inference = torch.Tensor().to(self.device)
 
     @property
-    def example_input_array(
-        self,
-    ) -> Dict[Tuple[ViewEnum, TimeSeriesAttribute], Tensor]:
+    def example_input_array(self) -> Tensor:
         """Redefine example input array based on the cardiac attributes provided to the model."""
         # 2 is the size of the batch in the example
         labels = torch.randperm(10)
-        time_series_attrs = {
-            (view, attr): torch.randn(10, self.hparams["data_params"].in_shape[OrchidTag.time_series_attrs][1])
-            for view, attr in itertools.product(self.hparams["views"], self.hparams["time_series_attrs"])
-        }
-        # time_series_notna_mask = torch.ones(
-        #     (10, len(self.hparams["views"]) * len(self.hparams["time_series_attrs"])), dtype=torch.bool
-        # )
-        return time_series_attrs  # , time_series_notna_mask
+        time_series_attrs = torch.randn(10, 64)
+        ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(1)], dim=1)
+        return ts_example_input
 
     def configure_model(
         self,
@@ -188,27 +164,24 @@ class TSPFNPretraining(pl.LightningModule):
     @auto_move_data
     def process_data(
         self,
-        time_series_attrs: Dict[Tuple[ViewEnum, TimeSeriesAttribute], Tensor],
-        # target: Tensor,
-        # time_series_notna_mask: Optional[Tensor] = None,
-    ) -> Tuple[Tensor, Tensor]:
+        time_series_attrs: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor]:
         """Tokenizes the input time-series attributes, providing a mask of non-missing attributes.
 
         Args:
-            time_series_attrs: (K: S, V: (N, ?)), Sequence of batches of time-series attributes, where the
-                dimensionality of each attribute can vary.
+            time_series_attrs: (N, T), Batch of T-lengthed time series.
 
         Returns:
-            Batch of i) (N, S, E) tokens for each attribute, and ii) (N, S) mask of non-missing attributes.
+            - (S, 1), Support set labels.
+            - (Q, 1), Query set labels.
+            - (N (=S+Q), T), Time series input for .
         """
-        # Initialize lists for cumulating (optional) tensors for each modality, that will be concatenated into tensors
-        ts_tokens_list, notna_mask_list = [], []
 
         # Tokenize the attributes
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        ts_tokens = time_series_attrs[:, :-1]
-        indices = torch.arange(ts_tokens.shape[0])
+        ts = time_series_attrs[:, :-1]
+        indices = torch.arange(ts.shape[0])
         y = time_series_attrs[:, -1]
 
         if self.training or len(self.y_train_for_inference) == 0:
@@ -233,12 +206,12 @@ class TSPFNPretraining(pl.LightningModule):
                         random_state=self.hparams["seed"],
                     )
 
-            ts_tokens_support = torch.as_tensor(ts_tokens[train_indices], dtype=torch.float32)
-            ts_tokens_query = torch.as_tensor(ts_tokens[test_indices], dtype=torch.float32)
-            ts_tokens_support = ts_tokens_support.unsqueeze(0) if ts_tokens_support.ndim == 2 else ts_tokens_support
-            ts_tokens_query = ts_tokens_query.unsqueeze(0) if ts_tokens_query.ndim == 2 else ts_tokens_query
+            ts_support = torch.as_tensor(ts[train_indices], dtype=torch.float32)
+            ts_query = torch.as_tensor(ts[test_indices], dtype=torch.float32)
+            ts_support = ts_support.unsqueeze(0) if ts_support.ndim == 2 else ts_support
+            ts_query = ts_query.unsqueeze(0) if ts_query.ndim == 2 else ts_query
 
-            ts_tokens = torch.cat([ts_tokens_support, ts_tokens_query], dim=0)
+            ts = torch.cat([ts_support, ts_query], dim=0)
 
         if self.training or len(self.y_train_for_inference) == 0:
             y_batch_support = torch.as_tensor(y[train_indices], dtype=torch.float32)
@@ -247,44 +220,37 @@ class TSPFNPretraining(pl.LightningModule):
             y_batch_support = y.to(self.device)
             y_batch_query = y.to(self.device)
 
-        if ts_tokens.ndim == 2:
-            ts_tokens = ts_tokens.unsqueeze(1)
+        if ts.ndim == 2:
+            ts = ts.unsqueeze(1)
 
         return (
             y_batch_support,
             y_batch_query,
-            ts_tokens,
+            ts,
         )
 
     @auto_move_data
     def encode(
         self,
         y_batch_support: Tensor,
-        ts_tokens: Tensor,
-        # enable_augments: bool = False,
+        ts: Tensor,
     ) -> Tensor:
-        """Embeds input sequences using the encoder model, optionally selecting/pooling output ts_tokens for the embedding.
+        """Embeds input sequences using the encoder model, optionally selecting/pooling output ts for the embedding.
 
         Args:
-            ts_tokens: (N, S, E), Tokens to feed to the encoder.
-            avail_mask: (N, S), Boolean mask indicating available (i.e. non-missing) ts_tokens. Missing ts_tokens can thus be
-                treated distinctly from others (e.g. replaced w/ a specific mask).
-            enable_augments: Whether to perform augments on the ts_tokens (e.g. masking) to obtain a "corrupted" view for
-                contrastive learning. Augments are already configured differently for training/testing (to avoid
-                stochastic test-time predictions), so this parameter is simply useful to easily toggle augments on/off
-                to obtain contrasting views.
-
-        Returns: (N, E), Embeddings of the input sequences.
+            y_batch_support: (S, 1), Support set labels.
+            ts: (N (=S+Q), T), Tokens to feed to the encoder.
+        Returns: (Q, E), Embeddings of the input sequences.
         """
 
         if self.training or len(self.ts_train_for_inference) == 0:
-            out_features = self.encoder(ts_tokens, y_batch_support)[:, -1, :]
+            out_features = self.encoder(ts, y_batch_support)[:, -1, :]
 
         else:
             # Use train set as context for predicting the query set on val/test inference
-            ts_tokens = torch.cat([self.ts_train_for_inference, ts_tokens], dim=0)
+            ts = torch.cat([self.ts_train_for_inference, ts], dim=0)
             y_train = self.y_train_for_inference
-            out_features = self.encoder(ts_tokens, y_train)[:, -1, :]
+            out_features = self.encoder(ts, y_train)[:, -1, :]
 
         return out_features  # (N, d_model)
 
@@ -297,29 +263,24 @@ class TSPFNPretraining(pl.LightningModule):
         """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the prediction head.
 
         Args:
-            time_series_attrs: (K: S, V: (N, ?)), Sequence of batches of time-series attributes, where the
-                dimensionality of each attribute can vary.
+            time_series_attrs: (N, T): time series inputs.
             task: Flag indicating which type of inference task to perform.
 
         Returns:
             if `task` == 'encode':
-                (N, E), Batch of features extracted by the encoder.
-            if `task` == 'continuum_param`:
-                ? * (M), Parameter of the unimodal logits distribution for targets.
-            if `task` == 'continuum_tau`:
-                ? * (M), Temperature used to control the sharpness of the unimodal logits distribution for targets.
+                (Q, E), Batch of features extracted by the encoder.
             if `task` == 'predict' (and the model includes prediction heads):
-                ? * (N), Prediction for each target in `losses`.
+                1 * (Q), Prediction for each target in `losses`.
         """
         if task != "encode" and not self.prediction_heads:
             raise ValueError(
                 "You requested to perform a prediction task, but the model does not include any prediction heads."
             )
-        y_batch_support, y_batch_query, ts_tokens = self.process_data(
+        y_batch_support, y_batch_query, ts = self.process_data(
             time_series_attrs,
         )  # (N, S, E), (N, S)
 
-        out_features = self.encode(y_batch_support, ts_tokens)  # (N, S, E) -> (N, E)
+        out_features = self.encode(y_batch_support, ts)  # (N, S, E) -> (N, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
@@ -349,10 +310,10 @@ class TSPFNPretraining(pl.LightningModule):
         batch_idx: int,
     ) -> Tensor:
         """Extracts the latent vectors from the encoder for the given batch."""
-        y_batch_support, y_batch_query, ts_tokens = self.process_data(time_series_attrs=batch)  # (N, S, E), (N, S)
+        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=batch)  # (N, S, E), (N, S)
         return self.encode(
             y_batch_support,
-            ts_tokens,
+            ts,
         )  # (N, S, E) -> (N, E)
 
     def _shared_step(self, batch: Tensor, batch_idx: int, dataloader_idx: int = 0) -> Dict[str, Tensor]:
@@ -360,12 +321,12 @@ class TSPFNPretraining(pl.LightningModule):
         if dataloader_idx > 0 and not self.training:
             return {}
 
-        y_batch_support, y_batch_query, ts_tokens = self.process_data(time_series_attrs=batch)  # (N, S, E), (N, S)
+        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=batch)  # (N, S, E), (N, S)
 
         metrics = {}
         losses = []
         if self.predict_losses is not None:
-            metrics.update(self._prediction_shared_step(y_batch_support, y_batch_query, ts_tokens))
+            metrics.update(self._prediction_shared_step(y_batch_support, y_batch_query, ts))
             losses.append(metrics["s_loss"])
 
         # Compute the sum of the (weighted) losses
@@ -377,13 +338,13 @@ class TSPFNPretraining(pl.LightningModule):
         self,
         y_batch_support: Tensor,
         y_batch_query: Tensor,
-        ts_tokens: Tensor,
+        ts: Tensor,
     ) -> Dict[str, Tensor]:
         # Forward pass through the encoder without gradient computation to fine-tune only the prediction heads
         assert (
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
-        prediction = self.encode(y_batch_support, ts_tokens)
+        prediction = self.encode(y_batch_support, ts)
         predictions = {}
         for attr, prediction_head in self.prediction_heads.items():
             pred = prediction_head(prediction)
@@ -419,42 +380,49 @@ class TSPFNPretraining(pl.LightningModule):
             if callable(train_loader):
                 train_loader = train_loader()
 
-            ts_attrs_for_train_inference = {}
-            for batch in train_loader:
-                ts_for_train_inference = {
-                    attr: attr_data
-                    for attr, attr_data in filter_time_series_attributes(
-                        batch, views=self.hparams["views"], attrs=self.hparams["time_series_attrs"]
-                    )[0].items()
-                }
-                for attr, view in ts_for_train_inference.keys():
-                    ts_attrs_for_train_inference.setdefault((attr, view), []).append(
-                        ts_for_train_inference[(attr, view)]
-                    )
+            ts_batch_list = [ts_batch for ts_batch in train_loader]
+            ts_tokens_support = torch.vstack(ts_batch_list)
 
-            ts_cat_attrs_for_train_inference = {
-                attr: torch.cat(ts_attrs_for_train_inference[attr], dim=0) for attr in ts_attrs_for_train_inference
-            }
-            ts_data: Dict[Tuple[str, str], List[Tensor]] = {}
-            for cross_attrs in ts_cat_attrs_for_train_inference:
-                cross_attrs_column: Tuple[str, str] = (cross_attrs[0].__str__(), cross_attrs[1].__str__())
-                ts_data_value = F.interpolate(
-                    ts_cat_attrs_for_train_inference[cross_attrs].unsqueeze(1), size=64, mode="linear"
-                ).squeeze(1)
-                ts_data.setdefault(cross_attrs_column, []).append(ts_data_value)
-            ts_data_stacked = {ts_view_attr: torch.vstack(batch_vals) for ts_view_attr, batch_vals in ts_data.items()}
-            ts_data_doublestack = {
-                ts_view: torch.hstack(
-                    [ts_data_stacked[(view, attr)] for (view, attr) in ts_data_stacked.keys() if view == ts_view]
-                )
-                for ts_view in self.hparams["views"]
-            }
-            ts_tokens_shered_list = []
-            for ts_view in ts_data_doublestack:
-                ts_view_data = ts_data_doublestack[ts_view]
-                ts_tokens_shered_list.append(ts_view_data)
-            ts_tokens_shered = torch.stack(ts_tokens_shered_list, dim=1).float()  # (N, 1, S_ts * num_time_units)
-            self.ts_train_for_inference = ts_tokens_shered.to(self.device)
+            assert ts_tokens_support.ndim == 2, f"{ts_tokens_support.ndim=}, {ts_tokens_support.shape=}"
+
+            self.ts_train_for_inference = ts_tokens_support.to(self.device)
+
+            # ts_attrs_for_train_inference = {}
+            # for batch in train_loader:
+            #     ts_for_train_inference = {
+            #         attr: attr_data
+            #         for attr, attr_data in filter_time_series_attributes(
+            #             batch, views=self.hparams["views"], attrs=self.hparams["time_series_attrs"]
+            #         )[0].items()
+            #     }
+            #     for attr, view in ts_for_train_inference.keys():
+            #         ts_attrs_for_train_inference.setdefault((attr, view), []).append(
+            #             ts_for_train_inference[(attr, view)]
+            #         )
+
+            # ts_cat_attrs_for_train_inference = {
+            #     attr: torch.cat(ts_attrs_for_train_inference[attr], dim=0) for attr in ts_attrs_for_train_inference
+            # }
+            # ts_data: Dict[Tuple[str, str], List[Tensor]] = {}
+            # for cross_attrs in ts_cat_attrs_for_train_inference:
+            #     cross_attrs_column: Tuple[str, str] = (cross_attrs[0].__str__(), cross_attrs[1].__str__())
+            #     ts_data_value = F.interpolate(
+            #         ts_cat_attrs_for_train_inference[cross_attrs].unsqueeze(1), size=64, mode="linear"
+            #     ).squeeze(1)
+            #     ts_data.setdefault(cross_attrs_column, []).append(ts_data_value)
+            # ts_data_stacked = {ts_view_attr: torch.vstack(batch_vals) for ts_view_attr, batch_vals in ts_data.items()}
+            # ts_data_doublestack = {
+            #     ts_view: torch.hstack(
+            #         [ts_data_stacked[(view, attr)] for (view, attr) in ts_data_stacked.keys() if view == ts_view]
+            #     )
+            #     for ts_view in self.hparams["views"]
+            # }
+            # ts_tokens_shered_list = []
+            # for ts_view in ts_data_doublestack:
+            #     ts_view_data = ts_data_doublestack[ts_view]
+            #     ts_tokens_shered_list.append(ts_view_data)
+            # ts_tokens_shered = torch.stack(ts_tokens_shered_list, dim=1).float()  # (N, 1, num_time_units)
+            # self.ts_train_for_inference = ts_tokens_shered.to(self.device)
 
     def on_validation_epoch_start(self):
         self._on_epoch_start()
