@@ -8,6 +8,7 @@ from typing import Any, Callable, List
 
 import hydra
 import numpy as np
+import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Callback
 
