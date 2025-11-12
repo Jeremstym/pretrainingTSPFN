@@ -47,7 +47,7 @@ class TSPFNRunner(ABC):
         register_omegaconf_resolvers()
 
     @staticmethod
-    @hydra.main(version_base=None, config_path="config", config_name="default")
+    @hydra.main(version_base=None, config_path="../config", config_name="default")
     def run_system(cfg: DictConfig) -> None:
         """Handles the training and evaluation of a model.
 
