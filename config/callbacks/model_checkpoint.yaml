@@ -3,4 +3,3 @@ model_checkpoint:
   dirpath: ${sys.getcwd:}/checkpoints
   monitor: "val/loss"
   save_last: True
-  save_last: False
