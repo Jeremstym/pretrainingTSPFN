@@ -32,6 +32,7 @@ class TSPFNPretraining(pl.LightningModule):
 
     def __init__(
         self,
+        optim: DictConfig,
         embed_dim: int,
         split_finetuning: float = 0.5,
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
@@ -132,7 +133,22 @@ class TSPFNPretraining(pl.LightningModule):
         if self.hparams["model"].get("freeze_encoder", False):
             for param in self.encoder.parameters():
                 param.requires_grad = False
-        return super().configure_optimizers()
+        # Extract the optimizer and scheduler configs
+        scheduler_cfg = None
+        if optimizer_cfg := self.hparams["optim"].get("optimizer"):
+            scheduler_cfg = self.hparams["optim"].get("lr_scheduler")
+        else:
+            optimizer_cfg = self.hparams["optim"]
+
+        # Instantiate the optimizer and scheduler
+        configured_optimizer = {"optimizer": hydra.utils.instantiate(optimizer_cfg, params=params)}
+        if scheduler_cfg:
+            configured_optimizer["lr_scheduler"] = hydra.utils.instantiate(
+                scheduler_cfg, optimizer=configured_optimizer["optimizer"]
+            )
+
+        return configured_optimizer
+
 
     @auto_move_data
     def process_data(
