@@ -102,7 +102,7 @@ class TSPFNRunner(ABC):
 
         # Instantiate system (which will handle instantiating the model and optimizer).
         model: TSPFNPretraining = hydra.utils.instantiate(
-            cfg.task, choices=cfg.choices, data_params=datamodule.data_params, _recursive_=False
+            cfg.task, choices=cfg.choices, _recursive_=False
         )
 
         if cfg.ckpt:  # Load pretrained model if checkpoint is provided
@@ -115,7 +115,7 @@ class TSPFNRunner(ABC):
                 print(commonkeys)
             else:
                 logger.info(f"Loading model from {ckpt_path}")
-                model = model.load_from_checkpoint(ckpt_path, data_params=datamodule.data_params, strict=cfg.strict)
+                model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
 
         if cfg.train:
             if cfg.resume:
