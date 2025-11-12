@@ -27,7 +27,6 @@ output_dir: ${sys.getcwd:}
 
 data:
   batch_size: 1024
-  test_batch_size: 1
 
 task:
   _target_: tspfn.pretraining.tspfn_module.TSPFNPretraining
