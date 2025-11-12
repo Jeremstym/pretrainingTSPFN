@@ -2,23 +2,23 @@
 
 defaults:
   - /task/data: tabular+time-series
-  - /task/time_series_tokenizer/model: transformer
+  # - /task/time_series_tokenizer/model: transformer
   - /task/model/encoder: ???
-  - /task/data/preprocessors: tabpfn-ensemble-config
-  - /task/model/contrastive_head: mlp
-  - /task/model/fusion_module: dafted-fusion
+  # - /task/data/preprocessors: tabpfn-ensemble-config
+  # - /task/model/contrastive_head: mlp
+  # - /task/model/fusion_module: dafted-fusion
   # - /task/model/fusion_module: null
-  - /task/model/ts_encoder: time-series-pfn-encoder
+  # - /task/model/ts_encoder: time-series-pfn-encoder
   - /task/model/prediction_head: pfn-prediction
-  - /task/model/prediction_head@task.model.ordinal_head: unimodal-logits
+  # - /task/model/prediction_head@task.model.ordinal_head: unimodal-logits
   - override /task/model: null  # Set this to null because we specify multiple submodels instead of a singleton model
   - override /task/optim: adamw
   - override /data: pretraining-csv
 
 test: True
-
 trainer:
-  devices: 1
+  devices: ${sys.num_gpus:}
+  accelerator: gpu
   precision: 32 #16-mixed, 32
 
 output_dir: ${sys.getcwd:}

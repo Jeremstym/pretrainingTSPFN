@@ -22,7 +22,7 @@ strict: True
 
 train: True
 test: False
-predict: True
+predict: False
 
 results_processors_multiprocessing: True
 

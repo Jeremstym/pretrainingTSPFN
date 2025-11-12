@@ -1,4 +1,0 @@
-_target_: data.datamodule.TSPDataModule
-data_roots:
-  - ${oc.env:TSPFN_DATA_PATH}
-views: null
