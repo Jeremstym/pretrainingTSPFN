@@ -1,10 +1,10 @@
 """PyTorch Lightning DataModule and minimal Dataset wrapper for TSP-style data.
 
 This module provides:
-- TSPDataset: flexible loader for `.pt`/`.pth` files stored per-split or a single file per split.
-- TSPDataModule: LightningDataModule with optional deterministic splitting from an `all` dataset.
+- TSPFNDataset: flexible loader for `.pt`/`.pth` files stored per-split or a single file per split.
+- TSPFNDataModule: LightningDataModule with optional deterministic splitting from an `all` dataset.
 
-Feel free to adapt `_load` in `TSPDataset` to match your on-disk format (CSV, one-file-per-sample, etc.).
+Feel free to adapt `_load` in `TSPFNDataset` to match your on-disk format (CSV, one-file-per-sample, etc.).
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 
 
-class TSPDataset(Dataset):
+class TSPFNDataset(Dataset):
     """Minimal dataset for TSP-style tensors.
 
     Loading rules (defaults):
@@ -72,7 +72,7 @@ class TSPDataset(Dataset):
         return sample
 
 
-class TSPDataModule(pl.LightningDataModule):
+class TSPFNDataModule(pl.LightningDataModule):
     """LightningDataModule for TSP datasets.
 
     Parameters
@@ -87,7 +87,7 @@ class TSPDataModule(pl.LightningDataModule):
         subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
         num_workers: int = 0,
         batch_size: int = 32,
-        pin_memory: bool = True,
+        pin_memory: bool = bool(num_workers),
         transform: Optional[Callable] = None,
         seed: int = 42,
     ) -> None:
@@ -120,12 +120,12 @@ class TSPDataModule(pl.LightningDataModule):
         #     return
         
         self.dataset = {
-            subset_name: TSPDataset(self.data_roots, subset_path, transform=self.transform)
+            subset_name: TSPFNDataset(self.data_roots, subset_path, transform=self.transform)
             for subset_name, subset_path in self.subset_list.items()
         }
 
         # # Prefer single combined 'all' dataset if present
-        # all_ds = TSPDataset(self.data_roots, transform=self.transform)
+        # all_ds = TSPFNDataset(self.data_roots, transform=self.transform)
         # n_all = len(all_ds)
         # if n_all > 0:
         #     val_len = max(1, int(n_all * self.val_split)) if self.val_split > 0 else 0
@@ -170,4 +170,4 @@ class TSPDataModule(pl.LightningDataModule):
         ]
 
 
-__all__ = ["TSPDataset", "TSPDataModule"]
+__all__ = ["TSPFNDataset", "TSPFNDataModule"]
