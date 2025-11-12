@@ -13,7 +13,7 @@ import numpy as np
 import torch
 from tspfn.tspfn_module import TSPFNPretraining
 from data.data_module import TSPFNDataModule
-from data.utils.config import register_omegaconf_resolvers
+from data.utils.config import register_omegaconf_resolvers, instantiate_config_node_leaves
 from data.utils.saving import resolve_model_checkpoint_path
 
 from dotenv import load_dotenv
@@ -47,7 +47,7 @@ class TSPFNRunner(ABC):
         register_omegaconf_resolvers()
 
     @staticmethod
-    @hydra.main(version_base=None, config_path="config", config_name="data_default")
+    @hydra.main(version_base=None, config_path="config", config_name="default")
     def run_system(cfg: DictConfig) -> None:
         """Handles the training and evaluation of a model.
 
@@ -69,8 +69,9 @@ class TSPFNRunner(ABC):
         if job_num := HydraConfig.get().job.get("num") and cfg.seed is None:
             # If Hydra is in multirun mode and no seed is specified by the user (meaning we don't want to reproduce a
             # previous experiment and only care about "true" randomness), use the job number as part of the seed to make
-            # sure to get a different seed for each job. This is a patch since (for some reason I could not figure out)
-            # some jobs get seeded with the same seed
+            # sure to get a different seed for each job.
+            # This is a patch from Nathan Painchaud (nathan.painchaud@usherbrooke.ca) in
+            # "Fusing Echocardiography Images and Medical Records for Continuous Patient Stratification" (TUFFC, 2024).
 
             # The seed is generated under the conditions that:
             # i) it is different for each trial (make sure that even if the same initial seed is returned by `randint`,
@@ -107,12 +108,6 @@ class TSPFNRunner(ABC):
         if cfg.ckpt:  # Load pretrained model if checkpoint is provided
             if cfg.weights_only:
                 logger.info(f"Loading weights from {ckpt_path}")
-                # if not cfg.state_dict:
-                #     model.load_state_dict(torch.load(ckpt_path, map_location=model.device), strict=cfg.strict)
-                #     for key in model.state_dict():
-                #         if key in model.state_dict().keys() and key in torch.load(ckpt_path, map_location=model.device).keys():
-                #             print(key)
-                # else:
                 model.load_state_dict(torch.load(ckpt_path, map_location=model.device)["state_dict"], strict=cfg.strict)
                 modelkeys = list(model.state_dict().keys())
                 loadkeys = list(torch.load(ckpt_path, map_location=model.device)["state_dict"].keys())
@@ -121,42 +116,37 @@ class TSPFNRunner(ABC):
             else:
                 logger.info(f"Loading model from {ckpt_path}")
                 model = model.load_from_checkpoint(ckpt_path, data_params=datamodule.data_params, strict=cfg.strict)
+
         if cfg.train:
             if cfg.resume:
                 trainer.fit(model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
             else:
                 trainer.fit(model, datamodule=datamodule)
 
-            if not cfg.trainer.get("fast_dev_run", False):
-                # Copy best model checkpoint to a predictable path + online tracker (if used)
-                if trainer.checkpoint_callback is not None:
-                    # copy2(trainer.checkpoint_callback.best_model_path, str(best_model_path))
-                    # os.rename(trainer.checkpoint_callback.best_model_path, str(best_model_path))
-                    # Ensure we use the best weights (and not the latest ones) by loading back the best model
-                    model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
-                    print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
-                else:  # If checkpoint callback is not used, save current model.
-                    best_model_path = TSPFNRunner._best_model_path(model.log_dir, cfg)
-                    trainer.save_checkpoint(best_model_path)
-                    print(f"Best model checkpoint saved at {best_model_path}")
+            # Copy best model checkpoint to a predictable path + online tracker (if used)
+            if trainer.checkpoint_callback is not None:
+                # Ensure we use the best weights (and not the latest ones) by loading back the best model
+                model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
+                print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
+            else:  # If checkpoint callback is not used, save current model.
+                best_model_path = TSPFNRunner._best_model_path(model.log_dir, cfg)
+                trainer.save_checkpoint(best_model_path)
+                print(f"Best model checkpoint saved at {best_model_path}")
 
-                if isinstance(trainer.logger, CometLogger):
-                    last_model_path = None
-                    if trainer.checkpoint_callback is not None:
-                        best_model_path = trainer.checkpoint_callback.best_model_path
-                        last_model_path = trainer.checkpoint_callback.last_model_path
+            # if isinstance(trainer.logger, CometLogger):
+            #     last_model_path = None
+            #     if trainer.checkpoint_callback is not None:
+            #         best_model_path = trainer.checkpoint_callback.best_model_path
+            #         last_model_path = trainer.checkpoint_callback.last_model_path
 
-                    trainer.logger.experiment.log_model("best-model", best_model_path)
+            #     trainer.logger.experiment.log_model("best-model", best_model_path)
 
-                    # Also log the `ModelCheckpoint`'s last checkpoint, if it is configured to save one
-                    if last_model_path:
-                        trainer.logger.experiment.log_model("last-model", last_model_path)
+            #     # Also log the `ModelCheckpoint`'s last checkpoint, if it is configured to save one
+            #     if last_model_path:
+            #         trainer.logger.experiment.log_model("last-model", last_model_path)
 
         if cfg.test:
             trainer.test(model, datamodule=datamodule)
-
-        if cfg.predict:
-            trainer.predict(model, datamodule=datamodule)
 
     @staticmethod
     def _check_cfg(cfg: DictConfig) -> DictConfig:
