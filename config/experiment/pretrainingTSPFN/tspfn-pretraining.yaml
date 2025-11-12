@@ -1,0 +1,88 @@
+# @package _global_
+
+defaults:
+  - /task/data: tabular+time-series
+  # - /task/time_series_tokenizer/model: transformer
+  - /task/model/encoder: ???
+  # - /task/data/preprocessors: tabpfn-ensemble-config
+  # - /task/model/contrastive_head: mlp
+  # - /task/model/fusion_module: dafted-fusion
+  # - /task/model/fusion_module: null
+  # - /task/model/ts_encoder: time-series-pfn-encoder
+  # - /task/model/prediction_head@task.model.ordinal_head: unimodal-logits
+  - /task/model/prediction_head: pfn-prediction
+  - /task/model/encoder: tspfn-encoder
+  - override /task/optim: adamw
+  - override /data: pretraining-csv
+
+
+trainer:
+  max_steps: 1000
+
+test: True
+trainer:
+  devices: ${sys.num_gpus:}
+  accelerator: gpu
+  precision: 32 #16-mixed, 32
+
+output_dir: ${sys.getcwd:}
+
+data:
+  batch_size: 1024
+  test_batch_size: 1
+
+task:
+  _target_: tspfn.tspfn_module.TSPFNPretraining
+  predict_losses:
+    diagnosis:
+      _target_: torch.nn.CrossEntropyLoss
+  embed_dim: 192 # As in TabPFN_v2 paper
+  seed : ${seed}
+  split_finetuning: 0.5
+  model:
+    freeze_encoder: True # Whether to freeze the TabPFN encoder during training
+  # Default to the light finetuning describe in XTab's paper
+  optim:
+    optimizer:
+      _target_: torch.optim.AdamW
+      lr: 1e-4
+      weight_decay: 1e-5
+
+
+# Change checkpoint loading defaults to:
+ckpt: ??? # Make it mandatory to provide a checkpoint
+weights_only: True  # Only load the weights and ignore the hyperparameters
+strict: False # Only load weights where they match the defined network, to only some changes (e.g. heads, etc.)
+
+
+experiment_dirname: data=${hydra:runtime.choices.task/data}/contrastive=${oc.select:task.contrastive_loss_weight,0}/time_series_tokenizer=${hydra:runtime.choices.task/time_series_tokenizer/model}
+hydra:
+  job:
+    config:
+      override_dirname:
+        exclude_keys:
+          - hydra/launcher
+          - hydra.launcher.n_jobs
+          - hydra.run.dir
+          - hydra.sweep.dir
+          - hydra.sweep.subdir
+
+          - experiment
+          - trainer.enable_progress_bar
+          - trainer.max_epochs
+
+          - callbacks.learning_rate_finder
+
+          - ckpt
+
+          - data
+          - exclude_tabular_attrs
+          - task/data
+          - task.tabular_attrs
+          - task.time_series_attrs
+          - task.predict_losses
+
+          - task.embed_dim
+          - task/time_series_tokenizer/model
+
+          - task/model/encoder

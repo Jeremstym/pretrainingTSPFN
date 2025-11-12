@@ -1,4 +1,4 @@
-_target_: didactic.models.tabpfn_encoder.TabPFNEncoder
+_target_: tspfn.architecture.tspfn_encoder.TSPFNEncoder
 model_path: /home/stympopper/didacticJerem/ckpts/tabpfn-v2-classifier.ckpt
 seed: ${seed}
 which: classifier # regressor
