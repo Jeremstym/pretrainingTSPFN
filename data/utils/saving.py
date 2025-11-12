@@ -6,7 +6,7 @@ from typing import Type, Union
 import comet_ml
 import pytorch_lightning as pl
 import torch
-from tspfn.tspfn_module import TSPFNPretraining
+from tspfn.pretraining.tspfn_module import TSPFNPretraining
 from data.utils.importlib import import_from_module
 from packaging.version import InvalidVersion, Version
 from torch.types import Device

@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 def register_omegaconf_resolvers() -> None:
     """Registers various OmegaConf resolvers useful to query system/repository/config info."""
     OmegaConf.register_new_resolver("sys.num_workers", lambda x=None: os.cpu_count() - 1, replace=True)
+    OmegaConf.register_new_resolver("sys.num_gpus", lambda x=None: torch.cuda.device_count(), replace=True)
     OmegaConf.register_new_resolver("sys.getcwd", lambda x=None: os.getcwd(), replace=True)
     OmegaConf.register_new_resolver("sys.eps.np", lambda dtype: np.finfo(np.dtype(dtype)).eps, replace=True)
 
