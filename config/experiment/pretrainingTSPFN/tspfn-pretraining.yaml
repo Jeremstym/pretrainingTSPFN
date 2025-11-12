@@ -14,14 +14,13 @@ defaults:
   - override /data: pretraining-csv
 
 
-trainer:
-  max_steps: 1000
 
 test: True
 trainer:
   devices: ${sys.num_gpus:}
   accelerator: gpu
   precision: 32 #16-mixed, 32
+  max_steps: 1000
 
 output_dir: ${sys.getcwd:}
 
