@@ -4,7 +4,7 @@ defaults:
   - data: default  # Incomplete config, but sets some common options
   - callbacks:
       - model_checkpoint
-  # - logger: comet/online
+  - logger: tensorboard
   - _self_
 
 seed: null
