@@ -8,9 +8,9 @@ defaults:
   # - /task/model/fusion_module: null
   # - /task/model/ts_encoder: time-series-pfn-encoder
   # - /task/model/prediction_head@task.model.ordinal_head: unimodal-logits
-  - task/model: null
   - /task/model/prediction_head: pfn-prediction
   - /task/model/encoder: tspfn-encoder
+  - override /task/model: null
   - override /task/optim: adamw
   - override /data: pretraining-csv
 
