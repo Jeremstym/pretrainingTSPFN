@@ -323,7 +323,7 @@ class TSPFNPretraining(TSPFNSystem):
                 MulticlassAveragePrecision(num_classes=n_class, average="macro"),
                 MulticlassF1Score(num_classes=n_class, average="macro"),
             ]
-        )
+        ).to(self.device)
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
@@ -339,6 +339,7 @@ class TSPFNPretraining(TSPFNSystem):
                 y_hat,
                 target,
             )
+
             for metric_tag, metric in self.metrics[f"dataset{dataloader_idx}"].items():
                 metric.update(y_hat, target)
 
