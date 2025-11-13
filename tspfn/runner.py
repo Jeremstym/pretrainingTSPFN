@@ -114,17 +114,21 @@ class TSPFNRunner(ABC):
                 logger.info(f"Loading model from {ckpt_path}")
                 model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
 
+        model_saved = False
         while True:
             trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
             trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
 
             datamodule.setup()
+            if model_saved:
+                model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
             if cfg.train:
                 trainer.fit(model, datamodule=datamodule)
                 # Copy best model checkpoint to a predictable path + online tracker (if used)
                 # Ensure we use the best weights (and not the latest ones) by loading back the best model
                 model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
                 print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
+                model_saved = True
             if cfg.test:
                 trainer.test(model, datamodule=datamodule)
             if not datamodule.switch_to_next_dataset():
