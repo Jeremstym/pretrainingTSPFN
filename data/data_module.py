@@ -13,6 +13,7 @@ import os
 import sys
 from typing import Optional, Callable, Dict, Sequence, List, Union
 from pathlib import Path
+from tqdm import tqdm
 
 import torch
 import pytorch_lightning as pl
@@ -58,8 +59,19 @@ class TSPFNDataset(Dataset):
         # fallback to single file
         path = os.path.join(self.subset_path)
         assert os.path.isfile(path), f"Dataset file not found: {path}"
-        loaded_df = pd.read_csv(path, index_col=0)
-        self.data_ts = list(loaded_df.values)
+        # Get number of lines in the file
+        with open(path, 'r') as f:
+            total_lines = sum(1 for _ in f)
+
+        list_df = []
+        with tqdm(total=total_lines) as pbar:
+            for chunk in pd.read_csv(path, chunksize=1000):
+                list_df.append(chunk)
+                pbar.update(chunk.shape[0])
+
+        df = pd.concat(list_df, ignore_index=True)
+        # loaded_df = pd.read_csv(path, index_col=0)
+        self.data_ts = list(df.values)
         return
 
     def __len__(self) -> int:
