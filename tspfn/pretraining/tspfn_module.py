@@ -410,3 +410,7 @@ class TSPFNPretraining(TSPFNSystem):
 
         # Print metrics to terminal
         logger.info(f"Test metrics: {all_metrics}")
+
+        # Reset inference storage tensors for next dataset
+        self.y_train_for_inference = torch.Tensor().to(self.device)
+        self.ts_train_for_inference = torch.Tensor().to(self.device)
