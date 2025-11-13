@@ -144,11 +144,7 @@ class TSPFNDataModule(pl.LightningDataModule):
             return True
         return False
 
-    def _dataloader(self, dataset: Dataset, shuffle: bool):
-        if not self.training:
-            batch_size = 1
-        else:
-            batch_size = self.batch_size
+    def _dataloader(self, dataset: Dataset, shuffle: bool, batch_size: int) -> DataLoader:
         return DataLoader(
             dataset,
             batch_size=batch_size,
@@ -158,12 +154,13 @@ class TSPFNDataModule(pl.LightningDataModule):
         )
 
     def train_dataloader(self):
-        return self._dataloader(self.train_dataset, shuffle=True)
+        return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
 
     def val_dataloader(self):
-        return self._dataloader(self.val_dataset, shuffle=False)
+        return self._dataloader(self.val_dataset, shuffle=False, batch_size=1)
 
     def test_dataloader(self):
-        return self._dataloader(self.test_dataset, shuffle=False)
+        return self._dataloader(self.test_dataset, shuffle=False, batch_size=1)
+
 
 __all__ = ["TSPFNDataset", "TSPFNDataModule"]
