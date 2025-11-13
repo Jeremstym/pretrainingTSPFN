@@ -118,6 +118,7 @@ class TSPFNSystem(pl.LightningModule, ABC):
 
     def validation_step(self, *args, **kwargs) -> Dict[str, Tensor]:  # noqa: D102
         result = prefix(self._shared_step(*args, **kwargs), "val/")
+        print(result)
         self.log_dict(result, **self.hparams.val_log_kwargs)
         return result
 
