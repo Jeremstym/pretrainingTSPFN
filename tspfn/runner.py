@@ -117,36 +117,18 @@ class TSPFNRunner(ABC):
                 logger.info(f"Loading model from {ckpt_path}")
                 model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
 
-        if cfg.train:
-            if cfg.resume:
-                trainer.fit(model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
-            else:
+        while True:
+            datamodule.setup()
+            if cfg.train:
                 trainer.fit(model, datamodule=datamodule)
-
-            # Copy best model checkpoint to a predictable path + online tracker (if used)
-            if trainer.checkpoint_callback is not None:
+                # Copy best model checkpoint to a predictable path + online tracker (if used)
                 # Ensure we use the best weights (and not the latest ones) by loading back the best model
                 model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
                 print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
-            else:  # If checkpoint callback is not used, save current model.
-                best_model_path = TSPFNRunner._best_model_path(model.log_dir, cfg)
-                trainer.save_checkpoint(best_model_path)
-                print(f"Best model checkpoint saved at {best_model_path}")
-
-            # if isinstance(trainer.logger, CometLogger):
-            #     last_model_path = None
-            #     if trainer.checkpoint_callback is not None:
-            #         best_model_path = trainer.checkpoint_callback.best_model_path
-            #         last_model_path = trainer.checkpoint_callback.last_model_path
-
-            #     trainer.logger.experiment.log_model("best-model", best_model_path)
-
-            #     # Also log the `ModelCheckpoint`'s last checkpoint, if it is configured to save one
-            #     if last_model_path:
-            #         trainer.logger.experiment.log_model("last-model", last_model_path)
-
-        if cfg.test:
-            trainer.test(model, datamodule=datamodule)
+            if cfg.test:
+                trainer.test(model, datamodule=datamodule)
+            if not datamodule.switch_to_next_dataset():
+                break
 
     @staticmethod
     def _check_cfg(cfg: DictConfig) -> DictConfig:

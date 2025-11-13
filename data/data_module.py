@@ -38,7 +38,6 @@ class TSPFNDataset(Dataset):
         self.subset_path = subset
         self._load()
 
-
     def _load(self) -> None:
         # folder = os.path.join(self.data_roots)
         # if os.path.isdir(folder):
@@ -61,7 +60,7 @@ class TSPFNDataset(Dataset):
         name_csv = os.path.basename(path)
         assert os.path.isfile(path), f"Dataset file not found: {path}"
         # Get number of lines in the file
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             total_lines = sum(1 for _ in f)
 
         list_df = []
@@ -115,47 +114,59 @@ class TSPFNDataModule(pl.LightningDataModule):
 
         self.dataset: Dict[str, Dataset] = {}
 
-        self.subset_list: Dict[Dataset] = {
-            subset_name: subset_path
-            for subset_name, subset_path in subsets.items()
-        }
+        self.subset_list: [subset_path for _, subset_path in subsets.items()]
+
+        self.current_dataset_idx = 0
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
-        
-        self.dataset = {
-            subset_name: TSPFNDataset(self.data_roots, subset_path, transform=self.transform)
-            for subset_name, subset_path in self.subset_list.items()
-        }
+        # TODO: fow now, train/val/test use the same subset. Later, we can modify to have different subsets for each.
+
+        self.train_dataset = TSPFNDataset(
+            data_roots=self.data_roots,
+            subset=self.subset_list[self.current_dataset_idx],
+            transform=self.transform,
+        )
+        self.val_dataset = TSPFNDataset(
+            data_roots=self.data_roots,
+            subset=self.subset_list[self.current_dataset_idx],
+            transform=self.transform,
+        )
+        self.test_dataset = TSPFNDataset(
+            data_roots=self.data_roots,
+            subset=self.subset_list[self.current_dataset_idx],
+            transform=self.transform,
+        )
 
         return
 
+    def switch_to_next_dataset(self):
+        self.current_dataset_idx += 1
+        if self.current_dataset_idx < len(self.subset_list):
+            self.setup()
+            return True
+        return False
+
     def _dataloader(self, dataset: Dataset, shuffle: bool):
+        if not self.training:
+            batch_size = 1
+        else:
+            batch_size = self.batch_size
         return DataLoader(
             dataset,
-            batch_size=self.batch_size,
+            batch_size=batch_size,
             shuffle=shuffle,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
         )
 
     def train_dataloader(self):
-        return [
-            self._dataloader(self.dataset[subset_name], shuffle=True)
-            for subset_name in self.subsets.keys()
-        ]
+        return self._dataloader(self.train_dataset, shuffle=True)
 
     def val_dataloader(self):
-        return [
-            self._dataloader(self.dataset[subset_name], shuffle=False)
-            for subset_name in self.subsets.keys()
-        ]
+        return self._dataloader(self.val_dataset, shuffle=False)
 
     def test_dataloader(self):
-        return [
-            self._dataloader(self.dataset[subset_name], shuffle=False)
-            for subset_name in self.subsets.keys()
-        ]
-
+        return self._dataloader(self.test_dataset, shuffle=False)
 
 __all__ = ["TSPFNDataset", "TSPFNDataModule"]

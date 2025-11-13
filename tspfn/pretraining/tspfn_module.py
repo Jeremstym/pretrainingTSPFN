@@ -255,11 +255,11 @@ class TSPFNPretraining(TSPFNSystem):
             # Forward pass through each target's prediction head
             n_class = torch.unique(torch.cat([y_batch_support, y_batch_query])).shape[0]
             predictions = {
-                attr: prediction_head(out_features, n_class) for attr, prediction_head in self.prediction_heads.items()
+                target_task: prediction_head(out_features, n_class) for target_task, prediction_head in self.prediction_heads.items()
             }
 
             # Squeeze out the singleton dimension from the predictions' features (only relevant for scalar predictions)
-            predictions = {attr: prediction.squeeze(dim=1) for attr, prediction in predictions.items()}
+            predictions = {target_task: prediction.squeeze(dim=1) for target_task, prediction in predictions.items()}
             return predictions
 
         else:
@@ -278,7 +278,7 @@ class TSPFNPretraining(TSPFNSystem):
             ts,
         )  # (N, S, E) -> (N, E)
 
-    def _shared_step(self, batch: Tensor, batch_idx: int, dataloader_idx: int) -> Dict[str, Tensor]:
+    def _shared_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
         # Extract time-series inputs from the batch
 
         y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=batch)  # (N, S, E), (N, S)
@@ -287,7 +287,7 @@ class TSPFNPretraining(TSPFNSystem):
         losses = []
         if self.predict_losses is not None:
             metrics.update(
-                self._prediction_shared_step(batch, batch_idx, dataloader_idx, y_batch_support, y_batch_query, ts)
+                self._prediction_shared_step(y_batch_support, y_batch_query, ts)
             )
             losses.append(metrics["s_loss"])
 
@@ -298,9 +298,6 @@ class TSPFNPretraining(TSPFNSystem):
 
     def _prediction_shared_step(
         self,
-        batch: Tensor,
-        batch_idx: int,
-        dataloader_idx: int,
         y_batch_support: Tensor,
         y_batch_query: Tensor,
         ts: Tensor,
@@ -312,35 +309,36 @@ class TSPFNPretraining(TSPFNSystem):
         prediction = self.encode(y_batch_support, ts)
         n_class = torch.unique(torch.cat([y_batch_support, y_batch_query])).shape[0]
         predictions = {}
-        for attr, prediction_head in self.prediction_heads.items():
+        for target_task, prediction_head in self.prediction_heads.items():
             pred = prediction_head(prediction, n_class)
-            predictions[attr] = pred
+            predictions[target_task] = pred
 
-        self.metrics[f"dataset{dataloader_idx}"] = MetricCollection(
-            [
-                MulticlassAccuracy(num_classes=n_class, average="micro"),
-                MulticlassAUROC(num_classes=n_class, average="macro"),
-                MulticlassAveragePrecision(num_classes=n_class, average="macro"),
-                MulticlassF1Score(num_classes=n_class, average="macro"),
-            ]
-        ).to(self.device)
+        for target_task in self.predict_losses:
+            self.metrics[target_task] = MetricCollection(
+                [
+                    MulticlassAccuracy(num_classes=n_class, average="micro"),
+                    MulticlassAUROC(num_classes=n_class, average="macro"),
+                    MulticlassAveragePrecision(num_classes=n_class, average="macro"),
+                    MulticlassF1Score(num_classes=n_class, average="macro"),
+                ]
+            ).to(self.device)
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
 
         target_batch = y_batch_query
 
-        for attr, loss in self.predict_losses.items():
-            target, y_hat = target_batch, predictions[attr]
+        for target_task, target_loss in self.predict_losses.items():
+            target, y_hat = target_batch, predictions[target_task]
 
             target = target.float() if len(torch.unique(target)) == 2 else target.long()
 
-            losses[f"{loss.__class__.__name__.lower().replace('loss', '')}/{attr}"] = loss(
+            losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                 y_hat,
                 target,
             )
 
-            for metric_tag, metric in self.metrics[f"dataset{dataloader_idx}"].items():
+            for metric_tag, metric in self.metrics[target_task].items():
                 metric.update(y_hat, target)
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
@@ -374,15 +372,14 @@ class TSPFNPretraining(TSPFNSystem):
 
     def on_test_epoch_end(self):
         all_metrics = {}
-        for dataset_tag, dataset_metrics in self.metrics.items():
-            for target_task in self.predict_losses:
-                for metric_tag, metric in dataset_metrics.items():
-                    metrics_value = metric.compute()
-                    self.log(f"test_{dataset_tag}/{target_task}/{metric_tag}", metrics_value)
-                    all_metrics[f"{dataset_tag}/{target_task}/{metric_tag}"] = (
-                        metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
-                    )
-                    metric.reset()
+        for target_task in self.predict_losses:
+            for metric_tag, metric in self.metrics[target_task].items():
+                metrics_value = metric.compute()
+                self.log(f"test_{metric_tag}/{target_task}", metrics_value)
+                all_metrics[f"{metric_tag}/{target_task}"] = (
+                    metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
+                )
+                metric.reset()
 
         # Print metrics to terminal
         logger.info(f"Test metrics: {all_metrics}")

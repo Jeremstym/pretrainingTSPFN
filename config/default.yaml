@@ -10,8 +10,6 @@ defaults:
 seed: null
 float32_matmul_precision: high
 
-resume: False
-
 # IMPORTANT NOTE: When using a local checkpoint with a relative path add the working_dir to the checkpoint path because
 # hydra will change the current working directory. For example:
 # If defined in the config:  `ckpt: ${hydra:runtime.cwd}/path/to/checkpoint.ckpt`
