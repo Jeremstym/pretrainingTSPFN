@@ -161,7 +161,7 @@ class TSPFNDataModule(pl.LightningDataModule):
         return self._dataloader(self.val_dataset, shuffle=False, batch_size=self.batch_size)
 
     def test_dataloader(self):
-        return self._dataloader(self.test_dataset, shuffle=False, batch_size=1)
+        return self._dataloader(self.test_dataset, shuffle=False, batch_size=self.batch_size)
 
 
 __all__ = ["TSPFNDataset", "TSPFNDataModule"]
