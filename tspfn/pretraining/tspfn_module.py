@@ -182,8 +182,8 @@ class TSPFNPretraining(TSPFNSystem):
 
             ts_support = torch.as_tensor(ts[train_indices], dtype=torch.float32)
             ts_query = torch.as_tensor(ts[test_indices], dtype=torch.float32)
-            ts_support = ts_support.unsqueeze(0) if ts_support.ndim == 2 else ts_support
-            ts_query = ts_query.unsqueeze(0) if ts_query.ndim == 2 else ts_query
+            # ts_support = ts_support.unsqueeze(0) if ts_support.ndim == 2 else ts_support
+            # ts_query = ts_query.unsqueeze(0) if ts_query.ndim == 2 else ts_query
 
             ts = torch.cat([ts_support, ts_query], dim=0)
 
