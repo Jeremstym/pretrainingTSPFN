@@ -366,7 +366,7 @@ class TSPFNPretraining(TSPFNSystem):
 
             assert ts_tokens_support.ndim == 2, f"{ts_tokens_support.ndim=}, {ts_tokens_support.shape=}"
 
-            self.ts_train_for_inference = ts_tokens_support.to(self.device)
+            self.ts_train_for_inference = ts_tokens_support.unsqueeze(1).to(self.device)
 
     def on_validation_epoch_start(self):
         self._on_epoch_start()
