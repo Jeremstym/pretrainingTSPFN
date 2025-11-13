@@ -107,13 +107,6 @@ class TSPFNDataModule(pl.LightningDataModule):
             for subset_name, subset_path in subsets.items()
         }
 
-    def prepare_data(self, df: pd.DataFrame) -> None:
-        """Convert dataframe into dictionary with separated labels (last column)."""
-        time_series = df.iloc[:, :-1].values
-        labels = df.iloc[:, -1].values
-        self.data_dict = {"data": time_series, "labels": labels}
-        return
-
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
         # if self.train_dataset is not None and self.val_dataset is not None and self.test_dataset is not None:
