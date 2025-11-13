@@ -254,6 +254,8 @@ class TSPFNPretraining(TSPFNSystem):
             time_series_attrs,
         )  # (N, S, E), (N, S)
 
+        print(f"{ts.shape=}, {y_batch_support.shape=}")
+
         out_features = self.encode(y_batch_support, ts)  # (N, S, E) -> (N, E)
 
         # Early return if requested task requires no prediction heads
