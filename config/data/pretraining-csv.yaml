@@ -9,4 +9,4 @@ subsets:
   12ecg: ${oc.env:TSPFN_DATA_PATH}/12ECG_pretraining_data.csv
   haptic: ${oc.env:TSPFN_DATA_PATH}/Haptics_dataset.csv
   yoga: ${oc.env:TSPFN_DATA_PATH}/Yoga_dataset.csv
-# num_workers: 0
+num_workers: 4
