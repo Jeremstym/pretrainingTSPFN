@@ -94,7 +94,7 @@ class TSPFNPretraining(TSPFNSystem):
     def example_input_array(self) -> Tensor:
         """Redefine example input array based on the cardiac attributes provided to the model."""
         # 2 is the size of the batch in the example
-        labels = torch.randperm(10)
+        labels = torch.cat([torch.randperm(5)]*2)
         time_series_attrs = torch.randn(10, 64)
         ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(1)], dim=1)
         return ts_example_input, len(torch.unique(labels))  # (N, T), num_classes
