@@ -58,13 +58,14 @@ class TSPFNDataset(Dataset):
 
         # fallback to single file
         path = os.path.join(self.subset_path)
+        name_csv = os.path.basename(path)
         assert os.path.isfile(path), f"Dataset file not found: {path}"
         # Get number of lines in the file
         with open(path, 'r') as f:
             total_lines = sum(1 for _ in f)
 
         list_df = []
-        with tqdm(total=total_lines, desc=f"Loading {path}") as pbar:
+        with tqdm(total=total_lines, desc=f"Loading {name_csv}") as pbar:
             for chunk in pd.read_csv(path, chunksize=1000):
                 list_df.append(chunk)
                 pbar.update(chunk.shape[0])
