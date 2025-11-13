@@ -12,7 +12,7 @@ from omegaconf import DictConfig
 from torch import Tensor, nn
 from torchinfo import summary
 
-from data.utils.decorators import prefix
+from data.utils.decorators import prefix_native
 
 
 class TSPFNSystem(pl.LightningModule, ABC):
@@ -110,20 +110,19 @@ class TSPFNSystem(pl.LightningModule, ABC):
         raise NotImplementedError
 
     def training_step(self, *args, **kwargs) -> Dict[str, Tensor]:  # noqa: D102
-        result = prefix(self._shared_step(*args, **kwargs), "train/")
+        result = prefix_native(self._shared_step(*args, **kwargs), "train/")
         self.log_dict(result, **self.hparams.train_log_kwargs)
         # Add reference to 'train_loss' under 'loss' keyword, requested by PL to know which metric to optimize
         result["loss"] = result["train/loss"]
         return result
 
     def validation_step(self, *args, **kwargs) -> Dict[str, Tensor]:  # noqa: D102
-        result = prefix(self._shared_step(*args, **kwargs), "val/")
-        print(result)
+        result = prefix_native(self._shared_step(*args, **kwargs), "val/")
         self.log_dict(result, **self.hparams.val_log_kwargs)
         return result
 
     def test_step(self, *args, **kwargs) -> Dict[str, Tensor]:  # noqa: D102
-        result = prefix(self._shared_step(*args, **kwargs), "test/")
+        result = prefix_native(self._shared_step(*args, **kwargs), "test/")
         self.log_dict(result, **self.hparams.val_log_kwargs)
         return result
 
