@@ -111,11 +111,7 @@ class TSPFNDataModule(pl.LightningDataModule):
         self.pin_memory = pin_memory
         self.transform = transform
         self.seed = seed
-
-        self.dataset: Dict[str, Dataset] = {}
-
-        self.subset_list: [subset_path for _, subset_path in subsets.items()]
-        print(self.subset_list)
+        self.subset_list = [subset_path for _, subset_path in subsets.items()]
 
         self.current_dataset_idx = 0
 
