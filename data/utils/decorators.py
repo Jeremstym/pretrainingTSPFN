@@ -10,6 +10,47 @@ from pytorch_lightning.utilities import move_data_to_device
 def _has_method(o: object, name: str) -> bool:
     return callable(getattr(o, name, None))
 
+def prefix_native(map: Mapping[str, Any], prefix: str, exclude: Union[str, Sequence[str]] = None) -> Dict[str, Any]:
+    """Prepends a prefix to the keys of a mapping with string keys.
+
+    Args:
+        map: Mapping with string keys for which to add a prefix to the keys.
+        prefix: Prefix to add to the current keys in the mapping.
+        exclude: Keys to exclude from the prefix addition. These will remain unchanged in the new mapping.
+
+    Returns:
+        Mapping where the keys have been prepended with `prefix`.
+    """
+    if exclude is None:
+        exclude = []
+    elif isinstance(exclude, str):
+        exclude = [exclude]
+
+    return {f"{prefix}{k}" if k not in exclude else k: v for k, v in map.items()}
+
+def prefix(
+    prefix: str, exclude: Union[str, Sequence[str]] = None
+) -> Callable[[Callable[..., Mapping[str, Any]]], Callable[..., Dict[str, Any]]]:
+    """Decorator for functions that return a mapping with string keys, to add a prefix to the keys.
+
+    Args:
+        prefix: Prefix to add to the current keys in the mapping.
+        exclude: Keys to exclude from the prefix addition. These will remain unchanged in the new mapping.
+
+    Returns:
+        Function where the keys of the mapping returned have been prepended with `prefix`, except for the keys listed in
+        `exclude`, that are left as-is.
+    """
+
+    def prefix_decorator(fn: Callable[..., Mapping[str, Any]]) -> Callable[..., Dict[str, Any]]:
+        @wraps(fn)
+        def prefix_wrapper(self, *args, **kwargs):
+            return prefix_native(fn(self, *args, **kwargs), prefix, exclude=exclude)
+
+        return prefix_wrapper
+
+    return prefix_decorator
+
 
 def auto_move_data(fn: Callable) -> Callable:
     """Decorator for ``LightningModule`` methods for which input args should be moved to the correct device.
