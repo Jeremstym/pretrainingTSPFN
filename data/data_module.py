@@ -39,23 +39,6 @@ class TSPFNDataset(Dataset):
         self._load()
 
     def _load(self) -> None:
-        # folder = os.path.join(self.data_roots)
-        # if os.path.isdir(folder):
-        #     files = sorted(os.listdir(folder))
-        #     subsets = []
-        #     for fname in files:
-        #         if not (fname.endswith(".pt") or fname.endswith(".pth")):
-        #             continue
-        #         path = os.path.join(folder, fname)
-        #         try:
-        #             subsets.append(torch.load(path))
-        #         except Exception:
-        #             # skip unreadable files
-        #             continue
-        #     self.subsets = subsets
-        #     return
-
-        # fallback to single file
         path = os.path.join(self.subset_path)
         name_csv = os.path.basename(path)
         assert os.path.isfile(path), f"Dataset file not found: {path}"
