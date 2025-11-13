@@ -14,7 +14,7 @@ train_log_kwargs:
   on_epoch: null
 
 val_log_kwargs:
-  prog_bar: False
+  prog_bar: True
   logger: True
   on_step: null
   on_epoch: True
