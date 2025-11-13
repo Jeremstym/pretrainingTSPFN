@@ -126,23 +126,23 @@ class TSPFNSystem(pl.LightningModule, ABC):
         self.log_dict(result, **self.hparams.val_log_kwargs)
         return result
 
-    def setup(self, stage: str) -> None:  # noqa: D102
-        self.log_dir.mkdir(parents=True, exist_ok=True)  # Ensure output directory exists
+    # def setup(self, stage: str) -> None:  # noqa: D102
+    #     self.log_dir.mkdir(parents=True, exist_ok=True)  # Ensure output directory exists
 
-        # Save Keras-style summary to a ``summary.txt`` file, inside the output directory
-        # Option to disable the summary if PL model's summary is disabled to avoid possible device incompatibilities
-        # (e.g. in clusters).
-        if stage == TrainerFn.FITTING and self.hparams["enable_model_summary"] and self.global_rank == 0:
-            model_summary = summary(
-                self,
-                input_data=self.example_input_array,
-                col_names=["input_size", "output_size", "kernel_size", "num_params"],
-                depth=sys.maxsize,
-                device=self.device,
-                mode=self.hparams["model_summary_mode"],
-                verbose=0,
-            )
-            (self.log_dir / "summary.txt").write_text(str(model_summary), encoding="utf-8")
+    #     # Save Keras-style summary to a ``summary.txt`` file, inside the output directory
+    #     # Option to disable the summary if PL model's summary is disabled to avoid possible device incompatibilities
+    #     # (e.g. in clusters).
+    #     if stage == TrainerFn.FITTING and self.hparams["enable_model_summary"] and self.global_rank == 0:
+    #         model_summary = summary(
+    #             self,
+    #             input_data=self.example_input_array,
+    #             col_names=["input_size", "output_size", "kernel_size", "num_params"],
+    #             depth=sys.maxsize,
+    #             device=self.device,
+    #             mode=self.hparams["model_summary_mode"],
+    #             verbose=0,
+    #         )
+    #         (self.log_dir / "summary.txt").write_text(str(model_summary), encoding="utf-8")
 
     @property
     def log_dir(self) -> Path:
