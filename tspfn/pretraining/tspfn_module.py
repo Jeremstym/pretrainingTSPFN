@@ -276,6 +276,8 @@ class TSPFNPretraining(TSPFNSystem):
     ) -> Tensor:
         """Extracts the latent vectors from the encoder for the given batch."""
         time_series_input, num_classes = batch
+        num_classes = num_classes.cpu().item()
+        
         y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (N, S, E), (N, S)
         return self.encode(
             y_batch_support,
@@ -285,7 +287,8 @@ class TSPFNPretraining(TSPFNSystem):
     def _shared_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
         # Extract time-series inputs from the batch
         time_series_input, num_classes = batch
-        print(f"num_classes: {num_classes}")
+        num_classes = num_classes.cpu().item()
+        print(f"num_classes IN GET LATENT: {num_classes}")
         y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (N, S, E), (N, S)
 
         metrics = {}
