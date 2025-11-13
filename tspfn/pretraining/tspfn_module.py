@@ -361,16 +361,16 @@ class TSPFNPretraining(TSPFNSystem):
         else:
             if callable(train_loader):
                 train_loader = train_loader()
-            
-            batch_counter = 0 # For memory control, only store a limited number of batches
-            ts_batch_list = []
-            for batch in train_loader:
-                ts_batch_list.append(batch[0])
-                batch_counter += 1
-                if batch_counter >= self.hparams["max_batches_stored_for_inference"]:
-                    break
+
+            ts_batch_list = [ts_batch for ts_batch, _ in train_loader]
             ts_tokens_support = torch.vstack(ts_batch_list)
-            print(f" ts_tokens_support shape in on_epoch_start: {ts_tokens_support.shape}")
+
+            if ts_tokens_support.shape[0] > self.hparams["max_batches_stored_for_inference"]:
+                # Randomly subsample to limit RAM usage
+                perm = torch.randperm(ts_tokens_support.shape[0])
+                ts_tokens_support = ts_tokens_support[perm[: self.hparams["max_batches_stored_for_inference"]]]
+
+            print(f'{ts_tokens_support.shape=}')
 
             assert ts_tokens_support.ndim == 2, f"{ts_tokens_support.ndim=}, {ts_tokens_support.shape=}"
             
