@@ -179,12 +179,14 @@ class TSPFNPretraining(TSPFNSystem):
 
             ts = torch.cat([ts_support, ts_query], dim=0)
 
+        print(f" ts shape after split in process data: {ts.shape}")
         if self.training or len(self.y_train_for_inference) == 0:
             y_batch_support = torch.as_tensor(y[train_indices], dtype=torch.float32)
             y_batch_query = torch.as_tensor(y[test_indices], dtype=torch.float32)
         else:
             y_batch_support = y.to(self.device)
             y_batch_query = y.to(self.device)
+            ts = ts.to(self.device)
 
         if ts.ndim == 2:
             ts = ts.unsqueeze(1)
