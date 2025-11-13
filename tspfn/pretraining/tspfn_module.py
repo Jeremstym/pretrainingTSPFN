@@ -361,7 +361,7 @@ class TSPFNPretraining(TSPFNSystem):
             if callable(train_loader):
                 train_loader = train_loader()
 
-            ts_batch_list = [ts_batch for ts_batch in train_loader]
+            ts_batch_list = [ts_batch for ts_batch, _ in train_loader]
             ts_tokens_support = torch.vstack(ts_batch_list)
 
             assert ts_tokens_support.ndim == 2, f"{ts_tokens_support.ndim=}, {ts_tokens_support.shape=}"
