@@ -150,8 +150,6 @@ class TSPFNPretraining(TSPFNSystem):
         indices = torch.arange(ts.shape[0])
         y = time_series_attrs[:, -1]
 
-        print(f" ts shape in process data: {ts.shape}")
-
         if self.training or len(self.y_train_for_inference) == 0:
             assert self.hparams["split_finetuning"] > 0.0, "split_finetuning must be > 0.0 when training."
             label = y.clone().cpu()
@@ -179,7 +177,6 @@ class TSPFNPretraining(TSPFNSystem):
 
             ts = torch.cat([ts_support, ts_query], dim=0)
 
-        print(f" ts shape after split in process data: {ts.shape}")
         if self.training or len(self.y_train_for_inference) == 0:
             y_batch_support = torch.as_tensor(y[train_indices], dtype=torch.float32)
             y_batch_query = torch.as_tensor(y[test_indices], dtype=torch.float32)
@@ -216,7 +213,6 @@ class TSPFNPretraining(TSPFNSystem):
 
         else:
             # Use train set as context for predicting the query set on val/test inference
-            print(f"{ts.shape=}, {self.ts_train_for_inference.shape=}")
             ts_full = torch.cat([self.ts_train_for_inference, ts], dim=0)
             y_train = self.y_train_for_inference
             out_features = self.encoder(ts_full, y_train)[:, -1, :]
