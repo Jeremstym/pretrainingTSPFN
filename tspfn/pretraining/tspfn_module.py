@@ -122,7 +122,7 @@ class TSPFNPretraining(TSPFNSystem):
             prediction_heads = nn.ModuleDict()
             output_size = 10  # follows TabPFN's default setting for classification tasks
             prediction_heads["classification"] = hydra.utils.instantiate(
-                self.hparams["model"]["prediction_head"], out_features=output_size
+                self.hparams["model"]["prediction_head"],
             )
 
         return encoder, prediction_heads
@@ -264,8 +264,9 @@ class TSPFNPretraining(TSPFNSystem):
             ), "You requested to perform a prediction task, but the model does not include any prediction heads."
 
             # Forward pass through each target's prediction head
+            n_class = torch.unique(torch.cat([y_batch_support, y_batch_query])).shape[0]
             predictions = {
-                attr: prediction_head(out_features) for attr, prediction_head in self.prediction_heads.items()
+                attr: prediction_head(out_features, n_class) for attr, prediction_head in self.prediction_heads.items()
             }
 
             # Squeeze out the singleton dimension from the predictions' features (only relevant for scalar predictions)
@@ -317,9 +318,10 @@ class TSPFNPretraining(TSPFNSystem):
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
         prediction = self.encode(y_batch_support, ts)
+        n_class = torch.unique(torch.cat([y_batch_support, y_batch_query])).shape[0]
         predictions = {}
         for attr, prediction_head in self.prediction_heads.items():
-            pred = prediction_head(prediction)
+            pred = prediction_head(prediction, n_class)
             predictions[attr] = pred
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
