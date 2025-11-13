@@ -12,6 +12,8 @@ from omegaconf import DictConfig
 from torch import Tensor, nn
 from torchinfo import summary
 
+from data.utils.decorators import prefix
+
 
 class TSPFNSystem(pl.LightningModule, ABC):
     """Top-level abstract system from which to inherit, implementing some generic utilities and boilerplate code.
