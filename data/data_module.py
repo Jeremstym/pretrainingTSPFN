@@ -73,6 +73,7 @@ class TSPFNDataset(Dataset):
         # loaded_df = pd.read_csv(path, index_col=0)
         self.data_ts = list(df.values)
         self.num_classes = len(np.unique(df.iloc[:, -1]))
+        print(f" num_classes IN DATAMODULE: {self.num_classes}")
         return
 
     def __len__(self) -> int:
