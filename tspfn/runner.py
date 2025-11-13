@@ -89,9 +89,6 @@ class TSPFNRunner(ABC):
         if isinstance(callbacks_node := cfg.get("callbacks"), DictConfig):
             callbacks.extend(instantiate_config_node_leaves(callbacks_node, "callback"))
 
-        trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
-        trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
-
         # if isinstance(trainer.logger, CometLogger):
         #     experiment_logger.experiment.log_asset_folder(".hydra", log_file_name=True)
         #     if cfg.get("comet_tags", None):
@@ -118,6 +115,9 @@ class TSPFNRunner(ABC):
                 model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
 
         while True:
+            trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
+            trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
+
             datamodule.setup()
             if cfg.train:
                 trainer.fit(model, datamodule=datamodule)
