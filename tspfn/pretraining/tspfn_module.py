@@ -370,6 +370,7 @@ class TSPFNPretraining(TSPFNSystem):
                 if batch_counter >= self.hparams["max_batches_stored_for_inference"]:
                     break
             ts_tokens_support = torch.vstack(ts_batch_list)
+            print(f" ts_tokens_support shape in on_epoch_start: {ts_tokens_support.shape}")
 
             assert ts_tokens_support.ndim == 2, f"{ts_tokens_support.ndim=}, {ts_tokens_support.shape=}"
             
