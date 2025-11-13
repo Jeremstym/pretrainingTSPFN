@@ -1,5 +1,3 @@
-from abc import ABC
-
 import logging
 from sklearn.model_selection import train_test_split
 from typing import Any, Callable, Dict, Literal, Optional, Sequence, Tuple, cast
@@ -25,11 +23,12 @@ from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError
 from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
+from tspfn.system import TSPFNSystem
 
 logger = logging.getLogger(__name__)
 
 
-class TSPFNPretraining(pl.LightningModule, ABC):
+class TSPFNPretraining(TSPFNSystem):
     """Multi-modal transformer to learn a representation from cardiac imaging and patient records data."""
 
     def __init__(
@@ -135,22 +134,7 @@ class TSPFNPretraining(pl.LightningModule, ABC):
         if self.hparams["model"].get("freeze_encoder", False):
             for param in self.encoder.parameters():
                 param.requires_grad = False
-        # Extract the optimizer and scheduler configs
-        scheduler_cfg = None
-        if optimizer_cfg := self.hparams["optim"].get("optimizer"):
-            scheduler_cfg = self.hparams["optim"].get("lr_scheduler")
-        else:
-            optimizer_cfg = self.hparams["optim"]
-
-        # Instantiate the optimizer and scheduler
-        configured_optimizer = {"optimizer": hydra.utils.instantiate(optimizer_cfg, params=params)}
-        if scheduler_cfg:
-            configured_optimizer["lr_scheduler"] = hydra.utils.instantiate(
-                scheduler_cfg, optimizer=configured_optimizer["optimizer"]
-            )
-
-        return configured_optimizer
-
+        return super().configure_optimizers()
 
     @auto_move_data
     def process_data(
