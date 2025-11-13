@@ -8,6 +8,7 @@ import hydra
 from omegaconf import DictConfig
 import torch
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
+from torch.utils.data import DataLoader
 from torch import Tensor, nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
@@ -354,15 +355,14 @@ class TSPFNPretraining(TSPFNSystem):
 
         return metrics
 
-    def _on_epoch_start(self):
-        train_loader = self.trainer.train_dataloader
-        if train_loader is None:
+    def _on_epoch_start(self, dataloader: DataLoader):
+        if dataloader is None:
             return "No training dataloader found while setting up inference storage tensors"
         else:
-            if callable(train_loader):
-                train_loader = train_loader()
+            if callable(dataloader):
+                dataloader = dataloader()
 
-            ts_batch_list = [ts_batch for ts_batch, _ in train_loader]
+            ts_batch_list = [ts_batch for ts_batch, _ in dataloader]
             ts_tokens_support = torch.vstack(ts_batch_list)
 
             if ts_tokens_support.shape[0] > self.hparams["max_batches_stored_for_inference"]:
@@ -381,10 +381,10 @@ class TSPFNPretraining(TSPFNSystem):
             self.ts_train_for_inference = ts_tokens_support.unsqueeze(1)
 
     def on_validation_epoch_start(self):
-        self._on_epoch_start()
+        self._on_epoch_start(self.trainer.val_dataloader)
 
     def on_test_epoch_start(self):
-        out_message = self._on_epoch_start()
+        self._on_epoch_start(self.trainer.test_dataloader)
         if out_message is not None:
             logger.info(f"Test epoch start: {out_message}")
             raise ValueError(out_message)
