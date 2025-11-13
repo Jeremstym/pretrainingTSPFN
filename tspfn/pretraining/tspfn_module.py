@@ -381,10 +381,10 @@ class TSPFNPretraining(TSPFNSystem):
             self.ts_train_for_inference = ts_tokens_support.unsqueeze(1)
 
     def on_validation_epoch_start(self):
-        self._on_epoch_start(self.trainer.val_dataloader)
+        self._on_epoch_start(self.trainer.val_dataloaders)
 
     def on_test_epoch_start(self):
-        self._on_epoch_start(self.trainer.test_dataloader)
+        self._on_epoch_start(self.trainer.test_dataloaders)
         if out_message is not None:
             logger.info(f"Test epoch start: {out_message}")
             raise ValueError(out_message)
