@@ -122,30 +122,12 @@ class TSPFNDataModule(pl.LightningDataModule):
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
-        # if self.train_dataset is not None and self.val_dataset is not None and self.test_dataset is not None:
-        #     return
         
         self.dataset = {
             subset_name: TSPFNDataset(self.data_roots, subset_path, transform=self.transform)
             for subset_name, subset_path in self.subset_list.items()
         }
 
-        # # Prefer single combined 'all' dataset if present
-        # all_ds = TSPFNDataset(self.data_roots, transform=self.transform)
-        # n_all = len(all_ds)
-        # if n_all > 0:
-        #     val_len = max(1, int(n_all * self.val_split)) if self.val_split > 0 else 0
-        #     test_len = max(1, int(n_all * self.test_split)) if self.test_split > 0 else 0
-        #     train_len = n_all - val_len - test_len
-        #     if train_len <= 0:
-        #         train_len = max(1, n_all - val_len - test_len)
-        #     lengths = [train_len, val_len, test_len]
-        #     total = sum(lengths)
-        #     if total != n_all:
-        #         lengths[0] += n_all - total
-        #     generator = torch.Generator().manual_seed(self.seed)
-        #     splits = random_split(all_ds, lengths, generator=generator)
-        #     self.train_dataset, self.val_dataset, self.test_dataset = splits
         return
 
     def _dataloader(self, dataset: Dataset, shuffle: bool):

@@ -363,43 +363,6 @@ class TSPFNPretraining(TSPFNSystem):
 
             self.ts_train_for_inference = ts_tokens_support.to(self.device)
 
-            # ts_attrs_for_train_inference = {}
-            # for batch in train_loader:
-            #     ts_for_train_inference = {
-            #         attr: attr_data
-            #         for attr, attr_data in filter_time_series_attributes(
-            #             batch, views=self.hparams["views"], attrs=self.hparams["time_series_attrs"]
-            #         )[0].items()
-            #     }
-            #     for attr, view in ts_for_train_inference.keys():
-            #         ts_attrs_for_train_inference.setdefault((attr, view), []).append(
-            #             ts_for_train_inference[(attr, view)]
-            #         )
-
-            # ts_cat_attrs_for_train_inference = {
-            #     attr: torch.cat(ts_attrs_for_train_inference[attr], dim=0) for attr in ts_attrs_for_train_inference
-            # }
-            # ts_data: Dict[Tuple[str, str], List[Tensor]] = {}
-            # for cross_attrs in ts_cat_attrs_for_train_inference:
-            #     cross_attrs_column: Tuple[str, str] = (cross_attrs[0].__str__(), cross_attrs[1].__str__())
-            #     ts_data_value = F.interpolate(
-            #         ts_cat_attrs_for_train_inference[cross_attrs].unsqueeze(1), size=64, mode="linear"
-            #     ).squeeze(1)
-            #     ts_data.setdefault(cross_attrs_column, []).append(ts_data_value)
-            # ts_data_stacked = {ts_view_attr: torch.vstack(batch_vals) for ts_view_attr, batch_vals in ts_data.items()}
-            # ts_data_doublestack = {
-            #     ts_view: torch.hstack(
-            #         [ts_data_stacked[(view, attr)] for (view, attr) in ts_data_stacked.keys() if view == ts_view]
-            #     )
-            #     for ts_view in self.hparams["views"]
-            # }
-            # ts_tokens_shered_list = []
-            # for ts_view in ts_data_doublestack:
-            #     ts_view_data = ts_data_doublestack[ts_view]
-            #     ts_tokens_shered_list.append(ts_view_data)
-            # ts_tokens_shered = torch.stack(ts_tokens_shered_list, dim=1).float()  # (N, 1, num_time_units)
-            # self.ts_train_for_inference = ts_tokens_shered.to(self.device)
-
     def on_validation_epoch_start(self):
         self._on_epoch_start()
 
