@@ -350,7 +350,7 @@ class TSPFNPretraining(TSPFNSystem):
     def _on_epoch_start(self):
         train_loader = self.trainer.train_dataloader
         if train_loader is None:
-            raise ValueError("No training dataloader found while setting up inference storage tensors.")
+            return "No training dataloader found while setting up inference storage tensors"
         else:
             if callable(train_loader):
                 train_loader = train_loader()
@@ -403,7 +403,10 @@ class TSPFNPretraining(TSPFNSystem):
         self._on_epoch_start()
 
     def on_test_epoch_start(self):
-        self._on_epoch_start()
+        out_message = self._on_epoch_start()
+        if out_message is not None:
+            logger.info(f"Test epoch start: {out_message}")
+            raise ValueError(out_message)
 
     def on_test_epoch_end(self):
         all_metrics = {}
