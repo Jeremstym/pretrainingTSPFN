@@ -115,6 +115,7 @@ class TSPFNDataModule(pl.LightningDataModule):
         self.dataset: Dict[str, Dataset] = {}
 
         self.subset_list: [subset_path for _, subset_path in subsets.items()]
+        print(self.subset_list)
 
         self.current_dataset_idx = 0
 
