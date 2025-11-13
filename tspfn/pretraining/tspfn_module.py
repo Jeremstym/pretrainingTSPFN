@@ -97,7 +97,7 @@ class TSPFNPretraining(TSPFNSystem):
         labels = torch.randperm(10)
         time_series_attrs = torch.randn(10, 64)
         ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(1)], dim=1)
-        return ts_example_input
+        return ts_example_input, len(torch.unique(labels))  # (N, T), num_classes
 
     def configure_model(
         self,
@@ -221,6 +221,7 @@ class TSPFNPretraining(TSPFNSystem):
     def forward(
         self,
         time_series_attrs: Tensor,
+        num_classes: int,
         task: Literal["encode", "predict"] = "encode",
     ) -> Tensor | Dict[str, Tensor]:
         """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the prediction head.
@@ -255,9 +256,8 @@ class TSPFNPretraining(TSPFNSystem):
             ), "You requested to perform a prediction task, but the model does not include any prediction heads."
 
             # Forward pass through each target's prediction head
-            n_class = torch.unique(torch.cat([y_batch_support, y_batch_query])).shape[0]
             predictions = {
-                target_task: prediction_head(out_features, n_class) for target_task, prediction_head in self.prediction_heads.items()
+                target_task: prediction_head(out_features, num_classes) for target_task, prediction_head in self.prediction_heads.items()
             }
 
             # Squeeze out the singleton dimension from the predictions' features (only relevant for scalar predictions)
@@ -274,7 +274,8 @@ class TSPFNPretraining(TSPFNSystem):
         batch_idx: int,
     ) -> Tensor:
         """Extracts the latent vectors from the encoder for the given batch."""
-        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=batch)  # (N, S, E), (N, S)
+        time_series_input, num_classes = batch
+        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (N, S, E), (N, S)
         return self.encode(
             y_batch_support,
             ts,
@@ -282,14 +283,14 @@ class TSPFNPretraining(TSPFNSystem):
 
     def _shared_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
         # Extract time-series inputs from the batch
-
-        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=batch)  # (N, S, E), (N, S)
+        time_series_input, num_classes = batch
+        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (N, S, E), (N, S)
 
         metrics = {}
         losses = []
         if self.predict_losses is not None:
             metrics.update(
-                self._prediction_shared_step(y_batch_support, y_batch_query, ts)
+                self._prediction_shared_step(y_batch_support, y_batch_query, ts, num_classes)
             )
             losses.append(metrics["s_loss"])
 
@@ -303,25 +304,25 @@ class TSPFNPretraining(TSPFNSystem):
         y_batch_support: Tensor,
         y_batch_query: Tensor,
         ts: Tensor,
+        num_classes: int,
     ) -> Dict[str, Tensor]:
         # Forward pass through the encoder without gradient computation to fine-tune only the prediction heads
         assert (
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
         prediction = self.encode(y_batch_support, ts)
-        n_class = torch.unique(torch.cat([y_batch_support, y_batch_query])).shape[0]
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
-            pred = prediction_head(prediction, n_class)
+            pred = prediction_head(prediction, num_classes)
             predictions[target_task] = pred
 
         for target_task in self.predict_losses:
             self.metrics[target_task] = MetricCollection(
                 [
-                    MulticlassAccuracy(num_classes=n_class, average="micro"),
-                    MulticlassAUROC(num_classes=n_class, average="macro"),
-                    MulticlassAveragePrecision(num_classes=n_class, average="macro"),
-                    MulticlassF1Score(num_classes=n_class, average="macro"),
+                    MulticlassAccuracy(num_classes=num_classes, average="micro"),
+                    MulticlassAUROC(num_classes=num_classes, average="macro"),
+                    MulticlassAveragePrecision(num_classes=num_classes, average="macro"),
+                    MulticlassF1Score(num_classes=num_classes, average="macro"),
                 ]
             ).to(self.device)
 

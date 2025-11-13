@@ -72,6 +72,7 @@ class TSPFNDataset(Dataset):
         df = pd.concat(list_df, ignore_index=True)
         # loaded_df = pd.read_csv(path, index_col=0)
         self.data_ts = list(df.values)
+        self.num_classes = len(np.unique(df.iloc[:, -1]))
         return
 
     def __len__(self) -> int:
@@ -81,7 +82,7 @@ class TSPFNDataset(Dataset):
         sample = self.data_ts[idx]
         if self.transform is not None:
             sample = self.transform(sample)
-        return sample
+        return sample, self.num_classes
 
 
 class TSPFNDataModule(pl.LightningDataModule):
