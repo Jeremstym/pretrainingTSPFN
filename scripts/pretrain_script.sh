@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=electronic,hard
-#SBATCH --job-name=TabPFN-MultiModal
+#SBATCH --job-name=TSPFN-Pretraining
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --time=1-23:00:00
