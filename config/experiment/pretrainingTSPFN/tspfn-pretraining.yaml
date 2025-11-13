@@ -31,7 +31,7 @@ data:
 task:
   _target_: tspfn.pretraining.tspfn_module.TSPFNPretraining
   predict_losses:
-    diagnosis:
+    classification:
       _target_: torch.nn.CrossEntropyLoss
   embed_dim: 192 # As in TabPFN_v2 paper
   seed : ${seed}

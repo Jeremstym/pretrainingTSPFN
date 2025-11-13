@@ -58,17 +58,6 @@ class TSPFNPretraining(TSPFNSystem):
 
         # Configure losses/metrics to compute at each train/val/test step
         self.metrics = nn.ModuleDict()
-
-        # Supervised losses and metrics
-        self.predict_losses = {}
-        if predict_losses:
-            self.predict_losses = {
-                attr: (  # type: ignore[misc]
-                    hydra.utils.instantiate(attr_loss) if isinstance(attr_loss, DictConfig) else attr_loss
-                )
-                for attr, attr_loss in predict_losses.items()
-            }
-
         # if target in TabularAttribute.numerical_attrs():
         #     self.metrics[target] = MetricCollection([MeanAbsoluteError(), MeanSquaredError()])
         # elif target in TabularAttribute.binary_attrs():
@@ -81,17 +70,17 @@ class TSPFNPretraining(TSPFNSystem):
         #         ],
         #     )
         # else:  # attr in TabularAttribute.categorical_attrs()
-        num_classes = 10  # TODO: adapt to variable number of classes
-        self.metrics["classification"] = MetricCollection(
-            [
-                MulticlassAccuracy(num_classes=num_classes, average="micro"),
-                MulticlassAUROC(num_classes=num_classes, average="macro"),
-                MulticlassAveragePrecision(num_classes=num_classes, average="macro"),
-                MulticlassF1Score(num_classes=num_classes, average="macro"),
-            ]
-        )
 
-        # Self-supervised losses and metrics
+        # Supervised losses and metrics
+        self.predict_losses = {}
+        if predict_losses:
+            self.predict_losses = {
+                target_task: (
+                    hydra.utils.instantiate(target_loss) if isinstance(target_loss, DictConfig) else target_loss
+                )
+                for target_task, target_loss in predict_losses.items()
+            }
+
         # Initialize transformer encoder and self-supervised + prediction heads
         self.encoder, self.prediction_heads = self.configure_model()
 
@@ -120,10 +109,10 @@ class TSPFNPretraining(TSPFNSystem):
         prediction_heads = None
         if self.predict_losses:
             prediction_heads = nn.ModuleDict()
-            output_size = 10  # follows TabPFN's default setting for classification tasks
-            prediction_heads["classification"] = hydra.utils.instantiate(
-                self.hparams["model"]["prediction_head"],
-            )
+            for target_task in self.predict_losses:
+                prediction_heads[target_task] = hydra.utils.instantiate(
+                    self.hparams["model"]["prediction_head"],
+                )
 
         return encoder, prediction_heads
 
@@ -289,17 +278,17 @@ class TSPFNPretraining(TSPFNSystem):
             ts,
         )  # (N, S, E) -> (N, E)
 
-    def _shared_step(self, batch: Tensor, batch_idx: int, dataloader_idx: int = 0) -> Dict[str, Tensor]:
+    def _shared_step(self, batch: Tensor, batch_idx: int, dataloader_idx: int) -> Dict[str, Tensor]:
         # Extract time-series inputs from the batch
-        if dataloader_idx > 0 and not self.training:
-            return {}
 
         y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=batch)  # (N, S, E), (N, S)
 
         metrics = {}
         losses = []
         if self.predict_losses is not None:
-            metrics.update(self._prediction_shared_step(y_batch_support, y_batch_query, ts))
+            metrics.update(
+                self._prediction_shared_step(batch, batch_idx, dataloader_idx, y_batch_support, y_batch_query, ts)
+            )
             losses.append(metrics["s_loss"])
 
         # Compute the sum of the (weighted) losses
@@ -309,6 +298,9 @@ class TSPFNPretraining(TSPFNSystem):
 
     def _prediction_shared_step(
         self,
+        batch: Tensor,
+        batch_idx: int,
+        dataloader_idx: int,
         y_batch_support: Tensor,
         y_batch_query: Tensor,
         ts: Tensor,
@@ -324,6 +316,15 @@ class TSPFNPretraining(TSPFNSystem):
             pred = prediction_head(prediction, n_class)
             predictions[attr] = pred
 
+        self.metrics[f"dataset{dataloader_idx}"] = MetricCollection(
+            [
+                MulticlassAccuracy(num_classes=n_class, average="micro"),
+                MulticlassAUROC(num_classes=n_class, average="macro"),
+                MulticlassAveragePrecision(num_classes=n_class, average="macro"),
+                MulticlassF1Score(num_classes=n_class, average="macro"),
+            ]
+        )
+
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
 
@@ -338,7 +339,7 @@ class TSPFNPretraining(TSPFNSystem):
                 y_hat,
                 target,
             )
-            for metric_tag, metric in self.metrics[attr].items():
+            for metric_tag, metric in self.metrics[f"dataset{dataloader_idx}"].items():
                 metric.update(y_hat, target)
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
@@ -406,14 +407,15 @@ class TSPFNPretraining(TSPFNSystem):
 
     def on_test_epoch_end(self):
         all_metrics = {}
-        for attr in self.predict_losses:
-            for metric_tag, metric in self.metrics[attr].items():
-                metrics_value = metric.compute()
-                self.log(f"test_{metric_tag}/{attr}", metrics_value)
-                all_metrics[f"{metric_tag}/{attr}"] = (
-                    metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
-                )
-                metric.reset()
+        for dataset_tag, dataset_metrics in self.metrics.items():
+            for target_task in self.predict_losses:
+                for metric_tag, metric in dataset_metrics.items():
+                    metrics_value = metric.compute()
+                    self.log(f"test_{dataset_tag}/{target_task}/{metric_tag}", metrics_value)
+                    all_metrics[f"{dataset_tag}/{target_task}/{metric_tag}"] = (
+                        metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
+                    )
+                    metric.reset()
 
         # Print metrics to terminal
         logger.info(f"Test metrics: {all_metrics}")
