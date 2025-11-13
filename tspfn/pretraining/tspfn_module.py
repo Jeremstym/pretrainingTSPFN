@@ -212,6 +212,7 @@ class TSPFNPretraining(TSPFNSystem):
 
         else:
             # Use train set as context for predicting the query set on val/test inference
+            print(f"{ts.shape=}, {self.ts_train_for_inference.shape=}")
             ts = torch.cat([self.ts_train_for_inference, ts], dim=0)
             y_train = self.y_train_for_inference
             out_features = self.encoder(ts, y_train)[:, -1, :]
