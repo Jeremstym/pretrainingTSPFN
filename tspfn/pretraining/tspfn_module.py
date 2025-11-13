@@ -384,7 +384,7 @@ class TSPFNPretraining(TSPFNSystem):
                 metric.reset()
         output_dir = os.getcwd()
         csv_file = "test_metrics.csv"
-        with open(csv_file, mode="w", newline="") as f:
+        with open(csv_file, mode="a", newline="") as f:
             writer = csv.writer(f)
             # Write headers
             writer.writerow(["metric", "value"])
