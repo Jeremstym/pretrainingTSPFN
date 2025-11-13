@@ -340,7 +340,7 @@ class TSPFNPretraining(TSPFNSystem):
         for target_task, target_loss in self.predict_losses.items():
             target, y_hat = target_batch, predictions[target_task]
 
-            target = target.float() if len(torch.unique(target)) == 2 else target.long()
+            target = target.long()
 
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                 y_hat,
