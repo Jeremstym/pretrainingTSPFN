@@ -382,7 +382,7 @@ class TSPFNPretraining(TSPFNSystem):
         self._on_epoch_start(self.trainer.val_dataloaders)
 
     def on_test_epoch_start(self):
-        self._on_epoch_start(self.trainer.test_dataloaders)
+        out_message = self._on_epoch_start(self.trainer.test_dataloaders)
         if out_message is not None:
             logger.info(f"Test epoch start: {out_message}")
             raise ValueError(out_message)
