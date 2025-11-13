@@ -21,9 +21,7 @@ class TSPFNSystem(pl.LightningModule, ABC):
     (e.g. evaluation).
     """
 
-    def __init__(
-        self, model: DictConfig, optim: DictConfig, choices: DictConfig, **kwargs
-    ):
+    def __init__(self, model: DictConfig, optim: DictConfig, choices: DictConfig, **kwargs):
         """Saves the system's configuration in `hparams`.
 
         Args:
@@ -56,8 +54,7 @@ class TSPFNSystem(pl.LightningModule, ABC):
         else:
             return super().load_from_checkpoint(*args, **kwargs)
 
-
-    def configure_model(self) ->Tuple[nn.Module, Optional[nn.Module], Optional[nn.ModuleDict]]:
+    def configure_model(self) -> Tuple[nn.Module, Optional[nn.Module], Optional[nn.ModuleDict]]:
         """Configure the network architecture used by the system."""
         return hydra.utils.instantiate(
             self.hparams["model"],
@@ -100,6 +97,32 @@ class TSPFNSystem(pl.LightningModule, ABC):
             )
 
         return configured_optimizer
+
+    def _shared_step(self, *args, **kwargs) -> Dict[str, Tensor]:
+        """Handles steps for the train/val/test loops, assuming the behavior should be the same.
+
+        Returns:
+            Mapping between metric names and their values. It must contain at least a ``'loss'``, as that is the value
+            optimized in training and monitored by callbacks during validation.
+        """
+        raise NotImplementedError
+
+    def training_step(self, *args, **kwargs) -> Dict[str, Tensor]:  # noqa: D102
+        result = prefix(self._shared_step(*args, **kwargs), "train/")
+        self.log_dict(result, **self.hparams.train_log_kwargs)
+        # Add reference to 'train_loss' under 'loss' keyword, requested by PL to know which metric to optimize
+        result["loss"] = result["train/loss"]
+        return result
+
+    def validation_step(self, *args, **kwargs) -> Dict[str, Tensor]:  # noqa: D102
+        result = prefix(self._shared_step(*args, **kwargs), "val/")
+        self.log_dict(result, **self.hparams.val_log_kwargs)
+        return result
+
+    def test_step(self, *args, **kwargs) -> Dict[str, Tensor]:  # noqa: D102
+        result = prefix(self._shared_step(*args, **kwargs), "test/")
+        self.log_dict(result, **self.hparams.val_log_kwargs)
+        return result
 
     def setup(self, stage: str) -> None:  # noqa: D102
         self.log_dir.mkdir(parents=True, exist_ok=True)  # Ensure output directory exists

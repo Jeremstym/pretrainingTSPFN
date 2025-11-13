@@ -3,7 +3,6 @@ import shutil
 from pathlib import Path
 from typing import Type, Union
 
-import comet_ml
 import pytorch_lightning as pl
 import torch
 from tspfn.pretraining.tspfn_module import TSPFNPretraining

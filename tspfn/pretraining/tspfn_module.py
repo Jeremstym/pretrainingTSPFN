@@ -33,7 +33,6 @@ class TSPFNPretraining(TSPFNSystem):
 
     def __init__(
         self,
-        optim: DictConfig,
         embed_dim: int,
         split_finetuning: float = 0.5,
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
