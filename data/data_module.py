@@ -64,7 +64,7 @@ class TSPFNDataset(Dataset):
             total_lines = sum(1 for _ in f)
 
         list_df = []
-        with tqdm(total=total_lines) as pbar:
+        with tqdm(total=total_lines, desc=f"Loading {path}") as pbar:
             for chunk in pd.read_csv(path, chunksize=1000):
                 list_df.append(chunk)
                 pbar.update(chunk.shape[0])
