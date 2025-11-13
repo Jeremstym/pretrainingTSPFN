@@ -1,3 +1,5 @@
+import os
+import csv
 import logging
 from sklearn.model_selection import train_test_split
 from typing import Any, Callable, Dict, Literal, Optional, Sequence, Tuple, cast
@@ -380,6 +382,15 @@ class TSPFNPretraining(TSPFNSystem):
                     metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
                 )
                 metric.reset()
+        output_dir = os.getcwd()
+        csv_file = "test_metrics.csv"
+        with open(csv_file, mode="w", newline="") as f:
+            writer = csv.writer(f)
+            # Write headers
+            writer.writerow(["metric", "value"])
+            # Write metric data
+            for key, value in all_metrics.items():
+                writer.writerow([key, value])
 
         # Print metrics to terminal
         logger.info(f"Test metrics: {all_metrics}")
