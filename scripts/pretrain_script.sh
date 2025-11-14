@@ -10,4 +10,4 @@
 uname -a
 nvidia-smi
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_pretraining' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_BIGpretraining' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
