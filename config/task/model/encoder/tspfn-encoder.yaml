@@ -1,5 +1,5 @@
 _target_: tspfn.architecture.tspfn_encoder.TSPFNEncoder
-model_path: ${oc.env:TABPFN_MODEL_PATH}
+model_path: ${pfn_path}
 seed: ${seed}
 which: classifier # regressor
 fit_mode: fit_preprocessors # fit_preprocessors, low_memory, fit_with_cache
