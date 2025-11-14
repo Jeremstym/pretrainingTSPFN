@@ -9,4 +9,15 @@ subsets:
   12ecg: ${oc.env:TSPFN_DATA_PATH}/12ECG_pretraining_data.csv
   yoga: ${oc.env:TSPFN_DATA_PATH}/Yoga_dataset.csv
   coffee: ${oc.env:TSPFN_DATA_PATH}/Coffee_dataset.csv
+  gunpoint: ${oc.env:TSPFN_DATA_PATH}/GunPoint_dataset.csv
+  beef: ${oc.env:TSPFN_DATA_PATH}/Beef_dataset.csv
+  italy_power_demand: ${oc.env:TSPFN_DATA_PATH}/ItalyPowerDemand_dataset.csv
+  face_all: ${oc.env:TSPFN_DATA_PATH}/FaceAll_dataset.csv
+  ecg200: ${oc.env:TSPFN_DATA_PATH}/ECG200_dataset.csv
+  ecg_five_days: ${oc.env:TSPFN_DATA_PATH}/ECGFiveDays_dataset.csv
+  two_patterns: ${oc.env:TSPFN_DATA_PATH}/TwoPatterns_dataset.csv
+  arrow_head: ${oc.env:TSPFN_DATA_PATH}/ArrowHead_dataset.csv
+  strawberry: ${oc.env:TSPFN_DATA_PATH}/Strawberry_dataset.csv
+  wafer: ${oc.env:TSPFN_DATA_PATH}/Wafer_dataset.csv
+  chlorine_concentration: ${oc.env:TSPFN_DATA_PATH}/ChlorineConcentration_dataset.csv
 num_workers: 4
