@@ -115,7 +115,7 @@ class TSPFNRunner(ABC):
             trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
 
             # Instantiate system (which will handle instantiating the model and optimizer).
-            model: TSPFNPretraining = hydra.utils.instantiate(cfg.task, _recursive_=False)
+            model: TSPFNPretraining = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
 
             datamodule.setup()
             if cfg.train:
