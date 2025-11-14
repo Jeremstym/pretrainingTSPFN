@@ -15,6 +15,7 @@ import logging
 class TSPFNEncoder(nn.Module, ABC):
     def __init__(self, model_path: Path, which: str, fit_mode: str, seed: int, random_init: bool = False, **kwargs):
         super().__init__()
+        logging.info(f"Initializing TabPFN Encoder with model from {model_path}")
         self.model, _, self.model_config = load_model_criterion_config(
             model_path=model_path,
             check_bar_distribution_criterion=False,
