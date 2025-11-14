@@ -45,7 +45,7 @@ class TSPFNEncoder(nn.Module, ABC):
                     new_state_dict[k] = v
             self.model.load_state_dict(new_state_dict, strict=True)
 
-        self.x_encoder = self.model.encoder
+        self.encoder = self.model.encoder
         self.y_encoder = self.model.y_encoder
         self.transformer_encoder = self.model.transformer_encoder
         self.model.features_per_group = 1  # Each feature is its own group
@@ -116,7 +116,7 @@ class TSPFNEncoder(nn.Module, ABC):
 
         X = einops.rearrange(X, "b s f n -> s (b f) n")
         embedded_x = einops.rearrange(
-            self.x_encoder(
+            self.encoder(
                 {"main": X},
                 single_eval_pos=single_eval_pos_,
                 cache_trainset_representation=False,
