@@ -20,6 +20,7 @@ import pytorch_lightning as pl
 from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 
 class TSPFNDataset(Dataset):
@@ -31,11 +32,15 @@ class TSPFNDataset(Dataset):
     - Otherwise the dataset is empty.
     """
 
-    def __init__(self, data_roots: str, subset: Path, transform: Optional[Callable] = None) -> None:
+    def __init__(
+        self, data_roots: str, subset: Path, split: str, split_ratio: float, transform: Optional[Callable] = None
+    ) -> None:
         super().__init__()
         self.data_roots = data_roots
         self.transform = transform
         self.subset_path = subset
+        self.split = split
+        self.split_ratio = split_ratio
         self._load()
 
     def _load(self) -> None:
@@ -53,6 +58,18 @@ class TSPFNDataset(Dataset):
                 pbar.update(chunk.shape[0])
 
         df = pd.concat(list_df, ignore_index=True)
+        # Split dataset
+        indices = np.arange(len(df))
+        train_indices, train_indices = train_test_split(
+            indices, train_size=self.split_ratio, random_state=42, shuffle=True
+        )
+        if self.split == "train":
+            df = df.iloc[train_indices]
+        elif self.split == "val":
+            df = df.iloc[train_indices]
+        else:
+            raise ValueError(f"Unknown split: {self.split}")
+
         # loaded_df = pd.read_csv(path, index_col=0)
         self.data_ts = list(df.values)
         self.num_classes = len(np.unique(df.iloc[:, -1]))
@@ -106,16 +123,23 @@ class TSPFNDataModule(pl.LightningDataModule):
         self.train_dataset = TSPFNDataset(
             data_roots=self.data_roots,
             subset=self.subset_list[self.current_dataset_idx],
+            split="train",
+            split_ratio=0.8,
             transform=self.transform,
+
         )
         self.val_dataset = TSPFNDataset(
             data_roots=self.data_roots,
             subset=self.subset_list[self.current_dataset_idx],
+            split="val",
+            split_ratio=0.8,
             transform=self.transform,
         )
         self.test_dataset = TSPFNDataset(
             data_roots=self.data_roots,
             subset=self.subset_list[self.current_dataset_idx],
+            split="val",
+            split_ratio=0.8,
             transform=self.transform,
         )
 
