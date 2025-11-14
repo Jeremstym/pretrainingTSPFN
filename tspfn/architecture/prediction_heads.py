@@ -42,7 +42,7 @@ class PFNPredictionHead(nn.Module):
 
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
-            state_dict = torch.load(updated_pfn_path, map_location=self.device) # updated_pfn_path is already a state dict
+            state_dict = torch.load(updated_pfn_path, map_location="cuda:0") # updated_pfn_path is already a state dict
             model.load_state_dict(state_dict, strict=True)
 
         self.head = model.decoder_dict["standard"]

@@ -36,7 +36,7 @@ class TSPFNEncoder(nn.Module, ABC):
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
             logging.info(f"Loading updated TabPFN model weights from {updated_pfn_path}")
-            state_dict = torch.load(updated_pfn_path, map_location=self.device) # updated_pfn_path is already a state dict
+            state_dict = torch.load(updated_pfn_path, map_location="cuda:0") # updated_pfn_path is already a state dict
             self.model.load_state_dict(state_dict, strict=True)
 
         self.x_encoder = self.model.encoder
