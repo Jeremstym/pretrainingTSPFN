@@ -42,9 +42,9 @@ class TSPFNDataset(Dataset):
         self.subset_path = subset
         self.split = split
         self.split_ratio = split_ratio
-        self._load()
-
         self.label_encoder = LabelEncoder()
+        
+        self._load()
 
     def _load(self) -> None:
         path = os.path.join(self.subset_path)
