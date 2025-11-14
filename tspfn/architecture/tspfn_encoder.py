@@ -13,9 +13,17 @@ import logging
 
 
 class TSPFNEncoder(nn.Module, ABC):
-    def __init__(self, model_path: Path, which: str, fit_mode: str, seed: int, random_init: bool = False, **kwargs):
+    def __init__(
+        self,
+        model_path: Path,
+        which: str,
+        fit_mode: str,
+        seed: int,
+        updated_pfn_path: Union[Path, None] = None,
+        random_init: bool = False,
+        **kwargs,
+    ):
         super().__init__()
-        logging.info(f"Initializing TabPFN Encoder with model from {model_path}")
         self.model, _, self.model_config = load_model_criterion_config(
             model_path=model_path,
             check_bar_distribution_criterion=False,
@@ -24,6 +32,12 @@ class TSPFNEncoder(nn.Module, ABC):
             version="v2",
             download=False,
         )
+
+        if updated_pfn_path is not None:
+            # Load updated model weights after pretraining
+            logging.info(f"Loading updated TabPFN model weights from {updated_pfn_path}")
+            state_dict = torch.load(updated_pfn_path, map_location=self.device) # updated_pfn_path is already a state dict
+            self.model.load_state_dict(state_dict, strict=True)
 
         self.x_encoder = self.model.encoder
         self.y_encoder = self.model.y_encoder

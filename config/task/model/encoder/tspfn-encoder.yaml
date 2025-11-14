@@ -3,4 +3,5 @@ model_path: ${oc.env:TABPFN_MODEL_PATH}
 seed: ${seed}
 which: classifier # regressor
 fit_mode: fit_preprocessors # fit_preprocessors, low_memory, fit_with_cache
+updated_pfn_path: ${updated_pfn_path} # Path to updated TabPFN model weights after pretraining
 random_init: False # Whether to randomly initialize the TabPFN weights instead of loading pretrained weights

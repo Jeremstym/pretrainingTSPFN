@@ -24,7 +24,7 @@ trainer:
   max_steps: 1000
 
 output_dir: ${sys.getcwd:}
-pfn_path: /home/stympopper/didacticJerem/ckpts/tabpfn-v2-classifier.ckpt
+updated_pfn_path: null
 
 data:
   batch_size: 1024

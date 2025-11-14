@@ -97,26 +97,25 @@ class TSPFNRunner(ABC):
         # Instantiate datamodule
         datamodule: TSPFNDataModule = hydra.utils.instantiate(cfg.data, _recursive_=False)
 
-        # Instantiate system (which will handle instantiating the model and optimizer).
-        model: TSPFNPretraining = hydra.utils.instantiate(
-            cfg.task, choices=cfg.choices, _recursive_=False
-        )
-
-        if cfg.ckpt:  # Load pretrained model if checkpoint is provided
-            if cfg.weights_only:
-                logger.info(f"Loading weights from {ckpt_path}")
-                model.load_state_dict(torch.load(ckpt_path, map_location=model.device)["state_dict"], strict=cfg.strict)
-                modelkeys = list(model.state_dict().keys())
-                loadkeys = list(torch.load(ckpt_path, map_location=model.device)["state_dict"].keys())
-                commonkeys = list(set(modelkeys).intersection(loadkeys))
-                print(commonkeys)
-            else:
-                logger.info(f"Loading model from {ckpt_path}")
-                model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
+        # if cfg.ckpt:  # Load pretrained model if checkpoint is provided
+        #     if cfg.weights_only:
+        #         logger.info(f"Loading weights from {ckpt_path}")
+        #         model.load_state_dict(torch.load(ckpt_path, map_location=model.device)["state_dict"], strict=cfg.strict)
+        #         modelkeys = list(model.state_dict().keys())
+        #         loadkeys = list(torch.load(ckpt_path, map_location=model.device)["state_dict"].keys())
+        #         commonkeys = list(set(modelkeys).intersection(loadkeys))
+        #         print(commonkeys)
+        #     else:
+        #         logger.info(f"Loading model from {ckpt_path}")
+        #         model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
 
         while True:
+            # Instantiate Lightning Trainer
             trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
             trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
+
+            # Instantiate system (which will handle instantiating the model and optimizer).
+            model: TSPFNPretraining = hydra.utils.instantiate(cfg.task, choices=cfg.choices, _recursive_=False)
 
             datamodule.setup()
             if cfg.train:
@@ -124,6 +123,8 @@ class TSPFNRunner(ABC):
                 # Copy best model checkpoint to a predictable path + online tracker (if used)
                 # Ensure we use the best weights (and not the latest ones) by loading back the best model
                 model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
+                torch.save(model.encoder.state_dict(), cfg.output_dir + "/tspfn_encoder_weights.pt")
+                cfg.updated_pfn_path = cfg.output_dir + "/tspfn_encoder_weights.pt"
                 print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
             if cfg.test:
                 trainer.test(model, datamodule=datamodule)

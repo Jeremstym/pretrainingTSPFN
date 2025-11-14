@@ -21,6 +21,8 @@ class PFNPredictionHead(nn.Module):
         self,
         in_features: int,
         model_path: Path,
+        updated_pfn_path: Union[Path, None] = None,
+        **kwargs,
     ):
         """Initializes class instance.
 
@@ -29,15 +31,22 @@ class PFNPredictionHead(nn.Module):
             out_features: Number of features to output.
         """
         super().__init__()
-        self.head = load_model_criterion_config(
+        model, _, _ = load_model_criterion_config(
             model_path=model_path,
             check_bar_distribution_criterion=False,
             cache_trainset_representation=False,
             which="classifier",
             version="v2",
             download=False,
-        )[0].decoder_dict["standard"]
+        )
 
+        if updated_pfn_path is not None:
+            # Load updated model weights after pretraining
+            state_dict = torch.load(updated_pfn_path, map_location=self.device) # updated_pfn_path is already a state dict
+            model.load_state_dict(state_dict, strict=True)
+
+        self.head = model.decoder_dict["standard"]
+    
     def forward(self, x: Tensor, n_class: int) -> Tensor:
         """Predicts unnormalized features from a feature vector input.
 
