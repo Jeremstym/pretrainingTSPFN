@@ -21,6 +21,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
 
 class TSPFNDataset(Dataset):
@@ -43,6 +44,8 @@ class TSPFNDataset(Dataset):
         self.split_ratio = split_ratio
         self._load()
 
+        self.label_encoder = LabelEncoder()
+
     def _load(self) -> None:
         path = os.path.join(self.subset_path)
         name_csv = os.path.basename(path)
@@ -58,6 +61,9 @@ class TSPFNDataset(Dataset):
                 pbar.update(chunk.shape[0])
 
         df = pd.concat(list_df, ignore_index=True)
+        # Encode labels to integers
+        df.iloc[:, -1] = self.label_encoder.fit_transform(df.iloc[:, -1])
+        df = pd.concat([df.iloc[:, :-1], df.iloc[:, -1]], axis=1)
         # Split dataset
         indices = np.arange(len(df))
         train_indices, train_indices = train_test_split(
