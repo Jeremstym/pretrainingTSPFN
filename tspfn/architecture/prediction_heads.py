@@ -64,7 +64,6 @@ class PFNPredictionHead(nn.Module):
         Returns:
             - (N, `out_features`), Batch of output features.
         """
-        print(f"number of classes in PFNPredictionHead: {n_class}")
         x = self.head(x.unsqueeze(1)).squeeze(1)
         x = x[:, :n_class]  # Original TabPFN prediction head outputs 10 classes by default, reduce to n_class
 
