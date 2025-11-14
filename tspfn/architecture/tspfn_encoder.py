@@ -32,7 +32,7 @@ class TSPFNEncoder(nn.Module, ABC):
             version="v2",
             download=False,
         )
-
+        print(f"model state dict keys: {self.model.state_dict().keys()}")
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
             logging.info(f"Loading updated TabPFN model weights from {updated_pfn_path}")
