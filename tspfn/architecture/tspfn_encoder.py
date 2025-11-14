@@ -24,7 +24,7 @@ class TSPFNEncoder(nn.Module, ABC):
         **kwargs,
     ):
         super().__init__()
-        self.model, _, self.model_config = load_model_criterion_config(
+        model, _, model_config = load_model_criterion_config(
             model_path=model_path,
             check_bar_distribution_criterion=False,
             cache_trainset_representation=(fit_mode == "fit_with_cache"),
@@ -43,15 +43,16 @@ class TSPFNEncoder(nn.Module, ABC):
                     new_state_dict[new_key] = v
                 else:
                     new_state_dict[k] = v
-            self.model.load_state_dict(new_state_dict, strict=True)
+            model.load_state_dict(new_state_dict, strict=True)
 
-        self.encoder = self.model.encoder
-        self.y_encoder = self.model.y_encoder
-        self.transformer_encoder = self.model.transformer_encoder
-        self.model.features_per_group = 1  # Each feature is its own group
+        self.encoder = model.encoder
+        self.y_encoder = model.y_encoder
+        self.transformer_encoder = model.transformer_encoder
+        self.features_per_group = 1  # Each feature is its own group
+        self.add_embeddings = model.add_embeddings
 
         if random_init:  # random_init:
-            self.model.apply(self._init_weights)
+            model.apply(self._init_weights)
             logging.info("Randomly initialized TabPFN model weights")
         else:
             logging.info("Loaded pretrained TabPFN model weights")
@@ -87,7 +88,7 @@ class TSPFNEncoder(nn.Module, ABC):
 
         assert y.shape[1] == single_eval_pos_
 
-        X = einops.rearrange(X, "s b (f n) -> b s f n", n=self.model.features_per_group)
+        X = einops.rearrange(X, "s b (f n) -> b s f n", n=self.features_per_group)
         y = torch.cat(
             (
                 y,
@@ -133,7 +134,7 @@ class TSPFNEncoder(nn.Module, ABC):
         seq_len, batch_size, num_features = X_full.shape
 
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
-        emb_x, emb_y = self.model.add_embeddings(
+        emb_x, emb_y = self.add_embeddings(
             emb_x,
             emb_y,
             data_dags=None,
