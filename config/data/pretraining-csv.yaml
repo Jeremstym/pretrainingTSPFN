@@ -12,7 +12,7 @@ subsets:
   gunpoint: ${oc.env:TSPFN_DATA_PATH}/GunPoint_dataset.csv
   beef: ${oc.env:TSPFN_DATA_PATH}/Beef_dataset.csv
   italy_power_demand: ${oc.env:TSPFN_DATA_PATH}/ItalyPowerDemand_dataset.csv
-  face_all: ${oc.env:TSPFN_DATA_PATH}/FaceAll_dataset.csv
+  # face_all: ${oc.env:TSPFN_DATA_PATH}/FaceAll_dataset.csv #! Does not work due to labels issues
   ecg200: ${oc.env:TSPFN_DATA_PATH}/ECG200_dataset.csv
   ecg_five_days: ${oc.env:TSPFN_DATA_PATH}/ECGFiveDays_dataset.csv
   two_patterns: ${oc.env:TSPFN_DATA_PATH}/TwoPatterns_dataset.csv
