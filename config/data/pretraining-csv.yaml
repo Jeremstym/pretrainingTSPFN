@@ -7,6 +7,10 @@ data_roots: ${oc.env:TSPFN_DATA_PATH}
 # Careful, index column is set to 0 to avoid issues when the first column is an ID column.
 subsets:
   12ecg: ${oc.env:TSPFN_DATA_PATH}/12ECG_pretraining_data.csv
+  12ecg_extra: ${oc.env:TSPFN_DATA_PATH}/12ECG_pretraining_data_cpsc_2018_extra.csv
+  12ecg_georgia: ${oc.env:TSPFN_DATA_PATH}/12ECG_pretraining_data_georgia.csv
+  12ecg_ptb_xl: ${oc.env:TSPFN_DATA_PATH}/12ECG_pretraining_data_ptb_xl.csv
+  12ecg_st_petersburg_incart: ${oc.env:TSPFN_DATA_PATH}/12ECG_pretraining_data_st_petersburg_incart.csv
   yoga: ${oc.env:TSPFN_DATA_PATH}/Yoga_dataset.csv
   coffee: ${oc.env:TSPFN_DATA_PATH}/Coffee_dataset.csv
   gunpoint: ${oc.env:TSPFN_DATA_PATH}/GunPoint_dataset.csv
