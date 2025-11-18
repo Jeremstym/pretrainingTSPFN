@@ -65,14 +65,18 @@ class TSPFNDataset(Dataset):
         df.iloc[:, -1] = self.label_encoder.fit_transform(df.iloc[:, -1])
         df = pd.concat([df.iloc[:, :-1], df.iloc[:, -1]], axis=1)
         self.num_classes = len(np.unique(df.iloc[:, -1]))
-        print(f"Number of classes for {name_csv} ({self.split}): {self.num_classes}")
         # Split dataset
         indices = np.arange(len(df))
-        print(f"labels counts before spl: {np.unique(df.iloc[:, -1], return_counts=True)}")
         labels = df.iloc[:, -1].values
-        train_indices, val_indices = train_test_split(
-            indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=labels
-        )
+        try:
+            train_indices, val_indices = train_test_split(
+                indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=labels
+            )
+        except ValueError:
+            print(f"Warning: Stratified split failed for {name_csv}, using non-stratified split instead.")
+            train_indices, val_indices = train_test_split(
+                indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=None
+            )
         if self.split == "train":
             df = df.iloc[train_indices]
         elif self.split == "val":
