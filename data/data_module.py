@@ -64,6 +64,8 @@ class TSPFNDataset(Dataset):
         # Encode labels to integers
         df.iloc[:, -1] = self.label_encoder.fit_transform(df.iloc[:, -1])
         df = pd.concat([df.iloc[:, :-1], df.iloc[:, -1]], axis=1)
+        self.num_classes = len(np.unique(df.iloc[:, -1]))
+        print(f"Number of classes for {name_csv} ({self.split}): {self.num_classes}")
         # Split dataset
         indices = np.arange(len(df))
         labels = df.iloc[:, -1].values
@@ -79,8 +81,6 @@ class TSPFNDataset(Dataset):
 
         # loaded_df = pd.read_csv(path, index_col=0)
         self.data_ts = list(df.values)
-        self.num_classes = len(np.unique(df.iloc[:, -1]))
-        print(f"Number of classes for {name_csv} ({self.split}): {self.num_classes}")
         return
 
     def __len__(self) -> int:
