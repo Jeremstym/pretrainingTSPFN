@@ -61,12 +61,11 @@ class TSPFNDataset(Dataset):
                 pbar.update(chunk.shape[0])
 
         df = pd.concat(list_df, ignore_index=False)
-        print(f"df is {df}")
         print(f"Unique labels before encoding in {name_csv}: {df.iloc[:, -1].unique()}")
         # Encode labels to integers
         df.iloc[:, -1] = self.label_encoder.fit_transform(df.iloc[:, -1])
         df = pd.concat([df.iloc[:, :-1], df.iloc[:, -1]], axis=1)
-        print(f'Unique labels in {name_csv}: {self.label_encoder.classes_}')
+        print(f'Unique labels in {name_csv}: {df.iloc[:, -1].unique()}')
         # Split dataset
         indices = np.arange(len(df))
         train_indices, train_indices = train_test_split(
