@@ -38,6 +38,8 @@ poetry install
 Use data in ```.csv``` format, where the last "column" of each row is the label.
 Put each dataset in the same folder that you could target with a ```.env```variable path directory.
 
+You just have to list your ```.csv``` in [config data pretraining-csv.yaml](config/data/pretraining-csv.yaml)
+
 **Warning** 
 Insure that each dataset does not contain more than 10 labels !! As we follow the TabPFN architecture (v1) and download its weights, 
 we cannot afford more than 10 label classification for now.
