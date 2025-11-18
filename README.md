@@ -44,7 +44,7 @@ we cannot afford more than 10 label classification for now.
 
 ### Configuring a Run
 This project uses Hydra to handle the configuration of the
-[`didactic` runner script](didactic/runner.py). To understand how to use Hydra's CLI, refer to its
+[`tspfn` runner script](tspfn/runner.py). To understand how to use Hydra's CLI, refer to its
 [documentation](https://hydra.cc/docs/intro/). For this particular project, preset configurations for various parts of
 the `tspfn` runner pipeline are available in the [config package](config). These files are meant to be
 composed together by Hydra to produce a complete configuration for a run.
