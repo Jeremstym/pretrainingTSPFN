@@ -68,6 +68,7 @@ class TSPFNDataset(Dataset):
         print(f"Number of classes for {name_csv} ({self.split}): {self.num_classes}")
         # Split dataset
         indices = np.arange(len(df))
+        print(f"labels counts before spl: {np.unique(df.iloc[:, -1], return_counts=True)}")
         labels = df.iloc[:, -1].values
         train_indices, val_indices = train_test_split(
             indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=labels
