@@ -64,6 +64,7 @@ class TSPFNDataset(Dataset):
         # Encode labels to integers
         df.iloc[:, -1] = self.label_encoder.fit_transform(df.iloc[:, -1])
         df = pd.concat([df.iloc[:, :-1], df.iloc[:, -1]], axis=1)
+        print(f'Unique labels in {name_csv}: {self.label_encoder.classes_}')
         # Split dataset
         indices = np.arange(len(df))
         train_indices, train_indices = train_test_split(
