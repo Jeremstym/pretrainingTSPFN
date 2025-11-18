@@ -56,11 +56,11 @@ class TSPFNDataset(Dataset):
 
         list_df = []
         with tqdm(total=total_lines, desc=f"Loading {name_csv}") as pbar:
-            for chunk in pd.read_csv(path, chunksize=1000):
+            for chunk in pd.read_csv(path, chunksize=1000, index_col=0):
                 list_df.append(chunk)
                 pbar.update(chunk.shape[0])
 
-        df = pd.concat(list_df, ignore_index=False)
+        df = pd.concat(list_df, ignore_index=True)
         print(f"df is {df}")
         print(f"Unique labels before encoding in {name_csv}: {df.iloc[:, -1].unique()}")
         # Encode labels to integers
