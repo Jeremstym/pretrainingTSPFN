@@ -61,6 +61,7 @@ class TSPFNDataset(Dataset):
                 pbar.update(chunk.shape[0])
 
         df = pd.concat(list_df, ignore_index=True)
+        print(f"df is {df}")
         print(f"Unique labels before encoding in {name_csv}: {df.iloc[:, -1].unique()}")
         # Encode labels to integers
         df.iloc[:, -1] = self.label_encoder.fit_transform(df.iloc[:, -1])
