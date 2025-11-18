@@ -66,13 +66,14 @@ class TSPFNDataset(Dataset):
         df = pd.concat([df.iloc[:, :-1], df.iloc[:, -1]], axis=1)
         # Split dataset
         indices = np.arange(len(df))
-        train_indices, train_indices = train_test_split(
-            indices, train_size=self.split_ratio, random_state=42, shuffle=True
+        labels = df.iloc[:, -1].values
+        train_indices, val_indices = train_test_split(
+            indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=labels
         )
         if self.split == "train":
             df = df.iloc[train_indices]
         elif self.split == "val":
-            df = df.iloc[train_indices]
+            df = df.iloc[val_indices]
         else:
             raise ValueError(f"Unknown split: {self.split}")
 
