@@ -39,7 +39,8 @@ class PFNPredictionHead(nn.Module):
             version="v2",
             download=False,
         )
-
+        self.n_classes = 10 # Default number of classes in TabPFN prediction head
+        
         # TODO: for now, we only support the standard prediction head
         # if updated_pfn_path is not None:
         #     # Load updated model weights after pretraining
@@ -65,6 +66,7 @@ class PFNPredictionHead(nn.Module):
             - (N, `out_features`), Batch of output features.
         """
         x = self.head(x.unsqueeze(1)).squeeze(1)
-        x = x[:, :n_class]  # Original TabPFN prediction head outputs 10 classes by default, reduce to n_class
+        # x = x[:, :n_class]  # Original TabPFN prediction head outputs 10 classes by default, reduce to n_class
+        x = x[:, :self.n_classes]  # Original TabPFN prediction head outputs 10 classes by default, reduce to n_class
 
         return x
