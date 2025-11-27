@@ -162,13 +162,13 @@ class TSPFNPretraining(TSPFNSystem):
             y_batch_support_list = []
             y_batch_query_list = []
             for dataset_idx, dataset_labels in enumerate(y):
-                label = dataset_labels.clone().cpu()
+                labels = dataset_labels.clone().cpu()
                 try:
                     train_indices, test_indices = train_test_split(
                         indices,
                         test_size=self.hparams["split_finetuning"],
                         random_state=self.hparams["seed"],
-                        stratify=label,
+                        stratify=labels,
                     )
                 except ValueError:
                     if len(indices) == 1:
@@ -182,6 +182,7 @@ class TSPFNPretraining(TSPFNSystem):
                             random_state=self.hparams["seed"],
                         )
 
+                print(f"ts shape: {ts.shape}")
                 ts_support = torch.as_tensor(ts[dataset_idx, train_indices], dtype=torch.float32)
                 ts_query = torch.as_tensor(ts[dataset_idx, test_indices], dtype=torch.float32)
                 ts_support_list.append(ts_support)
