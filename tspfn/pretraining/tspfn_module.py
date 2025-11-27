@@ -156,6 +156,8 @@ class TSPFNPretraining(TSPFNSystem):
         y = time_series_attrs[:, :, -1]  # (B, S, 1)
 
         if self.training or len(self.y_train_for_inference) == 0:
+            if len(self.y_train_for_inference) == 0:
+                indices = torch.arange(10)
             assert self.hparams["split_finetuning"] > 0.0, "split_finetuning must be > 0.0 when training."
             ts_support_list = []
             ts_query_list = []
