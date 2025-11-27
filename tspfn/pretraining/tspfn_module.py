@@ -98,7 +98,7 @@ class TSPFNPretraining(TSPFNSystem):
         num_classes = 10  # Default number of classes in TabPFN prediction head
         # labels = torch.cat([torch.randperm(5)]*2)
         labels = torch.arange(10) % num_classes
-        time_series_attrs = torch.randn(10, 64)
+        time_series_attrs = torch.randn(5, 10, 64) # (B, S, T)
         ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(1)], dim=1)
         # num_classes = len(torch.unique(labels))
         return ts_example_input
@@ -257,9 +257,9 @@ class TSPFNPretraining(TSPFNSystem):
             )
         y_batch_support, y_batch_query, ts = self.process_data(
             time_series_attrs,
-        )  # (N, S, E), (N, S)
+        )  # (B, Support, 1), (B, Query, 1), (B, S, T)
 
-        out_features = self.encode(y_batch_support, ts)  # (N, S, E) -> (N, E)
+        out_features = self.encode(y_batch_support, ts)  # (B, S, E) -> (B, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
