@@ -112,6 +112,7 @@ class TSPFNDataset(Dataset):
 
     def __getitem__(self, idx: int):
         sample = self.data_ts[idx]
+        print(f"Sample shape: {sample.shape}")
         if self.transform:
             sample = self.transform(sample)
         return sample
