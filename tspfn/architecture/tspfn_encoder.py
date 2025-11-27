@@ -129,6 +129,8 @@ class TSPFNEncoder(nn.Module, ABC):
     ) -> Tuple[torch.torch.Tensor, torch.torch.Tensor]:
 
         seq_len, batch_size, num_features = X_full.shape
+        print(f"Input shape: {X_full.shape}")
+        print(f"y_train shape: {y_train.shape}")
 
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
         emb_x, emb_y = self.model.add_embeddings(
