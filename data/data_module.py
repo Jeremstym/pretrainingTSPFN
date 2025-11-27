@@ -91,7 +91,6 @@ class TSPFNDataset(Dataset):
 
         # loaded_df = pd.read_csv(path, index_col=0)
         data_ts = df.values
-        print(f"Original data shape: {data_ts.shape}")
         if data_ts.shape[1] < 500:
             # Pad with zeros to have consistent feature size
             padding = np.zeros((data_ts.shape[0], 500 - data_ts.shape[1]))
@@ -103,7 +102,6 @@ class TSPFNDataset(Dataset):
             usable_size = (data_ts.shape[0] // chunk_size) * chunk_size
             data_chunked = data_ts[:usable_size]
             data_ts = data_chunked.reshape(-1, chunk_size, data_ts.shape[1])
-            print(f"Split data into chunks, new shape: {data_ts.shape}")
         else:
             data_ts = []
         
@@ -114,7 +112,6 @@ class TSPFNDataset(Dataset):
 
     def __getitem__(self, idx: int):
         sample = self.data_ts[idx]
-        print(f"Sample shape: {sample.shape}")
         if self.transform:
             sample = self.transform(sample)
         return sample
