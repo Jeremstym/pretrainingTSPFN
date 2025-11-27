@@ -129,8 +129,6 @@ class TSPFNEncoder(nn.Module, ABC):
     ) -> Tuple[torch.torch.Tensor, torch.torch.Tensor]:
 
         seq_len, batch_size, num_features = X_full.shape
-        print(f"Input shape: {X_full.shape}")
-        print(f"y_train shape: {y_train.shape}")
 
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
         emb_x, emb_y = self.model.add_embeddings(
@@ -152,9 +150,8 @@ class TSPFNEncoder(nn.Module, ABC):
             single_eval_pos=single_eval_pos,
             cache_trainset_representation=False,
         )
-        out_query = output[:, single_eval_pos:, :].transpose(0, 1)
-        print(f"out_query shape: {out_query.shape}")
-        raise Exception("Debug stop")
-        query_encoder_out = out_query.squeeze(1)  # (B, Query, E)
+        out_query = output[:, single_eval_pos:, :]
+        query_encoder_out = out_query.squeeze(1)  # (B, Query, T+1, E)
+        print(f"Encoder output shape: {query_encoder_out.shape}")
 
         return query_encoder_out
