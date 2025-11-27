@@ -91,7 +91,6 @@ class TSPFNDataset(Dataset):
 
         # loaded_df = pd.read_csv(path, index_col=0)
         data_ts = df.values
-        assert data_ts.ndim == 2
         print(f"Original data shape: {data_ts.shape}")
         if data_ts.shape[1] < 500:
             # Pad with zeros to have consistent feature size
@@ -101,6 +100,7 @@ class TSPFNDataset(Dataset):
         if data_ts.shape[0] // 1024 > 1:
             # Split into chunks of 1024 samples
             data_ts = np.array_split(data_ts, data_ts.shape[0] // 1024)
+            print(f"Split into {len(data_ts)} chunks of 1024 samples each.")
             data_ts = [[torch.tensor(chunk, dtype=torch.float32)] for chunk in data_ts if len(chunk) == 1024]
         else:
             data_ts = []
