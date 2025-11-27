@@ -154,14 +154,13 @@ class TSPFNPretraining(TSPFNSystem):
         # indices = torch.arange(ts.shape[0])
         indices = torch.arange(1024)  # Fix for pretraining with sequence length S =1024
         y = time_series_attrs[:, :, -1]  # (B, S, 1)
-        print(f"y shape: {y.shape}")
-        raise Exception("Debug stop")
 
         if self.training or len(self.y_train_for_inference) == 0:
             assert self.hparams["split_finetuning"] > 0.0, "split_finetuning must be > 0.0 when training."
             ts_support_list = []
             ts_query_list = []
             y_batch_support_list = []
+            y_batch_query_list = []
             for dataset_idx, dataset_labels in enumerate(y):
                 label = dataset_labels.clone().cpu()
                 try:
