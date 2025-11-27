@@ -192,6 +192,7 @@ class TSPFNPretraining(TSPFNSystem):
                 y_batch_query_list.append(torch.as_tensor(y[dataset_idx, test_indices], dtype=torch.float32))
 
             ts = torch.cat([torch.stack(ts_support_list, dim=0), torch.stack(ts_query_list, dim=0)], dim=0).to(self.device)
+            print(f"Processed ts shape: {ts.shape}")
             y_batch_support = torch.stack(y_batch_support_list, dim=0).to(self.device)
             y_batch_query = torch.stack(y_batch_query_list, dim=0).to(self.device)
 
