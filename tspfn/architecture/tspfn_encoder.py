@@ -155,7 +155,4 @@ class TSPFNEncoder(nn.Module, ABC):
         raise Exception("Debug stop")
         query_encoder_out = out_query.squeeze(1)  # (B, Query, E)
 
-        print(f"query_encoder_out shape: {query_encoder_out.shape}")
-        raise Exception("Debug stop")
-
         return query_encoder_out
