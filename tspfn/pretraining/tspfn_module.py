@@ -30,6 +30,8 @@ from tspfn.system import TSPFNSystem
 
 logger = logging.getLogger(__name__)
 
+# TODO: Split in advance the sequence of each dataset and export them as chunks of 1024 samples to avoid doing it on the fly because of RAM issues.
+
 
 class TSPFNPretraining(TSPFNSystem):
     """Multi-modal transformer to learn a representation from cardiac imaging and patient records data."""
@@ -99,7 +101,7 @@ class TSPFNPretraining(TSPFNSystem):
         # labels = torch.cat([torch.randperm(5)]*2)
         labels = torch.arange(10) % num_classes
         labels = labels.repeat(16, 1)
-        time_series_attrs = torch.randn(16, 10, 64) # (B, S, T)
+        time_series_attrs = torch.randn(16, 10, 64)  # (B, S, T)
         ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(-1)], dim=2)  # (B, S, T+1)
         # num_classes = len(torch.unique(labels))
         return ts_example_input
@@ -191,7 +193,9 @@ class TSPFNPretraining(TSPFNSystem):
                 y_batch_support_list.append(torch.as_tensor(y[dataset_idx, train_indices], dtype=torch.float32))
                 y_batch_query_list.append(torch.as_tensor(y[dataset_idx, test_indices], dtype=torch.float32))
 
-            ts = torch.cat([torch.stack(ts_support_list, dim=0), torch.stack(ts_query_list, dim=0)], dim=1).to(self.device)
+            ts = torch.cat([torch.stack(ts_support_list, dim=0), torch.stack(ts_query_list, dim=0)], dim=1).to(
+                self.device
+            )
             y_batch_support = torch.stack(y_batch_support_list, dim=0).to(self.device)
             y_batch_query = torch.stack(y_batch_query_list, dim=0).to(self.device)
 
