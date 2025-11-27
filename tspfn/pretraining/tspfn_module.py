@@ -194,8 +194,10 @@ class TSPFNPretraining(TSPFNSystem):
 
             ts = torch.cat([torch.stack(ts_support_list, dim=0), torch.stack(ts_query_list, dim=0)], dim=0).to(self.device)
             print(f"ts shape after concat: {ts.shape}")
-            y_batch_support = torch.cat(y_batch_support_list, dim=0).to(self.device)
-            y_batch_query = torch.cat(y_batch_query_list, dim=0).to(self.device)
+            y_batch_support = torch.stack(y_batch_support_list, dim=0).to(self.device)
+            y_batch_query = torch.stack(y_batch_query_list, dim=0).to(self.device)
+            print(f"y_batch_support shape: {y_batch_support.shape}")
+            print(f"y_batch_query shape: {y_batch_query.shape}")
 
         # if self.training or len(self.y_train_for_inference) == 0:
         #     y_batch_support = torch.as_tensor(y[train_indices], dtype=torch.float32).to(self.device)
