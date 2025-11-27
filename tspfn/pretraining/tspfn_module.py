@@ -100,7 +100,7 @@ class TSPFNPretraining(TSPFNSystem):
         labels = torch.arange(10) % num_classes
         labels = labels.repeat(5, 1)
         time_series_attrs = torch.randn(5, 10, 64) # (B, S, T)
-        ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(-1)], dim=1)
+        ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(-1)], dim=2)  # (B, S, T+1)
         # num_classes = len(torch.unique(labels))
         return ts_example_input
 
