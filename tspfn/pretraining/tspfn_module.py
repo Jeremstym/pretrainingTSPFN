@@ -98,7 +98,7 @@ class TSPFNPretraining(TSPFNSystem):
         num_classes = 10  # Default number of classes in TabPFN prediction head
         # labels = torch.cat([torch.randperm(5)]*2)
         labels = torch.arange(10) % num_classes
-        labels = labels.repeat(5)
+        labels = labels.repeat(5, 1)
         time_series_attrs = torch.randn(5, 10, 64) # (B, S, T)
         ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(1)], dim=1)
         # num_classes = len(torch.unique(labels))
