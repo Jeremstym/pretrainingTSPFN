@@ -45,11 +45,9 @@ class TSPFNDataset(Dataset):
         self.label_encoder = LabelEncoder()
         
         data_list = []
-        num_classes_list = []
         for subset_path in self.subset_paths:
-            data_ts, subset_num_classes_list = self._load_subset(subset_path)
+            data_ts = self._load_subset(subset_path)
             data_list.extend(data_ts)
-            num_classes_list.extend(subset_num_classes_list)
         self.data_ts = data_list
         # self.num_classes = num_classes_list
 
@@ -106,6 +104,7 @@ class TSPFNDataset(Dataset):
             data_ts = [torch.tensor(chunk, dtype=torch.float32) for chunk in data_ts if len(chunk) == 1024]
         else:
             data_ts = []
+        
         return data_ts #, [num_classes] * len(data_ts)
 
     def __len__(self) -> int:
