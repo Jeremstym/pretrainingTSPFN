@@ -101,7 +101,7 @@ class TSPFNDataset(Dataset):
         if data_ts.shape[0] // 1024 > 1:
             # Split into chunks of 1024 samples
             data_ts = np.array_split(data_ts, data_ts.shape[0] // 1024)
-            data_ts = [torch.tensor(chunk, dtype=torch.float32) for chunk in data_ts if len(chunk) == 1024]
+            data_ts = [[torch.tensor(chunk, dtype=torch.float32)] for chunk in data_ts if len(chunk) == 1024]
         else:
             data_ts = []
         
@@ -111,10 +111,10 @@ class TSPFNDataset(Dataset):
         return len(self.data_ts)
 
     def __getitem__(self, idx: int):
-        sampled_dataset = self.data_ts[idx]
-        if self.transform is not None:
-            sampled_dataset = self.transform(sampled_dataset)
-        return sampled_dataset #, self.num_classes
+        sample = self.data_ts[idx]
+        if self.transform:
+            sample = self.transform(sample)
+        return sample
 
 class TSPFNDataModule(pl.LightningDataModule):
     """LightningDataModule for TSP datasets.
