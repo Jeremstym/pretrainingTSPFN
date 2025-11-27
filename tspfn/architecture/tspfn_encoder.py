@@ -81,11 +81,9 @@ class TSPFNEncoder(nn.Module, ABC):
         if y.ndim == 1:
             y = y.unsqueeze(-1)
         if y.ndim == 2:
-            y = y.unsqueeze(-1)  # (Seq, N) -> (Seq, N, 1)
+            y = y.unsqueeze(-1)  # (S, B) -> (S, B, 1)
 
-        y = y.transpose(0, 1)  # (N, Seq, 1)
-
-        assert y.shape[1] == single_eval_pos_
+        y = y.transpose(0, 1)  # (B, S, 1)
 
         X = einops.rearrange(X, "s b (f n) -> b s f n", n=self.features_per_group)
         y = torch.cat(
@@ -103,7 +101,7 @@ class TSPFNEncoder(nn.Module, ABC):
             dim=1,
         )
 
-        y = y.transpose(0, 1)  # (Seq, N, 1)
+        y = y.transpose(0, 1)  # (S, B, 1)
         y[single_eval_pos_:] = torch.nan  # Make sure that no label leakage ever happens
 
         embedded_y = self.y_encoder(
@@ -153,6 +151,8 @@ class TSPFNEncoder(nn.Module, ABC):
             cache_trainset_representation=False,
         )
         out_query = output[:, single_eval_pos:, :].transpose(0, 1)
-        query_encoder_out = out_query.squeeze(1)  # (N_query, S_tab, d_model)
+        print(f"out_query shape: {out_query.shape}")
+        raise Exception("Debug stop")
+        query_encoder_out = out_query.squeeze(1)  # (B, Query, E)
 
         return query_encoder_out

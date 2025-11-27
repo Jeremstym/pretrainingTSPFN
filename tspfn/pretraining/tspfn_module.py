@@ -138,51 +138,62 @@ class TSPFNPretraining(TSPFNSystem):
         """Tokenizes the input time-series attributes, providing a mask of non-missing attributes.
 
         Args:
-            time_series_attrs: (N, T), Batch of T-lengthed time series.
+            time_series_attrs: (B, S, T), Batch of time-series datasets, where the last feature for each sample is the label.
 
         Returns:
-            - (S, 1), Support set labels.
-            - (Q, 1), Query set labels.
-            - (N (=S+Q), T), Time series input for .
+            - (B, Support, 1), Support set labels.
+            - (B, Query, 1), Query set labels.
+            - (B, S (=Support+Query), T), Time series input for .
         """
 
         # Tokenize the attributes
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        ts = time_series_attrs[:, :-1]
-        indices = torch.arange(ts.shape[0])
-        y = time_series_attrs[:, -1]
+        ts = time_series_attrs[:, :, :-1]  # (B, S, F-1)
+        # indices = torch.arange(ts.shape[0])
+        indices = torch.arange(1024)  # Fix for pretraining with sequence length S =1024
+        y = time_series_attrs[:, :, -1]  # (B, S)
 
         if self.training or len(self.y_train_for_inference) == 0:
             assert self.hparams["split_finetuning"] > 0.0, "split_finetuning must be > 0.0 when training."
-            label = y.clone().cpu()
-            try:
-                train_indices, test_indices = train_test_split(
-                    indices,
-                    test_size=self.hparams["split_finetuning"],
-                    random_state=self.hparams["seed"],
-                    stratify=label,
-                )
-            except ValueError:
-                if len(indices) == 1:
-                    print("Sanity check with single sample for TS, skipping train/test split.")
-                    train_indices, test_indices = indices, indices
-                else:
-                    print("Stratified splitting failed, performing non-stratified split instead.")
+            ts_support_list = []
+            ts_query_list = []
+            y_batch_support_list = []
+            for dataset_idx, dataset_labels in enumerate(y):
+                label = dataset_labels.clone().cpu()
+                try:
                     train_indices, test_indices = train_test_split(
                         indices,
                         test_size=self.hparams["split_finetuning"],
                         random_state=self.hparams["seed"],
+                        stratify=label,
                     )
+                except ValueError:
+                    if len(indices) == 1:
+                        print("Sanity check with single sample for TS, skipping train/test split.")
+                        train_indices, test_indices = indices, indices
+                    else:
+                        print("Stratified splitting failed, performing non-stratified split instead.")
+                        train_indices, test_indices = train_test_split(
+                            indices,
+                            test_size=self.hparams["split_finetuning"],
+                            random_state=self.hparams["seed"],
+                        )
 
-            ts_support = torch.as_tensor(ts[train_indices], dtype=torch.float32)
-            ts_query = torch.as_tensor(ts[test_indices], dtype=torch.float32)
+                ts_support = torch.as_tensor(ts[dataset_idx, train_indices], dtype=torch.float32)
+                ts_query = torch.as_tensor(ts[dataset_idx, test_indices], dtype=torch.float32)
+                ts_support_list.append(ts_support)
+                ts_query_list.append(ts_query)
+                y_batch_support_list.append(torch.as_tensor(y[dataset_idx, train_indices], dtype=torch.float32))
+                y_batch_query_list.append(torch.as_tensor(y[dataset_idx, test_indices], dtype=torch.float32))
 
-            ts = torch.cat([ts_support, ts_query], dim=0).to(self.device)
+            ts = torch.cat([torch.cat(ts_support_list, dim=0), torch.cat(ts_query_list, dim=0)], dim=0).to(self.device)
+            y_batch_support = torch.cat(y_batch_support_list, dim=0).to(self.device)
+            y_batch_query = torch.cat(y_batch_query_list, dim=0).to(self.device)
 
-        if self.training or len(self.y_train_for_inference) == 0:
-            y_batch_support = torch.as_tensor(y[train_indices], dtype=torch.float32).to(self.device)
-            y_batch_query = torch.as_tensor(y[test_indices], dtype=torch.float32).to(self.device)
+        # if self.training or len(self.y_train_for_inference) == 0:
+        #     y_batch_support = torch.as_tensor(y[train_indices], dtype=torch.float32).to(self.device)
+        #     y_batch_query = torch.as_tensor(y[test_indices], dtype=torch.float32).to(self.device)
         else:
             y_batch_support = y.to(self.device)
             y_batch_query = y.to(self.device)
@@ -207,20 +218,20 @@ class TSPFNPretraining(TSPFNSystem):
 
         Args:
             y_batch_support: (S, 1), Support set labels.
-            ts: (N (=S+Q), T), Tokens to feed to the encoder.
-        Returns: (Q, E), Embeddings of the input sequences.
+            ts: (B, S (=Support+Query), T), Tokens to feed to the encoder.
+        Returns: (B, Query, E), Embeddings of the input sequences.
         """
 
         if self.training or len(self.ts_train_for_inference) == 0:
-            out_features = self.encoder(ts, y_batch_support)[:, -1, :]
+            out_features = self.encoder(ts.transpose(0, 1), y_batch_support.transpose(0, 1))[:, :, -1, :]
 
         else:
             # Use train set as context for predicting the query set on val/test inference
             ts_full = torch.cat([self.ts_train_for_inference, ts], dim=0)
             y_train = self.y_train_for_inference
-            out_features = self.encoder(ts_full, y_train)[:, -1, :]
+            out_features = self.encoder(ts_full.transpose(0, 1), y_train.transpose(0, 1))[:, :, -1, :]
 
-        return out_features  # (N, d_model)
+        return out_features  # (B, Query, E)
 
     @auto_move_data
     def forward(
@@ -231,14 +242,14 @@ class TSPFNPretraining(TSPFNSystem):
         """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the prediction head.
 
         Args:
-            time_series_attrs: (N, T): time series inputs.
+            time_series_attrs: (B, S, T): time series inputs.
             task: Flag indicating which type of inference task to perform.
 
         Returns:
             if `task` == 'encode':
-                (Q, E), Batch of features extracted by the encoder.
+                (B, Query, E), Batch of features extracted by the encoder.
             if `task` == 'predict' (and the model includes prediction heads):
-                1 * (Q), Prediction for each target in `losses`.
+                1 * (B, Query), Prediction for each target in `losses`.
         """
         if task != "encode" and not self.prediction_heads:
             raise ValueError(
@@ -261,7 +272,8 @@ class TSPFNPretraining(TSPFNSystem):
 
             # Forward pass through each target's prediction head
             predictions = {
-                target_task: prediction_head(out_features) for target_task, prediction_head in self.prediction_heads.items()
+                target_task: prediction_head(out_features)
+                for target_task, prediction_head in self.prediction_heads.items()
             }
 
             # Squeeze out the singleton dimension from the predictions' features (only relevant for scalar predictions)
@@ -278,27 +290,25 @@ class TSPFNPretraining(TSPFNSystem):
         batch_idx: int,
     ) -> Tensor:
         """Extracts the latent vectors from the encoder for the given batch."""
-        time_series_input = batch
+        time_series_input = batch  # (B, S, T)
         # num_classes = num_classes.cpu().item()
-        
-        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (N, S, E), (N, S)
+
+        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (B, S, E), (B, S)
         return self.encode(
             y_batch_support,
             ts,
-        )  # (N, S, E) -> (N, E)
+        )  # (B, S, E) -> (B, E)
 
     def _shared_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
         # Extract time-series inputs from the batch
         time_series_input = batch
         # num_classes = num_classes[0].cpu().item()
-        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (N, S, E), (N, S)
+        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (B, S, E), (B, S)
 
         metrics = {}
         losses = []
         if self.predict_losses is not None:
-            metrics.update(
-                self._prediction_shared_step(y_batch_support, y_batch_query, ts, num_classes=10)
-            )
+            metrics.update(self._prediction_shared_step(y_batch_support, y_batch_query, ts, num_classes=10))
             losses.append(metrics["s_loss"])
 
         # Compute the sum of the (weighted) losses
@@ -372,12 +382,15 @@ class TSPFNPretraining(TSPFNSystem):
                 ts_tokens_support = ts_tokens_support[perm[: self.hparams["max_batches_stored_for_inference"]]]
 
             assert ts_tokens_support.ndim == 2, f"{ts_tokens_support.ndim=}, {ts_tokens_support.shape=}"
-            
-            # Store and remove label 
-            self.y_train_for_inference = ts_tokens_support[:, -1].to(self.device)
-            ts_tokens_support = ts_tokens_support[:, :-1].to(self.device)
 
-            self.ts_train_for_inference = ts_tokens_support.unsqueeze(1)
+            # Store and remove label
+            self.y_train_for_inference = ts_tokens_support[:, :, -1].to(self.device)
+            ts_tokens_support = ts_tokens_support[:, :, :-1].to(self.device)
+
+            if ts_tokens_support.ndim == 2:
+                ts_tokens_support = ts_tokens_support.unsqueeze(1)
+
+            self.ts_train_for_inference = ts_tokens_support
 
     def on_validation_epoch_start(self):
         self._on_epoch_start(self.trainer.val_dataloaders)
