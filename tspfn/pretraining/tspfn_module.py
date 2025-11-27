@@ -150,10 +150,12 @@ class TSPFNPretraining(TSPFNSystem):
         # Tokenize the attributes
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        ts = time_series_attrs[:, :, :-1]  # (B, S, F-1)
+        ts = time_series_attrs[:, :, :-1]  # (B, S, T)
         # indices = torch.arange(ts.shape[0])
         indices = torch.arange(1024)  # Fix for pretraining with sequence length S =1024
-        y = time_series_attrs[:, :, -1]  # (B, S)
+        y = time_series_attrs[:, :, -1]  # (B, S, 1)
+        print(f"y shape: {y.shape}")
+        raise Exception("Debug stop")
 
         if self.training or len(self.y_train_for_inference) == 0:
             assert self.hparams["split_finetuning"] > 0.0, "split_finetuning must be > 0.0 when training."
