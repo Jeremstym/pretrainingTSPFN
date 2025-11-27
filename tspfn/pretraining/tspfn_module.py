@@ -185,8 +185,8 @@ class TSPFNPretraining(TSPFNSystem):
                         )
 
                 print(f"ts shape: {ts.shape}")
-                ts_support = torch.as_tensor(ts[dataset_idx, train_indices], dtype=torch.float32)
-                ts_query = torch.as_tensor(ts[dataset_idx, test_indices], dtype=torch.float32)
+                ts_support = torch.as_tensor(ts[dataset_idx, train_indices, :], dtype=torch.float32)
+                ts_query = torch.as_tensor(ts[dataset_idx, test_indices, :], dtype=torch.float32)
                 ts_support_list.append(ts_support)
                 ts_query_list.append(ts_query)
                 y_batch_support_list.append(torch.as_tensor(y[dataset_idx, train_indices], dtype=torch.float32))
