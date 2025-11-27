@@ -385,7 +385,7 @@ class TSPFNPretraining(TSPFNSystem):
                 perm = torch.randperm(ts_tokens_support.shape[0])
                 ts_tokens_support = ts_tokens_support[perm[: self.hparams["max_batches_stored_for_inference"]]]
 
-            assert ts_tokens_support.ndim == 2, f"{ts_tokens_support.ndim=}, {ts_tokens_support.shape=}"
+            assert ts_tokens_support.ndim == 3, "Input time-series tokens must have 3 dimensions (B, S, T+1)."
 
             # Store and remove label
             self.y_train_for_inference = ts_tokens_support[:, :, -1].to(self.device)
