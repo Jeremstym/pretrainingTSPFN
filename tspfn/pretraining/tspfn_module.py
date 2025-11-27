@@ -95,11 +95,13 @@ class TSPFNPretraining(TSPFNSystem):
     def example_input_array(self) -> Tensor:
         """Redefine example input array based on the cardiac attributes provided to the model."""
         # 2 is the size of the batch in the example
-        labels = torch.cat([torch.randperm(5)]*2)
+        num_classes = 10  # Default number of classes in TabPFN prediction head
+        # labels = torch.cat([torch.randperm(5)]*2)
+        labels = torch.arange(10) % num_classes
         time_series_attrs = torch.randn(10, 64)
         ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(1)], dim=1)
-        num_classes = len(torch.unique(labels))
-        return ts_example_input, num_classes
+        # num_classes = len(torch.unique(labels))
+        return ts_example_input
 
     def configure_model(
         self,
@@ -224,7 +226,6 @@ class TSPFNPretraining(TSPFNSystem):
     def forward(
         self,
         time_series_attrs: Tensor,
-        num_classes: int,
         task: Literal["encode", "predict"] = "encode",
     ) -> Tensor | Dict[str, Tensor]:
         """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the prediction head.
@@ -260,7 +261,7 @@ class TSPFNPretraining(TSPFNSystem):
 
             # Forward pass through each target's prediction head
             predictions = {
-                target_task: prediction_head(out_features, num_classes) for target_task, prediction_head in self.prediction_heads.items()
+                target_task: prediction_head(out_features) for target_task, prediction_head in self.prediction_heads.items()
             }
 
             # Squeeze out the singleton dimension from the predictions' features (only relevant for scalar predictions)
@@ -277,8 +278,8 @@ class TSPFNPretraining(TSPFNSystem):
         batch_idx: int,
     ) -> Tensor:
         """Extracts the latent vectors from the encoder for the given batch."""
-        time_series_input, num_classes = batch
-        num_classes = num_classes.cpu().item()
+        time_series_input = batch
+        # num_classes = num_classes.cpu().item()
         
         y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (N, S, E), (N, S)
         return self.encode(
@@ -288,15 +289,15 @@ class TSPFNPretraining(TSPFNSystem):
 
     def _shared_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
         # Extract time-series inputs from the batch
-        time_series_input, num_classes = batch
-        num_classes = num_classes[0].cpu().item()
+        time_series_input = batch
+        # num_classes = num_classes[0].cpu().item()
         y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (N, S, E), (N, S)
 
         metrics = {}
         losses = []
         if self.predict_losses is not None:
             metrics.update(
-                self._prediction_shared_step(y_batch_support, y_batch_query, ts, num_classes)
+                self._prediction_shared_step(y_batch_support, y_batch_query, ts, num_classes=10)
             )
             losses.append(metrics["s_loss"])
 
@@ -319,7 +320,7 @@ class TSPFNPretraining(TSPFNSystem):
         prediction = self.encode(y_batch_support, ts)
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
-            pred = prediction_head(prediction, num_classes)
+            pred = prediction_head(prediction)
             predictions[target_task] = pred
 
         for target_task in self.predict_losses:
@@ -411,5 +412,5 @@ class TSPFNPretraining(TSPFNSystem):
         logger.info(f"Test metrics: {all_metrics}")
 
         # Reset inference storage tensors for next dataset
-        self.y_train_for_inference = torch.Tensor().to(self.device)
-        self.ts_train_for_inference = torch.Tensor().to(self.device)
+        # self.y_train_for_inference = torch.Tensor().to(self.device)
+        # self.ts_train_for_inference = torch.Tensor().to(self.device)
