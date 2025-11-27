@@ -377,7 +377,7 @@ class TSPFNPretraining(TSPFNSystem):
             if callable(dataloader):
                 dataloader = dataloader()
 
-            ts_batch_list = [ts_batch for ts_batch, _ in dataloader]
+            ts_batch_list = [ts_batch for ts_batch in dataloader]
             ts_tokens_support = torch.vstack(ts_batch_list)
 
             if ts_tokens_support.shape[0] > self.hparams["max_batches_stored_for_inference"]:
