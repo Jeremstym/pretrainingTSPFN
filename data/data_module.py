@@ -44,7 +44,6 @@ class TSPFNDataset(Dataset):
         self.split_ratio = split_ratio
         self.label_encoder = LabelEncoder()
         
-        print(f"path subsets: {self.subset_paths}")
         data_list = []
         for subset_path in self.subset_paths:
             data_ts = self._load_subset(subset_path)
@@ -93,7 +92,7 @@ class TSPFNDataset(Dataset):
         # loaded_df = pd.read_csv(path, index_col=0)
         data_ts = df.values
         assert data_ts.ndim == 2
-
+        print(f"Original data shape: {data_ts.shape}")
         if data_ts.shape[1] < 500:
             # Pad with zeros to have consistent feature size
             padding = np.zeros((data_ts.shape[0], 500 - data_ts.shape[1]))
