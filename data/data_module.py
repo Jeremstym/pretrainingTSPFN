@@ -44,12 +44,12 @@ class TSPFNDataset(Dataset):
         self.split_ratio = split_ratio
         self.label_encoder = LabelEncoder()
         
+        print(f"path subsets: {self.subset_paths}")
         data_list = []
         for subset_path in self.subset_paths:
             data_ts = self._load_subset(subset_path)
             data_list.extend(data_ts)
         self.data_ts = data_list
-        print(f"Total samples loaded: {len(self.data_ts)}")
         # self.num_classes = num_classes_list
 
     def _load_subset(self, subset_path: Path) -> None:
