@@ -34,20 +34,27 @@ class TSPFNDataset(Dataset):
     """
 
     def __init__(
-        self, data_roots: str, subset: Path, split: str, split_ratio: float, transform: Optional[Callable] = None
+        self, data_roots: str, subsets: List[Path], split: str, split_ratio: float, transform: Optional[Callable] = None
     ) -> None:
         super().__init__()
         self.data_roots = data_roots
         self.transform = transform
-        self.subset_path = subset
+        self.subset_paths = subsets
         self.split = split
         self.split_ratio = split_ratio
         self.label_encoder = LabelEncoder()
         
-        self._load()
+        data_list = []
+        num_classes_list = []
+        for subset_path in self.subset_paths:
+            data_ts, subset_num_classes_list = self._load_subset(subset_path)
+            data_list.extend(data_ts)
+            num_classes_list.extend(subset_num_classes_list)
+        self.data_ts = data_list
+        # self.num_classes = num_classes_list
 
-    def _load(self) -> None:
-        path = os.path.join(self.subset_path)
+    def _load_subset(self, subset_path: Path) -> None:
+        path = os.path.join(subset_path)
         name_csv = os.path.basename(path)
         assert os.path.isfile(path), f"Dataset file not found: {path}"
         # Get number of lines in the file
@@ -64,7 +71,7 @@ class TSPFNDataset(Dataset):
         # Encode labels to integers
         df.iloc[:, -1] = self.label_encoder.fit_transform(df.iloc[:, -1])
         df = pd.concat([df.iloc[:, :-1], df.iloc[:, -1]], axis=1)
-        self.num_classes = len(np.unique(df.iloc[:, -1]))
+        # num_classes = len(np.unique(df.iloc[:, -1]))
         # Split dataset
         indices = np.arange(len(df))
         labels = df.iloc[:, -1].values
@@ -85,18 +92,30 @@ class TSPFNDataset(Dataset):
             raise ValueError(f"Unknown split: {self.split}")
 
         # loaded_df = pd.read_csv(path, index_col=0)
-        self.data_ts = list(df.values)
-        return
+        data_ts = df.values
+        assert data_ts.ndim == 2
+
+        if data_ts.shape[1] < 500:
+            # Pad with zeros to have consistent feature size
+            padding = np.zeros((data_ts.shape[0], 500 - data_ts.shape[1]))
+            data_ts = np.hstack((data_ts, padding))
+
+        if data_ts.shape[0] // 1024 > 1:
+            # Split into chunks of 1024 samples
+            data_ts = np.array_split(data_ts, data_ts.shape[0] // 1024)
+            data_ts = [torch.tensor(chunk, dtype=torch.float32) for chunk in data_ts if len(chunk) == 1024]
+        else:
+            data_ts = []
+        return data_ts #, [num_classes] * len(data_ts)
 
     def __len__(self) -> int:
         return len(self.data_ts)
 
     def __getitem__(self, idx: int):
-        sample = self.data_ts[idx]
+        sampled_dataset = self.data_ts[idx]
         if self.transform is not None:
-            sample = self.transform(sample)
-        return sample, self.num_classes
-
+            sampled_dataset = self.transform(sampled_dataset)
+        return sampled_dataset #, self.num_classes
 
 class TSPFNDataModule(pl.LightningDataModule):
     """LightningDataModule for TSP datasets.
@@ -132,10 +151,10 @@ class TSPFNDataModule(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
         # TODO: fow now, train/val/test use the same subset. Later, we can modify to have different subsets for each.
-
+            
         self.train_dataset = TSPFNDataset(
             data_roots=self.data_roots,
-            subset=self.subset_list[self.current_dataset_idx],
+            subsets=self.subset_list,
             split="train",
             split_ratio=0.8,
             transform=self.transform,
@@ -143,14 +162,14 @@ class TSPFNDataModule(pl.LightningDataModule):
         )
         self.val_dataset = TSPFNDataset(
             data_roots=self.data_roots,
-            subset=self.subset_list[self.current_dataset_idx],
+            subsets=self.subset_list,
             split="val",
             split_ratio=0.8,
             transform=self.transform,
         )
         self.test_dataset = TSPFNDataset(
             data_roots=self.data_roots,
-            subset=self.subset_list[self.current_dataset_idx],
+            subsets=self.subset_list,
             split="val",
             split_ratio=0.8,
             transform=self.transform,
@@ -158,12 +177,12 @@ class TSPFNDataModule(pl.LightningDataModule):
 
         return
 
-    def switch_to_next_dataset(self):
-        self.current_dataset_idx += 1
-        if self.current_dataset_idx < len(self.subset_list):
-            self.setup()
-            return True
-        return False
+    # def switch_to_next_dataset(self):
+    #     self.current_dataset_idx += 1
+    #     if self.current_dataset_idx < len(self.subset_list):
+    #         self.setup()
+    #         return True
+    #     return False
 
     def _dataloader(self, dataset: Dataset, shuffle: bool, batch_size: int) -> DataLoader:
         return DataLoader(

@@ -109,27 +109,44 @@ class TSPFNRunner(ABC):
         #         logger.info(f"Loading model from {ckpt_path}")
         #         model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
 
-        while True:
-            # Instantiate Lightning Trainer
-            trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
-            trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
+        # while True:
+        #     # Instantiate Lightning Trainer
+        #     trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
+        #     trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
 
-            # Instantiate system (which will handle instantiating the model and optimizer).
-            model: TSPFNPretraining = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
+        #     # Instantiate system (which will handle instantiating the model and optimizer).
+        #     model: TSPFNPretraining = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
 
-            datamodule.setup()
-            if cfg.train:
-                trainer.fit(model, datamodule=datamodule)
-                # Copy best model checkpoint to a predictable path + online tracker (if used)
-                # Ensure we use the best weights (and not the latest ones) by loading back the best model
-                model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
-                torch.save(model.encoder.state_dict(), cfg.output_dir + "/tspfn_encoder_weights.pt")
-                cfg.updated_pfn_path = cfg.output_dir + "/tspfn_encoder_weights.pt"
-                print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
-            if cfg.test:
-                trainer.test(model, datamodule=datamodule)
-            if not datamodule.switch_to_next_dataset():
-                break
+        #     datamodule.setup()
+        #     if cfg.train:
+        #         trainer.fit(model, datamodule=datamodule)
+        #         # Copy best model checkpoint to a predictable path + online tracker (if used)
+        #         # Ensure we use the best weights (and not the latest ones) by loading back the best model
+        #         model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
+        #         torch.save(model.encoder.state_dict(), cfg.output_dir + "/tspfn_encoder_weights.pt")
+        #         cfg.updated_pfn_path = cfg.output_dir + "/tspfn_encoder_weights.pt"
+        #         print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
+        #     if cfg.test:
+        #         trainer.test(model, datamodule=datamodule)
+        #     if not datamodule.switch_to_next_dataset():
+        #         break
+        # Instantiate Lightning Trainer
+        trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
+        trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
+
+        # Instantiate system (which will handle instantiating the model and optimizer).
+        model: TSPFNPretraining = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
+        datamodule.setup()
+        if cfg.train:
+            trainer.fit(model, datamodule=datamodule)
+            # Copy best model checkpoint to a predictable path + online tracker (if used)
+            # Ensure we use the best weights (and not the latest ones) by loading back the best model
+            model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
+            torch.save(model.encoder.state_dict(), cfg.output_dir + "/tspfn_encoder_weights.pt")
+            cfg.updated_pfn_path = cfg.output_dir + "/tspfn_encoder_weights.pt"
+            print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
+        if cfg.test:
+            trainer.test(model, datamodule=datamodule)
 
     @staticmethod
     def _check_cfg(cfg: DictConfig) -> DictConfig:
