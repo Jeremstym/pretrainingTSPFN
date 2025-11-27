@@ -99,10 +99,11 @@ class TSPFNDataset(Dataset):
 
         if data_ts.shape[0] // 1024 > 1:
             # Split into chunks of 1024 samples
-            data_ts = np.array_split(data_ts, 1024)
-            for chunk in data_ts:
-                print(f"Chunk shape: {chunk.shape}")
-            data_ts = [[torch.tensor(chunk, dtype=torch.float32)] for chunk in data_ts if len(chunk) == 1024]
+            chunk_size = 1024
+            usable_size = (data_ts.shape[0] // chunk_size) * chunk_size
+            data_chunked = data_ts[:usable_size]
+            data_ts = data_chunked.reshape(-1, chunk_size)
+            print(f"Split data into chunks, new shape: {data_ts.shape}")
         else:
             data_ts = []
         
