@@ -226,7 +226,7 @@ class TSPFNPretraining(TSPFNSystem):
                 "You requested to perform a prediction task, but the model does not include any prediction heads."
             )
 
-        if hasattr(self, "example_input_array") and torch.equal(time_series_attrs, self.example_input_array):
+        if hasattr(self, "example_input_array") and torch.equal(time_series_attrs, self.example_input_array.to(self.device)):
             summary_mode = True
         else:
             summary_mode = False
