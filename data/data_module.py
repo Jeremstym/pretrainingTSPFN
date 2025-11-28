@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from pytorch_lightning.trainer.supporters import CombinedLoader
 
 
 class TSPFNDataset(Dataset):
@@ -209,10 +210,14 @@ class TSPFNDataModule(pl.LightningDataModule):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
 
     def val_dataloader(self):
-        return self._dataloader(self.val_dataset, shuffle=False, batch_size=self.batch_size)
+        val_loader = self._dataloader(self.val_dataset, shuffle=False, batch_size=self.batch_size)
+        train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
+        return CombinedLoader({"val": val_loader, "train": train_loader}, "max_size_cycle")
 
     def test_dataloader(self):
-        return self._dataloader(self.test_dataset, shuffle=False, batch_size=self.batch_size)
+        test_loader = self._dataloader(self.test_dataset, shuffle=False, batch_size=self.batch_size)
+        train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
+        return CombinedLoader({"test": test_loader, "train": train_loader}, "max_size_cycle")
 
 
 __all__ = ["TSPFNDataset", "TSPFNDataModule"]
