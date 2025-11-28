@@ -352,7 +352,7 @@ class TSPFNPretraining(TSPFNSystem):
             print(f"target shape: {target.shape}")
 
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
-                y_hat,
+                y_hat.squeeze(0),
                 target.unsqueeze(-1),
             )
 
