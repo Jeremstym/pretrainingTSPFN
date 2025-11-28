@@ -70,9 +70,16 @@ class TSPFNDataset(Dataset):
         df.iloc[:, -1] = self.label_encoder.fit_transform(df.iloc[:, -1])
         df = pd.concat([df.iloc[:, :-1], df.iloc[:, -1]], axis=1)
         # num_classes = len(np.unique(df.iloc[:, -1]))
+        
+        df_values = df_train.values
+        if df_values.shape[1] < 500:
+            # Pad with zeros to have consistent feature size
+            padding = np.zeros((df_values.shape[0], 500 - df_values.shape[1]))
+            df_values = np.hstack((df_values, padding))
+       
         # Split dataset
-        indices = np.arange(len(df))
-        labels = df.iloc[:, -1].values
+        indices = np.arange(len(df_values))
+        labels = df_values[:, -1]
         try:
             train_indices, val_indices = train_test_split(
                 indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=labels
@@ -82,40 +89,36 @@ class TSPFNDataset(Dataset):
             train_indices, val_indices = train_test_split(
                 indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=None
             )
+        df_train = df_values[train_indices]
+        df_val = df_values[val_indices]
+        
+        data_train_ts = []
+        data_val_ts = []
+        if df_train.shape[0] // 1024 > 1:
+            # Split into chunks of 1024 samples
+            chunk_size = 1024
+            chunk_val_size = 64
+            usable_size = (df_train.shape[0] // chunk_size) * chunk_size
+            data_chunked = df_train[:usable_size]
+            data_chunked = data_chunked.reshape(-1, chunk_size, df_train.shape[1])
+            for df in data_chunked:
+                data_support, data_query = train_test_split(
+                    df, test_size=0.5, random_state=42, shuffle=True, stratify=df[:, -1]
+                )
+                data_chunk = np.concatenate([data_support, data_query], axis=0)
+                data_train_ts.append(torch.tensor(data_chunk, dtype=torch.float32))
+                data_val_chunk = np.random.choice(df_val, size=chunk_val_size, replace=False)
+                data_val_ts.append(torch.tensor(data_val_chunk, dtype=torch.float32))
+        else:
+            data_train_ts = []
+            data_val_ts = []
+        
         if self.split == "train":
-            df_train = df.iloc[train_indices]
-            data_df = df_train.values
-            if data_df.shape[1] < 500:
-                # Pad with zeros to have consistent feature size
-                padding = np.zeros((data_df.shape[0], 500 - data_df.shape[1]))
-                data_df = np.hstack((data_df, padding))
-
-            data_ts = []
-            if df_train.shape[0] // 1024 > 1:
-                # Split into chunks of 1024 samples
-                chunk_size = 1024
-                usable_size = (data_df.shape[0] // chunk_size) * chunk_size
-                data_chunked = data_df[:usable_size]
-                data_chunked = data_chunked.reshape(-1, chunk_size, data_df.shape[1])
-                for df in data_chunked:
-                    data_support, data_query = train_test_split(
-                        df, test_size=0.5, random_state=42, shuffle=True, stratify=df[:, -1]
-                    )
-                    data_chunk = np.concatenate([data_support, data_query], axis=0)
-                    data_ts.append(torch.tensor(data_chunk, dtype=torch.float32))
-
+            return data_train_ts
         elif self.split == "val":
-            # We want to select the same datasets as in training for validation
-            if df.iloc[train_indices].shape[0] // 1024 > 1:
-                df_val = df.iloc[val_indices]
-                data_ts = [df_val.values]
-            else:
-                data_ts = []
-                
+            return data_val_ts 
         else:
             raise ValueError(f"Unknown split: {self.split}")
-        
-        return data_ts #, [num_classes] * len(data_ts)
 
     def __len__(self) -> int:
         return len(self.data_ts)
