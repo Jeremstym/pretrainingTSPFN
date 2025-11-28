@@ -349,8 +349,7 @@ class TSPFNPretraining(TSPFNSystem):
             for i, (target, y_hat) in enumerate(
                 zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
                 ):
-                target, y_hat = target_batch, predictions[target_task]
-                target = target.squeeze(0).long()
+                target = target.long()
                 print(f"target shape: {target.shape}, y_hat shape: {y_hat.shape}")
                 print(f"target is: {target}, y_hat is: {y_hat}")
 
