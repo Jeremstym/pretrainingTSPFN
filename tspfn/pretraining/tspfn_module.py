@@ -197,7 +197,7 @@ class TSPFNPretraining(TSPFNSystem):
             ts_full = torch.cat([ts_inference_support, ts], dim=1)
             y_train = y_inference_support
             out_features = self.encoder(ts_full.transpose(0, 1), y_train.transpose(0, 1))[:, :, -1, :]
-        
+
         else:
             raise ValueError("During inference, both support ts and labels must be provided.")
 
@@ -226,7 +226,9 @@ class TSPFNPretraining(TSPFNSystem):
                 "You requested to perform a prediction task, but the model does not include any prediction heads."
             )
 
-        if hasattr(self, "example_input_array") and torch.equal(time_series_attrs, self.example_input_array.to(self.device)):
+        if hasattr(self, "example_input_array") and torch.equal(
+            time_series_attrs, self.example_input_array.to(self.device)
+        ):
             summary_mode = True
         else:
             summary_mode = False
@@ -344,20 +346,24 @@ class TSPFNPretraining(TSPFNSystem):
         target_batch = y_batch_query
 
         for target_task, target_loss in self.predict_losses.items():
-            target, y_hat = target_batch, predictions[target_task]
+            for i, (target, y_hat) in enumerate(
+                zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
+                ):
+                print(f"target shape: {target.shape}, y_hat shape: {y_hat.shape}")
 
-            target = target.long()
+                target, y_hat = target_batch, predictions[target_task]
 
-            print(f"y_hat shape: {y_hat.shape}")
-            print(f"target shape: {target.shape}")
+                target = target.long()
 
-            losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
-                y_hat.squeeze(0),
-                target.unsqueeze(-1),
-            )
+                losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}/dataset{i}"] = (
+                    target_loss(
+                        y_hat,
+                        target,
+                    )
+                )
 
-            for metric_tag, metric in self.metrics[target_task].items():
-                metric.update(y_hat, target)
+                for metric_tag, metric in self.metrics[target_task].items():
+                    metric.update(y_hat, target)
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
         metrics.update(losses)
