@@ -29,8 +29,6 @@ from tspfn.system import TSPFNSystem
 
 logger = logging.getLogger(__name__)
 
-# TODO: Split in advance the sequence of each dataset and export them as chunks of 1024 samples to avoid doing it on the fly because of RAM issues.
-
 
 class TSPFNPretraining(TSPFNSystem):
     """Multi-modal transformer to learn a representation from cardiac imaging and patient records data."""
