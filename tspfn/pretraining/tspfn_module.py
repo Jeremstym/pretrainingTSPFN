@@ -1,7 +1,7 @@
 import os
 import csv
 import logging
-from typing import Any, Callable, Dict, Literal, Optional, Sequence, Tuple, cast
+from typing import Any, Callable, Dict, Literal, Optional, Sequence, Tuple, cast, Union
 
 import hydra
 from omegaconf import DictConfig
@@ -87,8 +87,8 @@ class TSPFNPretraining(TSPFNSystem):
         self.encoder, self.prediction_heads = self.configure_model()
 
         # Initialize inference storage tensors
-        self.ts_train_for_inference = torch.Tensor().to(self.device)
-        self.y_train_for_inference = torch.Tensor().to(self.device)
+        # self.ts_train_for_inference = torch.Tensor().to(self.device)
+        # self.y_train_for_inference = torch.Tensor().to(self.device)
 
     @property
     def example_input_array(self) -> Tensor:
@@ -159,9 +159,9 @@ class TSPFNPretraining(TSPFNSystem):
             y_batch_support = y[:, :half_size]  # (B, Support, 1)
             y_batch_query = y[:, half_size:]  # (B, Query, 1)
         else:
-            y_batch_support = y.to(self.device) # (B, S, 1)
-            y_batch_query = y.to(self.device) # (B, S, 1)
-            ts = ts.to(self.device) # (B, S, T)
+            y_batch_support = y.to(self.device)  # (B, S, 1)
+            y_batch_query = y.to(self.device)  # (B, S, 1)
+            ts = ts.to(self.device)  # (B, S, T)
 
         if ts.ndim == 2:
             ts = ts.unsqueeze(0)  # (1, S, T)
@@ -177,6 +177,8 @@ class TSPFNPretraining(TSPFNSystem):
         self,
         y_batch_support: Tensor,
         ts: Tensor,
+        y_inference_support: Optional[Tensor] = None,
+        ts_inference_support: Optional[Tensor] = None,
     ) -> Tensor:
         """Embeds input sequences using the encoder model, optionally selecting/pooling output ts for the embedding.
 
@@ -186,14 +188,17 @@ class TSPFNPretraining(TSPFNSystem):
         Returns: (B, Query, E), Embeddings of the input sequences.
         """
 
-        if self.training or len(self.ts_train_for_inference) == 0:
+        if self.training or y_inference_support is None:
             out_features = self.encoder(ts.transpose(0, 1), y_batch_support.transpose(0, 1))[:, :, -1, :]
 
-        else:
+        elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
-            ts_full = torch.cat([self.ts_train_for_inference, ts], dim=0)
-            y_train = self.y_train_for_inference
+            ts_full = torch.cat([ts_inference_support, ts], dim=0)
+            y_train = y_inference_support
             out_features = self.encoder(ts_full.transpose(0, 1), y_train.transpose(0, 1))[:, :, -1, :]
+        
+        else:
+            raise ValueError("During inference, both support ts and labels must be provided.")
 
         return out_features  # (B, Query, E)
 
@@ -264,15 +269,11 @@ class TSPFNPretraining(TSPFNSystem):
         )  # (B, S, E) -> (B, E)
 
     def _shared_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
-        # Extract time-series inputs from the batch
-        time_series_input = batch
-        # num_classes = num_classes[0].cpu().item()
-        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (B, S, E), (B, S)
-
+        # Shared step for training, validation and testing
         metrics = {}
         losses = []
         if self.predict_losses is not None:
-            metrics.update(self._prediction_shared_step(y_batch_support, y_batch_query, ts, num_classes=10))
+            metrics.update(self._prediction_shared_step(batch, num_classes=10))
             losses.append(metrics["s_loss"])
 
         # Compute the sum of the (weighted) losses
@@ -282,16 +283,37 @@ class TSPFNPretraining(TSPFNSystem):
 
     def _prediction_shared_step(
         self,
-        y_batch_support: Tensor,
-        y_batch_query: Tensor,
-        ts: Tensor,
+        batch: Union[Tensor, Dict[str, Tensor]],
         num_classes: int,
     ) -> Dict[str, Tensor]:
         # Forward pass through the encoder without gradient computation to fine-tune only the prediction heads
         assert (
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
-        prediction = self.encode(y_batch_support, ts)
+        if self.training:
+            time_series_input = batch  # (B, S, T)
+            time_series_for_inference = None
+        else:
+            time_series_input = batch["val"]  # (B, S, T)
+            time_series_for_inference = batch["train"]  # (B, S, T)
+
+        y_batch_support, y_batch_query, ts = self.process_data(
+            time_series_attrs=time_series_input,
+        )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+
+        if time_series_for_inference is not None:
+            # Store inference data for val/test steps
+            y_train_support, y_train_query, ts_train = self.process_data(
+                time_series_attrs=time_series_for_inference,
+            )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+            y_infernce_support = torch.vstack([y_train_support, y_batch_support])
+        else:
+            ts_train = None
+            y_infernce_support = None
+
+        prediction = self.encode(
+            y_batch_support, ts, y_inference_support=y_infernce_support, ts_inference_support=ts_train
+        )
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
             pred = prediction_head(prediction)
@@ -358,14 +380,14 @@ class TSPFNPretraining(TSPFNSystem):
 
             self.ts_train_for_inference = ts_tokens_support
 
-    def on_validation_epoch_start(self):
-        self._on_epoch_start(self.trainer.val_dataloaders)
+    # def on_validation_epoch_start(self):
+    #     self._on_epoch_start(self.trainer.val_dataloaders)
 
-    def on_test_epoch_start(self):
-        out_message = self._on_epoch_start(self.trainer.test_dataloaders)
-        if out_message is not None:
-            logger.info(f"Test epoch start: {out_message}")
-            raise ValueError(out_message)
+    # def on_test_epoch_start(self):
+    #     out_message = self._on_epoch_start(self.trainer.test_dataloaders)
+    #     if out_message is not None:
+    #         logger.info(f"Test epoch start: {out_message}")
+    #         raise ValueError(out_message)
 
     def on_test_epoch_end(self):
         all_metrics = {}
