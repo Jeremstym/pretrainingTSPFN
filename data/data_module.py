@@ -89,7 +89,6 @@ class TSPFNDataset(Dataset):
                 indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=None
             )
         df_train = df_values[train_indices]
-        df_val = df_values[val_indices]
         
         data_train_ts = []
         data_val_ts = []
@@ -106,7 +105,8 @@ class TSPFNDataset(Dataset):
                 )
                 data_chunk = np.concatenate([data_support, data_query], axis=0)
                 data_train_ts.append(torch.tensor(data_chunk, dtype=torch.float32))
-                data_val_chunk = np.random.choice(df_val, size=chunk_val_size, replace=False)
+                data_val_chunk_indices = np.random.choice(val_indices, size=chunk_val_size, replace=False)
+                data_val_chunk = df_values[data_val_chunk_indices]
                 data_val_ts.append(torch.tensor(data_val_chunk, dtype=torch.float32))
         else:
             data_train_ts = []
