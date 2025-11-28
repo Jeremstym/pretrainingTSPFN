@@ -350,8 +350,6 @@ class TSPFNPretraining(TSPFNSystem):
                 zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
                 ):
                 target = target.long()
-                print(f"target shape: {target.shape}, y_hat shape: {y_hat.shape}")
-                print(f"target is: {target}, y_hat is: {y_hat}")
 
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}/dataset{i}"] = (
                     target_loss(
@@ -377,8 +375,6 @@ class TSPFNPretraining(TSPFNSystem):
 
             ts_batch_list = [ts_batch for ts_batch in dataloader]
             ts_tokens_support = torch.vstack(ts_batch_list)
-            print(f"ts_tokens_support shape: {ts_tokens_support.shape}")
-            raise Exception("Debug stop")
 
             # if ts_tokens_support.shape[0] > self.hparams["max_batches_stored_for_inference"]:
             #     # Randomly subsample to limit RAM usage
