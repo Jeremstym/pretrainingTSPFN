@@ -167,10 +167,6 @@ class TSPFNPretraining(TSPFNSystem):
         if ts.ndim == 2:
             ts = ts.unsqueeze(0)  # (1, S, T)
 
-        print(f"ts shape in process_data: {ts.shape}")
-        print(f"y_batch_support shape in process_data: {y_batch_support.shape}")
-        print(f"y_batch_query shape in process_data: {y_batch_query.shape}")
-
         return (
             y_batch_support,
             y_batch_query,
@@ -346,12 +342,14 @@ class TSPFNPretraining(TSPFNSystem):
         losses, metrics = {}, {}
 
         target_batch = y_batch_query
-        print(f"target_batch shape in _prediction_shared_step: {target_batch.shape}")
 
         for target_task, target_loss in self.predict_losses.items():
             target, y_hat = target_batch, predictions[target_task]
 
             target = target.long()
+
+            print(f"y_hat shape: {y_hat.shape}")
+            print(f"target shape: {target.shape}")
 
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                 y_hat,
