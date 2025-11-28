@@ -349,12 +349,10 @@ class TSPFNPretraining(TSPFNSystem):
             for i, (target, y_hat) in enumerate(
                 zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
                 ):
-                print(f"target shape: {target.shape}, y_hat shape: {y_hat.shape}")
-                print(f"target: {target}, y_hat: {y_hat}")
-
                 target, y_hat = target_batch, predictions[target_task]
-
                 target = target.long()
+                print(f"target shape: {target.shape}, y_hat shape: {y_hat.shape}")
+                print(f"target is: {target}, y_hat is: {y_hat}")
 
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}/dataset{i}"] = (
                     target_loss(
