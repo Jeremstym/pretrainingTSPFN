@@ -72,13 +72,13 @@ subsets:
   worms_two_class: ${oc.env:TSPFN_DATA_PATH}/WormsTwoClass_dataset.csv
   yoga: ${oc.env:TSPFN_DATA_PATH}/Yoga_dataset.csv
   # > 1000 column datasets below
-  # cin_cecg_torso: ${oc.env:TSPFN_DATA_PATH}/CinCECGTorso_dataset.csv
-  # forda: ${oc.env:TSPFN_DATA_PATH}/FordA_dataset.csv
-  # fordb: ${oc.env:TSPFN_DATA_PATH}/FordB_dataset.csv
-  # haptics: ${oc.env:TSPFN_DATA_PATH}/Haptics_dataset.csv
-  # mallat: ${oc.env:TSPFN_DATA_PATH}/Mallat_dataset.csv
-  # phoneme: ${oc.env:TSPFN_DATA_PATH}/Phoneme_dataset.csv
-  # shapes_all: ${oc.env:TSPFN_DATA_PATH}/ShapesAll_dataset.csv
-  # starlight_curves: ${oc.env:TSPFN_DATA_PATH}/StarLightCurves_dataset.csv
+  cin_cecg_torso: ${oc.env:TSPFN_DATA_PATH}/CinCECGTorso_dataset.csv
+  forda: ${oc.env:TSPFN_DATA_PATH}/FordA_dataset.csv
+  fordb: ${oc.env:TSPFN_DATA_PATH}/FordB_dataset.csv
+  haptics: ${oc.env:TSPFN_DATA_PATH}/Haptics_dataset.csv
+  mallat: ${oc.env:TSPFN_DATA_PATH}/Mallat_dataset.csv
+  phoneme: ${oc.env:TSPFN_DATA_PATH}/Phoneme_dataset.csv
+  shapes_all: ${oc.env:TSPFN_DATA_PATH}/ShapesAll_dataset.csv
+  starlight_curves: ${oc.env:TSPFN_DATA_PATH}/StarLightCurves_dataset.csv
 
 num_workers: 4
