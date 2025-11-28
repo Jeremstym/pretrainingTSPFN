@@ -134,6 +134,7 @@ class TSPFNPretraining(TSPFNSystem):
     def process_data(
         self,
         time_series_attrs: Tensor,
+        summary_mode: bool = False,
     ) -> Tuple[Tensor, Tensor, Tensor]:
         """Tokenizes the input time-series attributes, providing a mask of non-missing attributes.
 
@@ -154,7 +155,7 @@ class TSPFNPretraining(TSPFNSystem):
         indices = torch.arange(1024)  # Fix for pretraining with sequence length S =1024
         y = time_series_attrs[:, :, -1]  # (B, S, 1)
 
-        if self.training or len(self.y_train_for_inference) == 0:
+        if self.training or summary_mode:
             half_size = ts.shape[1] // 2
             y_batch_support = y[:, :half_size]  # (B, Support, 1)
             y_batch_query = y[:, half_size:]  # (B, Query, 1)
@@ -224,8 +225,15 @@ class TSPFNPretraining(TSPFNSystem):
             raise ValueError(
                 "You requested to perform a prediction task, but the model does not include any prediction heads."
             )
+
+        if hasattr(self, "example_input_array") and torch.equal(time_series_attrs, self.example_input_array):
+            summary_mode = True
+        else:
+            summary_mode = False
+
         y_batch_support, y_batch_query, ts = self.process_data(
             time_series_attrs,
+            summary_mode=summary_mode,
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
 
         out_features = self.encode(y_batch_support, ts)  # (B, S, E) -> (B, E)
