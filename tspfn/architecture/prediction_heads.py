@@ -56,7 +56,7 @@ class PFNPredictionHead(nn.Module):
 
         self.head = model.decoder_dict["standard"]
     
-    def forward(self, x: Tensor, n_class: int) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         """Predicts unnormalized features from a feature vector input.
 
         Args:
