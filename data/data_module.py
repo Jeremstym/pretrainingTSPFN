@@ -111,7 +111,6 @@ class TSPFNDataset(Dataset):
                 data_ts.append(torch.tensor(data_chunk, dtype=torch.float32))
 
         print(f"Loaded {len(data_ts)} samples from {name_csv} for split '{self.split}'")
-        raise Exception("Debug stop")
         
         return data_ts #, [num_classes] * len(data_ts)
 
