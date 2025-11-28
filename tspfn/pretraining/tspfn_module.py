@@ -315,6 +315,9 @@ class TSPFNPretraining(TSPFNSystem):
             y_train_support, y_train_query, ts_train = self.process_data(
                 time_series_attrs=time_series_for_inference,
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+            print(f"ts_train shape: {ts_train.shape}")
+            print(f"y_train_support shape: {y_train_support.shape}")
+            print(f"y_train_query shape: {y_train_query.shape}")
             y_infernce_support = torch.vstack([y_train_support, y_batch_support])
         else:
             ts_train = None
