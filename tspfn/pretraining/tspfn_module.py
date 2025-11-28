@@ -352,8 +352,8 @@ class TSPFNPretraining(TSPFNSystem):
             print(f"target shape: {target.shape}")
 
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
-                y_hat.squeeze(0),
-                target.squeeze(0),
+                y_hat,
+                target.unsqueeze(-1),
             )
 
             for metric_tag, metric in self.metrics[target_task].items():
