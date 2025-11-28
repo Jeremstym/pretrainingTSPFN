@@ -314,10 +314,10 @@ class TSPFNPretraining(TSPFNSystem):
 
         if time_series_for_inference is not None:
             # Store inference data for val/test steps
-            y_train_support, y_train_query, ts_train = self.process_data(
+            y_train_support, _, ts_train = self.process_data(
                 time_series_attrs=time_series_for_inference,
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
-            y_inference_support = torch.cat([y_train_support, y_train_query], dim=1)
+            y_inference_support = y_train_support
         else:
             ts_train = None
             y_inference_support = None
