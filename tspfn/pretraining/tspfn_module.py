@@ -344,10 +344,10 @@ class TSPFNPretraining(TSPFNSystem):
             print(f"ts_tokens_support shape: {ts_tokens_support.shape}")
             raise Exception("Debug stop")
 
-            if ts_tokens_support.shape[0] > self.hparams["max_batches_stored_for_inference"]:
-                # Randomly subsample to limit RAM usage
-                perm = torch.randperm(ts_tokens_support.shape[0])
-                ts_tokens_support = ts_tokens_support[perm[: self.hparams["max_batches_stored_for_inference"]]]
+            # if ts_tokens_support.shape[0] > self.hparams["max_batches_stored_for_inference"]:
+            #     # Randomly subsample to limit RAM usage
+            #     perm = torch.randperm(ts_tokens_support.shape[0])
+            #     ts_tokens_support = ts_tokens_support[perm[: self.hparams["max_batches_stored_for_inference"]]]
 
             assert ts_tokens_support.ndim == 3, "Input time-series tokens must have 3 dimensions (B, S, T+1)."
 
