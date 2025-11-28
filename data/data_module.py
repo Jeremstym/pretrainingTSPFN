@@ -76,7 +76,11 @@ class TSPFNDataset(Dataset):
             # Pad with zeros to have consistent feature size
             padding = np.zeros((df_values.shape[0], 499 - df_values.shape[1]))
             df_values = np.hstack((df_values, padding))
+        elif df_values.shape[1] > 499:
+            # Truncate to 499 features
+            df_values = df_values[:, :499]
         df_values = np.hstack((df_values, df_label.reshape(-1, 1)))
+        
        
         # Split dataset
         indices = np.arange(len(df_values))
