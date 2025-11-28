@@ -105,7 +105,7 @@ class TSPFNDataset(Dataset):
             data_chunked = data_chunked.reshape(-1, chunk_size, data_df.shape[1])
             for df in data_chunked:
                 data_support, data_query = train_test_split(
-                    df, test_size=0.5, random_stame=42, shuffle=True, stratify=df[:, -1]
+                    df, test_size=0.5, random_state=42, shuffle=True, stratify=df[:, -1]
                 )
                 data_chunk = np.concatenate([data_support, data_query], axis=0)
                 data_ts.append(torch.tensor(data_chunk, dtype=torch.float32))
