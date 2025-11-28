@@ -152,6 +152,5 @@ class TSPFNEncoder(nn.Module, ABC):
         )
         out_query = output[:, single_eval_pos:, :]
         query_encoder_out = out_query.squeeze(1)  # (B, Query, T+1, E)
-        print(f"Encoder output shape: {query_encoder_out.shape}")
 
         return query_encoder_out
