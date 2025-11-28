@@ -348,6 +348,9 @@ class TSPFNPretraining(TSPFNSystem):
 
             target = target.long()
 
+            print(f"y_hat shape: {y_hat.shape}")
+            print(f"target shape: {target.shape}")
+
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                 y_hat,
                 target,
