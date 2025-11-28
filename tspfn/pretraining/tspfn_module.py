@@ -350,7 +350,7 @@ class TSPFNPretraining(TSPFNSystem):
                 zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
                 ):
                 target, y_hat = target_batch, predictions[target_task]
-                target = target.long()
+                target = target.squeeze(0).long()
                 print(f"target shape: {target.shape}, y_hat shape: {y_hat.shape}")
                 print(f"target is: {target}, y_hat is: {y_hat}")
 
