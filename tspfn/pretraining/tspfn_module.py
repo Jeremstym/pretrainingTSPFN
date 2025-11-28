@@ -323,6 +323,7 @@ class TSPFNPretraining(TSPFNSystem):
         prediction = self.encode(
             y_batch_support, ts, y_inference_support=y_inference_support, ts_inference_support=ts_train
         )
+        print(f"prediction shape: {prediction.shape}")
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
             pred = prediction_head(prediction)
