@@ -21,8 +21,8 @@ trainer:
   devices: ${sys.num_gpus:}
   accelerator: gpu
   precision: 32 #16-mixed, 32
-  max_steps: 1000
-
+  max_epochs: 500
+  
 output_dir: ${sys.getcwd:}
 updated_pfn_path: null
 
