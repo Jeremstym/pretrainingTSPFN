@@ -276,7 +276,7 @@ class TSPFNPretraining(TSPFNSystem):
             ts,
         )  # (B, S, E) -> (B, E)
 
-    def _shared_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
+    def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
         # Shared step for training, validation and testing
         metrics = {}
         losses = []
@@ -291,7 +291,7 @@ class TSPFNPretraining(TSPFNSystem):
 
     def _prediction_shared_step(
         self,
-        batch: Union[Tensor, Dict[str, Tensor]],
+        batch: Union[Tensor, Tuple[Tensor, ...]],
         num_classes: int,
     ) -> Dict[str, Tensor]:
         # Forward pass through the encoder without gradient computation to fine-tune only the prediction heads
@@ -302,8 +302,9 @@ class TSPFNPretraining(TSPFNSystem):
             time_series_input = batch  # (B, S, T)
             time_series_for_inference = None
         else:
-            time_series_input = batch["val"]  # (B, S, T)
-            time_series_for_inference = batch["train"]  # (B, S, T)
+            batch_dict, _, _ = batch
+            time_series_input = batch_dict["val"]  # (B, S, T)
+            time_series_for_inference = batch_dict["train"]  # (B, S, T)
 
         y_batch_support, y_batch_query, ts = self.process_data(
             time_series_attrs=time_series_input,
