@@ -108,7 +108,10 @@ class TSPFNDataset(Dataset):
             # We want to select the same datasets as in training for validation
             if df.iloc[train_indices].shape[0] // 1024 > 1:
                 df_val = df.iloc[val_indices]
-                data_ts = df_val.values
+                data_ts = [df_val.values]
+            else:
+                data_ts = []
+                
         else:
             raise ValueError(f"Unknown split: {self.split}")
         
