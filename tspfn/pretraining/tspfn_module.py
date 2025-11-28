@@ -323,7 +323,6 @@ class TSPFNPretraining(TSPFNSystem):
         prediction = self.encode(
             y_batch_support, ts, y_inference_support=y_inference_support, ts_inference_support=ts_train
         )
-        print(f"prediction shape: {prediction.shape}")
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
             pred = prediction_head(prediction)
@@ -348,9 +347,6 @@ class TSPFNPretraining(TSPFNSystem):
             target, y_hat = target_batch, predictions[target_task]
 
             target = target.long()
-
-            print(f"y_hat shape: {y_hat.shape}")
-            print(f"target shape: {target.shape}")
 
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                 y_hat,
