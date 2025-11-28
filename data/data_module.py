@@ -69,9 +69,8 @@ class TSPFNDataset(Dataset):
         # Encode labels to integers
         df.iloc[:, -1] = self.label_encoder.fit_transform(df.iloc[:, -1])
         df = pd.concat([df.iloc[:, :-1], df.iloc[:, -1]], axis=1)
-        # num_classes = len(np.unique(df.iloc[:, -1]))
         
-        df_values = df_train.values
+        df_values = df.values
         if df_values.shape[1] < 500:
             # Pad with zeros to have consistent feature size
             padding = np.zeros((df_values.shape[0], 500 - df_values.shape[1]))
@@ -101,9 +100,9 @@ class TSPFNDataset(Dataset):
             usable_size = (df_train.shape[0] // chunk_size) * chunk_size
             data_chunked = df_train[:usable_size]
             data_chunked = data_chunked.reshape(-1, chunk_size, df_train.shape[1])
-            for df in data_chunked:
+            for chunk in data_chunked:
                 data_support, data_query = train_test_split(
-                    df, test_size=0.5, random_state=42, shuffle=True, stratify=df[:, -1]
+                    chunk, test_size=0.5, random_state=42, shuffle=True, stratify=chunk[:, -1]
                 )
                 data_chunk = np.concatenate([data_support, data_query], axis=0)
                 data_train_ts.append(torch.tensor(data_chunk, dtype=torch.float32))
