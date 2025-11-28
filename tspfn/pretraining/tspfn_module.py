@@ -167,6 +167,10 @@ class TSPFNPretraining(TSPFNSystem):
         if ts.ndim == 2:
             ts = ts.unsqueeze(0)  # (1, S, T)
 
+        print(f"ts shape in process_data: {ts.shape}")
+        print(f"y_batch_support shape in process_data: {y_batch_support.shape}")
+        print(f"y_batch_query shape in process_data: {y_batch_query.shape}")
+
         return (
             y_batch_support,
             y_batch_query,
