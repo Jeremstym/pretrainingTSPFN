@@ -67,14 +67,15 @@ class TSPFNDataset(Dataset):
 
         df = pd.concat(list_df, ignore_index=False)
         # Encode labels to integers
-        df.iloc[:, -1] = self.label_encoder.fit_transform(df.iloc[:, -1])
-        df = pd.concat([df.iloc[:, :-1], df.iloc[:, -1]], axis=1)
+        df_label = self.label_encoder.fit_transform(df.iloc[:, -1])
+        df_features = df.iloc[:, :-1]
         
-        df_values = df.values
-        if df_values.shape[1] < 500:
+        df_values = df_features.values
+        if df_values.shape[1] < 499:
             # Pad with zeros to have consistent feature size
-            padding = np.zeros((df_values.shape[0], 500 - df_values.shape[1]))
+            padding = np.zeros((df_values.shape[0], 499 - df_values.shape[1]))
             df_values = np.hstack((df_values, padding))
+        df_values = np.hstack((df_values, df_label.reshape(-1, 1)))
        
         # Split dataset
         indices = np.arange(len(df_values))
