@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from pytorch_lightning.trainer import CombinedLoader
+from lightning.pytorch.utilities.combined_loader import CombinedLoader
 
 
 class TSPFNDataset(Dataset):
