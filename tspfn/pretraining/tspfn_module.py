@@ -167,6 +167,10 @@ class TSPFNPretraining(TSPFNSystem):
         if ts.ndim == 2:
             ts = ts.unsqueeze(0)  # (1, S, T)
 
+        print(f"ts shape in process_data: {ts.shape}")
+        print(f"y_batch_support shape in process_data: {y_batch_support.shape}")
+        print(f"y_batch_query shape in process_data: {y_batch_query.shape}")
+
         return (
             y_batch_support,
             y_batch_query,
@@ -194,7 +198,7 @@ class TSPFNPretraining(TSPFNSystem):
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
-            ts_full = torch.cat([ts_inference_support, ts], dim=0)
+            ts_full = torch.cat([ts_inference_support, ts], dim=1)
             y_train = y_inference_support
             out_features = self.encoder(ts_full.transpose(0, 1), y_train.transpose(0, 1))[:, :, -1, :]
         
@@ -315,16 +319,13 @@ class TSPFNPretraining(TSPFNSystem):
             y_train_support, y_train_query, ts_train = self.process_data(
                 time_series_attrs=time_series_for_inference,
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
-            print(f"ts_train shape: {ts_train.shape}")
-            print(f"y_train_support shape: {y_train_support.shape}")
-            print(f"y_train_query shape: {y_train_query.shape}")
-            y_infernce_support = torch.vstack([y_train_support, y_batch_support])
+            y_inference_support = torch.cat([y_train_support, y_train_query], dim=1)
         else:
             ts_train = None
-            y_infernce_support = None
+            y_inference_support = None
 
         prediction = self.encode(
-            y_batch_support, ts, y_inference_support=y_infernce_support, ts_inference_support=ts_train
+            y_batch_support, ts, y_inference_support=y_inference_support, ts_inference_support=ts_train
         )
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
