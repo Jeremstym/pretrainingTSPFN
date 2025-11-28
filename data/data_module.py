@@ -83,34 +83,34 @@ class TSPFNDataset(Dataset):
                 indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=None
             )
         if self.split == "train":
-            df = df.iloc[train_indices]
+            df_train = df.iloc[train_indices]
+            data_df = df_train.values
+            if data_df.shape[1] < 500:
+                # Pad with zeros to have consistent feature size
+                padding = np.zeros((data_df.shape[0], 500 - data_df.shape[1]))
+                data_df = np.hstack((data_df, padding))
+
+            data_ts = []
+            if df_train.shape[0] // 1024 > 1:
+                # Split into chunks of 1024 samples
+                chunk_size = 1024
+                usable_size = (data_df.shape[0] // chunk_size) * chunk_size
+                data_chunked = data_df[:usable_size]
+                data_chunked = data_chunked.reshape(-1, chunk_size, data_df.shape[1])
+                for df in data_chunked:
+                    data_support, data_query = train_test_split(
+                        df, test_size=0.5, random_state=42, shuffle=True, stratify=df[:, -1]
+                    )
+                    data_chunk = np.concatenate([data_support, data_query], axis=0)
+                    data_ts.append(torch.tensor(data_chunk, dtype=torch.float32))
+
         elif self.split == "val":
-            df = df.iloc[val_indices]
+            # We want to select the same datasets as in training for validation
+            if df.iloc[train_indices].shape[0] // 1024 > 1:
+                df_val = df.iloc[val_indices]
+                data_ts = df_val.values
         else:
             raise ValueError(f"Unknown split: {self.split}")
-
-        # loaded_df = pd.read_csv(path, index_col=0)
-        data_df = df.values
-        if data_df.shape[1] < 500:
-            # Pad with zeros to have consistent feature size
-            padding = np.zeros((data_df.shape[0], 500 - data_df.shape[1]))
-            data_df = np.hstack((data_df, padding))
-
-        data_ts = []
-        if data_df.shape[0] // 1024 > 1:
-            # Split into chunks of 1024 samples
-            chunk_size = 1024
-            usable_size = (data_df.shape[0] // chunk_size) * chunk_size
-            data_chunked = data_df[:usable_size]
-            data_chunked = data_chunked.reshape(-1, chunk_size, data_df.shape[1])
-            for df in data_chunked:
-                data_support, data_query = train_test_split(
-                    df, test_size=0.5, random_state=42, shuffle=True, stratify=df[:, -1]
-                )
-                data_chunk = np.concatenate([data_support, data_query], axis=0)
-                data_ts.append(torch.tensor(data_chunk, dtype=torch.float32))
-
-        print(f"Loaded {len(data_ts)} samples from {name_csv} for split '{self.split}'")
         
         return data_ts #, [num_classes] * len(data_ts)
 

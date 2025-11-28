@@ -1,7 +1,6 @@
 import os
 import csv
 import logging
-from sklearn.model_selection import train_test_split
 from typing import Any, Callable, Dict, Literal, Optional, Sequence, Tuple, cast
 
 import hydra
@@ -158,57 +157,16 @@ class TSPFNPretraining(TSPFNSystem):
         y = time_series_attrs[:, :, -1]  # (B, S, 1)
 
         if self.training or len(self.y_train_for_inference) == 0:
-            if len(self.y_train_for_inference) == 0:
-                indices = torch.arange(10)
-            assert self.hparams["split_finetuning"] > 0.0, "split_finetuning must be > 0.0 when training."
-            ts_support_list = []
-            ts_query_list = []
-            y_batch_support_list = []
-            y_batch_query_list = []
-            for dataset_idx, dataset_labels in enumerate(y):
-                labels = dataset_labels.clone().cpu()
-                try:
-                    train_indices, test_indices = train_test_split(
-                        indices,
-                        test_size=self.hparams["split_finetuning"],
-                        random_state=self.hparams["seed"],
-                        stratify=labels,
-                    )
-                except ValueError:
-                    if len(indices) == 1:
-                        print("Sanity check with single sample for TS, skipping train/test split.")
-                        train_indices, test_indices = indices, indices
-                    else:
-                        print("Stratified splitting failed, performing non-stratified split instead.")
-                        train_indices, test_indices = train_test_split(
-                            indices,
-                            test_size=self.hparams["split_finetuning"],
-                            random_state=self.hparams["seed"],
-                        )
-
-                ts_support = torch.as_tensor(ts[dataset_idx, train_indices, :], dtype=torch.float32)
-                ts_query = torch.as_tensor(ts[dataset_idx, test_indices, :], dtype=torch.float32)
-                ts_support_list.append(ts_support)
-                ts_query_list.append(ts_query)
-                y_batch_support_list.append(torch.as_tensor(y[dataset_idx, train_indices], dtype=torch.float32))
-                y_batch_query_list.append(torch.as_tensor(y[dataset_idx, test_indices], dtype=torch.float32))
-
-            ts = torch.cat([torch.stack(ts_support_list, dim=0), torch.stack(ts_query_list, dim=0)], dim=1).to(
-                self.device
-            )
-            y_batch_support = torch.stack(y_batch_support_list, dim=0).to(self.device)
-            y_batch_query = torch.stack(y_batch_query_list, dim=0).to(self.device)
-
-        # if self.training or len(self.y_train_for_inference) == 0:
-        #     y_batch_support = torch.as_tensor(y[train_indices], dtype=torch.float32).to(self.device)
-        #     y_batch_query = torch.as_tensor(y[test_indices], dtype=torch.float32).to(self.device)
+            half_size = ts.shape[1] // 2
+            y_batch_support = y[:, :half_size]  # (B, Support, 1)
+            y_batch_query = y[:, half_size:]  # (B, Query, 1)
         else:
-            y_batch_support = y.to(self.device)
-            y_batch_query = y.to(self.device)
-            ts = ts.to(self.device)
+            y_batch_support = y.to(self.device) # (B, S, 1)
+            y_batch_query = y.to(self.device) # (B, S, 1)
+            ts = ts.to(self.device) # (B, S, T)
 
         if ts.ndim == 2:
-            ts = ts.unsqueeze(1)
+            ts = ts.unsqueeze(0)  # (1, S, T)
 
         return (
             y_batch_support,
@@ -383,6 +341,8 @@ class TSPFNPretraining(TSPFNSystem):
 
             ts_batch_list = [ts_batch for ts_batch in dataloader]
             ts_tokens_support = torch.vstack(ts_batch_list)
+            print(f"ts_tokens_support shape: {ts_tokens_support.shape}")
+            raise Exception("Debug stop")
 
             if ts_tokens_support.shape[0] > self.hparams["max_batches_stored_for_inference"]:
                 # Randomly subsample to limit RAM usage
