@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=electronic,hard
+#SBATCH --partition=hard,electronic
 #SBATCH --job-name=TSPFN-Pretraining
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
@@ -14,4 +14,5 @@ nvidia-smi
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_BIGpretraining_v3' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/BatchTraining' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/BatchTrainingNOHUGEDS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/BatchTrainingNOHUGEDS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ShortBatchTrainingNOHUGEDS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 trainer.max_epochs=100
