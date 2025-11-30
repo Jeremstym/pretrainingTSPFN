@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=hard,electronic
+#SBATCH --partition=hard
 #SBATCH --job-name=TSPFN-Pretraining
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
