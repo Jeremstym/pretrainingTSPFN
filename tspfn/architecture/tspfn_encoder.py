@@ -35,11 +35,11 @@ class TSPFNEncoder(nn.Module, ABC):
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
             logging.info(f"Loading updated TabPFN model weights from {updated_pfn_path}")
-            state_dict = torch.load(updated_pfn_path, map_location="cuda:0") # updated_pfn_path is already a state dict
+            state_dict = torch.load(updated_pfn_path, map_location="cuda:0")  # updated_pfn_path is already a state dict
             new_state_dict = {}
             for k, v in state_dict.items():
                 if k.startswith("model."):
-                    new_key = k[len("model."):]  # strip the prefix
+                    new_key = k[len("model.") :]  # strip the prefix
                     new_state_dict[new_key] = v
                 else:
                     new_state_dict[k] = v
@@ -71,6 +71,21 @@ class TSPFNEncoder(nn.Module, ABC):
         # Initialize embeddings using normal distribution if any
         elif isinstance(module, nn.Embedding):
             nn.init.normal_(module.weight, mean=0, std=1)
+
+    def sinusoidal_positional_encoding(self, sequence_length=499, embedding_dim=192, n=10000.0):
+        if embedding_dim % 2 != 0:
+            raise ValueError("Embedding dimension must be even")
+
+        positions = torch.arange(0, sequence_length).unsqueeze(1)  # Shape: (sequence_length, 1)
+        denominators = torch.pow(
+            n, 2 * torch.arange(0, embedding_dim // 2) / embedding_dim
+        )  # Shape: (embedding_dim/2,)
+
+        posenc = torch.zeros(sequence_length, embedding_dim)
+        posenc[:, 0::2] = torch.sin(positions / denominators)  # Apply sin to even indices
+        posenc[:, 1::2] = torch.cos(positions / denominators)  # Apply cos to odd indices
+
+        return posenc
 
     def encode_x_and_y(
         self,
@@ -125,19 +140,42 @@ class TSPFNEncoder(nn.Module, ABC):
         return embedded_x, embedded_y, single_eval_pos_
 
     def forward(
-        self, X_full: torch.Tensor, y_train: torch.Tensor, *args, **kwargs
+        self, X_full: torch.Tensor, y_train: torch.Tensor, ts_pe: str = "none", *args, **kwargs
     ) -> Tuple[torch.torch.Tensor, torch.torch.Tensor]:
 
         seq_len, batch_size, num_features = X_full.shape
-
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
-        emb_x, emb_y = self.model.add_embeddings(
-            emb_x,
-            emb_y,
-            data_dags=None,
-            num_features=num_features,
-            seq_len=seq_len,
-        )
+
+        if ts_pe == "sinusoidal":
+            # Add sinusoidal positional encodings to time series attributes
+            pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
+            # Broadcast to (B, S, T, E)
+            pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, num_features, -1, -1)
+            emb_x += pos_broadcasted
+        elif ts_pe == "none":
+            # Use PE from TabPFN model
+            emb_x, emb_y = self.model.add_embeddings(
+                emb_x,
+                emb_y,
+                data_dags=None,
+                num_features=num_features,
+                seq_len=seq_len,
+            )
+        elif ts_pe == "mixed":
+            # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
+            pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
+            # Broadcast to (B, S, T, E)
+            pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, num_features, -1, -1)
+            emb_x, emb_y = self.model.add_embeddings(
+                emb_x,
+                emb_y,
+                data_dags=None,
+                num_features=num_features,
+                seq_len=seq_len,
+            )
+            emb_x += pos_broadcasted
+        else:
+            raise ValueError(f"Unknown ts_pe option: {ts_pe}")
 
         # (N, Seq, num_features, d_model) + (N, Seq, 1, d_model) -> (N, Seq, num_features + 1, d_model)
         embedded_input = torch.cat((emb_x, emb_y.unsqueeze(2)), dim=2)

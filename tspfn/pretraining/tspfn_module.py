@@ -38,6 +38,7 @@ class TSPFNPretraining(TSPFNSystem):
         embed_dim: int,
         split_finetuning: float = 0.5,
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
+        time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         *args,
         **kwargs,
     ):
@@ -89,6 +90,8 @@ class TSPFNPretraining(TSPFNSystem):
         # Initialize inference storage tensors
         # self.ts_train_for_inference = torch.Tensor().to(self.device)
         # self.y_train_for_inference = torch.Tensor().to(self.device)
+
+        self.time_series_positional_encoding = time_series_positional_encoding
 
     @property
     def example_input_array(self) -> Tensor:
@@ -190,13 +193,17 @@ class TSPFNPretraining(TSPFNSystem):
         """
 
         if self.training or y_inference_support is None:
-            out_features = self.encoder(ts.transpose(0, 1), y_batch_support.transpose(0, 1))[:, :, -1, :]
+            out_features = self.encoder(
+                ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
+            )[:, :, -1, :]
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
             ts_full = torch.cat([ts_inference_support, ts], dim=1)
             y_train = y_inference_support
-            out_features = self.encoder(ts_full.transpose(0, 1), y_train.transpose(0, 1))[:, :, -1, :]
+            out_features = self.encoder(
+                ts_full.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
+            )[:, :, -1, :]
 
         else:
             raise ValueError("During inference, both support ts and labels must be provided.")
@@ -348,7 +355,7 @@ class TSPFNPretraining(TSPFNSystem):
         for target_task, target_loss in self.predict_losses.items():
             for i, (target, y_hat) in enumerate(
                 zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
-                ):
+            ):
                 target = target.long()
 
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}/dataset{i}"] = (
