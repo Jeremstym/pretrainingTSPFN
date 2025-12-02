@@ -150,7 +150,7 @@ class TSPFNEncoder(nn.Module, ABC):
             # Add sinusoidal positional encodings to time series attributes
             pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
             # Broadcast to (B, S, T, E)
-            pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, num_features, -1, -1)
+            pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
             emb_x += pos_broadcasted
         elif ts_pe == "none":
             # Use PE from TabPFN model
@@ -165,7 +165,7 @@ class TSPFNEncoder(nn.Module, ABC):
             # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
             pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
             # Broadcast to (B, S, T, E)
-            pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, num_features, -1, -1)
+            pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
                 emb_y,
