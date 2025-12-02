@@ -31,12 +31,13 @@ data:
 
 task:
   _target_: tspfn.pretraining.tspfn_module.TSPFNPretraining
+  embed_dim: 192 # As in TabPFN_v2 paper
+  split_finetuning: 0.5
   predict_losses:
     classification:
       _target_: torch.nn.CrossEntropyLoss
-  embed_dim: 192 # As in TabPFN_v2 paper
+  time_series_positional_encoding: none
   seed : ${seed}
-  split_finetuning: 0.5
   max_batches_stored_for_inference: 256
   model:
     freeze_encoder: False # Whether to freeze the TabPFN encoder during training
