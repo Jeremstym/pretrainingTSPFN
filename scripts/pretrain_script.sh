@@ -15,4 +15,5 @@ nvidia-smi
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/BatchTraining' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/BatchTrainingNOHUGEDS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ShortBatchTrainingNOHUGEDS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 trainer.max_epochs=100
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ShortBatchTrainingNOHUGEDS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 trainer.max_epochs=100
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/SinusBatchTrainingNOHUGEDS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 task.time_series_positional_encoding=sinusoidal trainer.max_epochs=100
