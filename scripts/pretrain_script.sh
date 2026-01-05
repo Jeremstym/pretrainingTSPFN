@@ -20,4 +20,4 @@ nvidia-smi
 
 #! PRORCESSING TUEV
 
-python -m ~/pretrainingTSPFN/data/tuev_preprocessing.py
+python ~/pretrainingTSPFN/data/tuev_preprocessing.py
