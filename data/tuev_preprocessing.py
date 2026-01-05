@@ -220,7 +220,7 @@ if __name__ == "__main__":
 
 
     #transfer to train, eval, and test
-    root = "/data/stympopper/TUEV"
+    root = "/data/stympopper/TUEV/edf"
     seed = 4523
     np.random.seed(seed)
 
