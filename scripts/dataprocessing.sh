@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=hard
+#SBATCH --partition=electronic,hard
 #SBATCH --job-name=TUEV-processing
 #SBATCH --nodes=1
 #SBATCH --time=1-23:00:00
