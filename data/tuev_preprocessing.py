@@ -21,14 +21,16 @@ chOrder_standard = ['EEG FP1-REF', 'EEG FP2-REF', 'EEG F3-REF', 'EEG F4-REF', 'E
                     'EEG F8-REF', 'EEG T3-REF', 'EEG T4-REF', 'EEG T5-REF', 'EEG T6-REF', 'EEG A1-REF', 'EEG A2-REF', 'EEG FZ-REF', 'EEG CZ-REF', 'EEG PZ-REF', 'EEG T1-REF', 'EEG T2-REF']
 
 
-def BuildEvents(signals, times, EventData):
+def BuildEvents(signals, times, EventData, keep_channels):
     [numEvents, z] = EventData.shape  # numEvents is equal to # of rows of the .rec file
+    # EventData = EventData[np.argsort(EventData[:,0])]
     fs = 200.0
-    [numChan, numPoints] = signals.shape
+    # [numChan, numPoints] = signals.shape
     # for i in range(numChan):  # standardize each channel
     #     if np.std(signals[i, :]) > 0:
     #         signals[i, :] = (signals[i, :] - np.mean(signals[i, :])) / np.std(signals[i, :])
-    features = np.zeros([numEvents, numChan, int(fs) * 5])
+    # features = np.zeros([numEvents, len(keep_channels), int(fs) * 5])
+    features = np.zeros([numEvents, int(fs) * 5])
     # # Replace the triple concatenation with padding
     # # Pad only the time axis (axis 1) with 2 seconds worth of samples
     # pad_width = int(fs) * 2
@@ -38,15 +40,26 @@ def BuildEvents(signals, times, EventData):
     # features[i, :] = signals_padded[:, pad_width + start - 2*int(fs) : pad_width + end + 2*int(fs)]
     offending_channel = np.zeros([numEvents, 1])  # channel that had the detected thing
     labels = np.zeros([numEvents, 1])
+    def get_channel(chan_idx, keep_channels):
+        if chan_idx not in keep_channels:
+            raise ValueError("Channel index not in keep channels")
+        if chan_idx < 8:
+            return chan_idx
+        else:
+            return chan_idx - 6
+
     offset = signals.shape[1]
     signals = np.concatenate([signals, signals, signals], axis=1)
     for i in range(numEvents):  # for each event
         chan = int(EventData[i, 0])  # chan is channel
+        if chan not in keep_channels:
+            continue
+        chan = get_channel(chan, keep_channels)
         start = np.where((times) >= EventData[i, 1])[0][0]
         end = np.where((times) >= EventData[i, 2])[0][0]
         # print (offset + start - 2 * int(fs), offset + end + 2 * int(fs), signals.shape)
-        features[i, :] = signals[
-            :, offset + start - 2 * int(fs) : offset + end + 2 * int(fs)
+        features[i] = signals[
+            chan, offset + start - 2 * int(fs) : offset + end + 2 * int(fs)
         ]
         offending_channel[i, :] = int(chan)
         labels[i, :] = int(EventData[i, 3])
@@ -123,7 +136,9 @@ def convert_signals(signals, Rawdata):
             (signals[signal_names["EEG P4-REF"]] - signals[signal_names["EEG O2-REF"]]),
         )
     )  # 21
-    return new_signals
+
+    keep_channels = [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21]
+    return new_signals, keep_channels
 
 
 def readEDF(fileName):
@@ -161,12 +176,11 @@ def load_up_objects(BaseDir, Features, OffendingChannels, Labels, OutDir):
                     [signals, times, event, Rawdata] = readEDF(
                         dirName + "/" + fname
                     )  # event is the .rec file in the form of an array
-                    signals = convert_signals(signals, Rawdata)
+                    signals, keep_channels = convert_signals(signals, Rawdata)
                 except (ValueError, KeyError):
                     print("something funky happened in " + dirName + "/" + fname)
                     continue
-                signals, offending_channels, labels = BuildEvents(signals, times, event)
-
+                signals, offending_channels, labels = BuildEvents(signals, times, event, keep_channels)
                 for idx, (signal, offending_channel, label) in enumerate(
                     zip(signals, offending_channels, labels)
                 ):
