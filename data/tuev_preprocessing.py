@@ -23,14 +23,12 @@ chOrder_standard = ['EEG FP1-REF', 'EEG FP2-REF', 'EEG F3-REF', 'EEG F4-REF', 'E
 
 def BuildEvents(signals, times, EventData, keep_channels):
     [numEvents, z] = EventData.shape  # numEvents is equal to # of rows of the .rec file
-    # EventData = EventData[np.argsort(EventData[:,0])]
     fs = 200.0
     # [numChan, numPoints] = signals.shape
     # for i in range(numChan):  # standardize each channel
     #     if np.std(signals[i, :]) > 0:
     #         signals[i, :] = (signals[i, :] - np.mean(signals[i, :])) / np.std(signals[i, :])
-    # features = np.zeros([numEvents, len(keep_channels), int(fs) * 5])
-    features = np.zeros([numEvents, int(fs) * 5])
+    features = np.zeros([numEvents, len(keep_channels), int(fs) * 5])
     # # Replace the triple concatenation with padding
     # # Pad only the time axis (axis 1) with 2 seconds worth of samples
     # pad_width = int(fs) * 2
@@ -54,12 +52,12 @@ def BuildEvents(signals, times, EventData, keep_channels):
         chan = int(EventData[i, 0])  # chan is channel
         if chan not in keep_channels:
             continue
-        chan = get_channel(chan, keep_channels)
+        # chan = get_channel(chan, keep_channels)
         start = np.where((times) >= EventData[i, 1])[0][0]
         end = np.where((times) >= EventData[i, 2])[0][0]
         # print (offset + start - 2 * int(fs), offset + end + 2 * int(fs), signals.shape)
-        features[i] = signals[
-            chan, offset + start - 2 * int(fs) : offset + end + 2 * int(fs)
+        features[i, :] = signals[
+            :, offset + start - 2 * int(fs) : offset + end + 2 * int(fs)
         ]
         offending_channel[i, :] = int(chan)
         labels[i, :] = int(EventData[i, 3])
