@@ -203,39 +203,39 @@ def save_pickle(object, filename):
 
 if __name__ == "__main__":
 
-    # """
-    # TUEV dataset is downloaded from https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml
-    # """
+    """
+    TUEV dataset is downloaded from https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml
+    """
 
-    # root = "/data/stympopper/TUEV/edf"
-    # train_out_dir = os.path.join(root, "processed_train")
-    # eval_out_dir = os.path.join(root, "processed_eval")
-    # if not os.path.exists(train_out_dir):
-    #     os.makedirs(train_out_dir)
-    # if not os.path.exists(eval_out_dir):
-    #     os.makedirs(eval_out_dir)
+    root = "/data/stympopper/TUEV/edf"
+    train_out_dir = os.path.join(root, "processed_train")
+    eval_out_dir = os.path.join(root, "processed_eval")
+    if not os.path.exists(train_out_dir):
+        os.makedirs(train_out_dir)
+    if not os.path.exists(eval_out_dir):
+        os.makedirs(eval_out_dir)
 
-    # BaseDirTrain = os.path.join(root, "train")
-    # fs = 200
-    # TrainFeatures = np.empty(
-    #     (0, 16, fs)
-    # )  # 0 for lack of intialization, 22 for channels, fs for num of points
-    # TrainLabels = np.empty([0, 1])
-    # TrainOffendingChannel = np.empty([0, 1])
-    # load_up_objects(
-    #     BaseDirTrain, TrainFeatures, TrainLabels, TrainOffendingChannel, train_out_dir
-    # )
+    BaseDirTrain = os.path.join(root, "train")
+    fs = 200
+    TrainFeatures = np.empty(
+        (0, 16, fs)
+    )  # 0 for lack of intialization, 22 for channels, fs for num of points
+    TrainLabels = np.empty([0, 1])
+    TrainOffendingChannel = np.empty([0, 1])
+    load_up_objects(
+        BaseDirTrain, TrainFeatures, TrainLabels, TrainOffendingChannel, train_out_dir
+    )
 
-    # BaseDirEval = os.path.join(root, "eval")
-    # fs = 200
-    # EvalFeatures = np.empty(
-    #     (0, 16, fs)
-    # )  # 0 for lack of intialization, 22 for channels, fs for num of points
-    # EvalLabels = np.empty([0, 1])
-    # EvalOffendingChannel = np.empty([0, 1])
-    # load_up_objects(
-    #     BaseDirEval, EvalFeatures, EvalLabels, EvalOffendingChannel, eval_out_dir
-    # )
+    BaseDirEval = os.path.join(root, "eval")
+    fs = 200
+    EvalFeatures = np.empty(
+        (0, 16, fs)
+    )  # 0 for lack of intialization, 22 for channels, fs for num of points
+    EvalLabels = np.empty([0, 1])
+    EvalOffendingChannel = np.empty([0, 1])
+    load_up_objects(
+        BaseDirEval, EvalFeatures, EvalLabels, EvalOffendingChannel, eval_out_dir
+    )
 
 
     #transfer to train, eval, and test
