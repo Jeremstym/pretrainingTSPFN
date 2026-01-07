@@ -29,6 +29,13 @@ def BuildEvents(signals, times, EventData):
     #     if np.std(signals[i, :]) > 0:
     #         signals[i, :] = (signals[i, :] - np.mean(signals[i, :])) / np.std(signals[i, :])
     features = np.zeros([numEvents, numChan, int(fs) * 5])
+    # # Replace the triple concatenation with padding
+    # # Pad only the time axis (axis 1) with 2 seconds worth of samples
+    # pad_width = int(fs) * 2
+    # signals_padded = np.pad(signals, ((0, 0), (pad_width, pad_width)), mode='edge')
+
+    # # Now your offset is simply the pad_width
+    # features[i, :] = signals_padded[:, pad_width + start - 2*int(fs) : pad_width + end + 2*int(fs)]
     offending_channel = np.zeros([numEvents, 1])  # channel that had the detected thing
     labels = np.zeros([numEvents, 1])
     offset = signals.shape[1]
@@ -184,39 +191,39 @@ def save_pickle(object, filename):
 
 if __name__ == "__main__":
 
-    """
-    TUEV dataset is downloaded from https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml
-    """
+    # """
+    # TUEV dataset is downloaded from https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml
+    # """
 
-    root = "/data/stympopper/TUEV/edf"
-    train_out_dir = os.path.join(root, "processed_train")
-    eval_out_dir = os.path.join(root, "processed_eval")
-    if not os.path.exists(train_out_dir):
-        os.makedirs(train_out_dir)
-    if not os.path.exists(eval_out_dir):
-        os.makedirs(eval_out_dir)
+    # root = "/data/stympopper/TUEV/edf"
+    # train_out_dir = os.path.join(root, "processed_train")
+    # eval_out_dir = os.path.join(root, "processed_eval")
+    # if not os.path.exists(train_out_dir):
+    #     os.makedirs(train_out_dir)
+    # if not os.path.exists(eval_out_dir):
+    #     os.makedirs(eval_out_dir)
 
-    BaseDirTrain = os.path.join(root, "train")
-    fs = 200
-    TrainFeatures = np.empty(
-        (0, 23, fs)
-    )  # 0 for lack of intialization, 22 for channels, fs for num of points
-    TrainLabels = np.empty([0, 1])
-    TrainOffendingChannel = np.empty([0, 1])
-    load_up_objects(
-        BaseDirTrain, TrainFeatures, TrainLabels, TrainOffendingChannel, train_out_dir
-    )
+    # BaseDirTrain = os.path.join(root, "train")
+    # fs = 200
+    # TrainFeatures = np.empty(
+    #     (0, 16, fs)
+    # )  # 0 for lack of intialization, 22 for channels, fs for num of points
+    # TrainLabels = np.empty([0, 1])
+    # TrainOffendingChannel = np.empty([0, 1])
+    # load_up_objects(
+    #     BaseDirTrain, TrainFeatures, TrainLabels, TrainOffendingChannel, train_out_dir
+    # )
 
-    BaseDirEval = os.path.join(root, "eval")
-    fs = 200
-    EvalFeatures = np.empty(
-        (0, 23, fs)
-    )  # 0 for lack of intialization, 22 for channels, fs for num of points
-    EvalLabels = np.empty([0, 1])
-    EvalOffendingChannel = np.empty([0, 1])
-    load_up_objects(
-        BaseDirEval, EvalFeatures, EvalLabels, EvalOffendingChannel, eval_out_dir
-    )
+    # BaseDirEval = os.path.join(root, "eval")
+    # fs = 200
+    # EvalFeatures = np.empty(
+    #     (0, 16, fs)
+    # )  # 0 for lack of intialization, 22 for channels, fs for num of points
+    # EvalLabels = np.empty([0, 1])
+    # EvalOffendingChannel = np.empty([0, 1])
+    # load_up_objects(
+    #     BaseDirEval, EvalFeatures, EvalLabels, EvalOffendingChannel, eval_out_dir
+    # )
 
 
     #transfer to train, eval, and test
@@ -239,5 +246,5 @@ if __name__ == "__main__":
         os.system(f"cp {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_train')}")
     for file in val_files:
         os.system(f"cp {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_eval')}")
-    for file in test_files:
-        os.system(f"cp {os.path.join(root, 'processed_eval', file)} {os.path.join(root, 'processed', 'processed_test')}")
+    # for file in test_files:
+    #     os.system(f"cp {os.path.join(root, 'processed_eval', file)} {os.path.join(root, 'processed', 'processed_test')}")
