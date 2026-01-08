@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --partition=hard
-#SBATCH --job-name=TUEV-processing
+#SBATCH --partition=electronic,hard
+#SBATCH --job-name=TUEV-finetuning
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --time=1-23:00:00
