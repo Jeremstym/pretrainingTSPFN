@@ -23,7 +23,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
-from data.evaluation_datasets import TUABLoader, TUEVLoader
+from data.evaluation_datasets import TUABDataset, TUEVDataset
 
 
 class TSPFNDataset(Dataset):
@@ -254,33 +254,23 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             seed=seed,
         )
 
-    def train_dataloader(self):
-        return TUEVLoader(
-            root=os.path.join(self.data_roots, "processed_train"),
-            files=os.listdir(os.path.join(self.data_roots, "processed_train")),
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Create datasets. Called on every process in distributed settings."""
+        self.train_dataset = TUEVDataset(
+            root=os.path.join(self.data_roots, "train"),
+            files=os.listdir(os.path.join(self.data_roots, "train")),
+            sampling_rate=200,
         )
-
-    def val_dataloader(self):
-        val_loader = TUEVLoader(
-            root=os.path.join(self.data_roots, "processed_eval"),
-            files=os.listdir(os.path.join(self.data_roots, "processed_eval")),
+        self.val_dataset = TUEVDataset(
+            root=os.path.join(self.data_roots, "eval"),
+            files=os.listdir(os.path.join(self.data_roots, "eval")),
+            sampling_rate=200,
         )
-        train_loader = TUEVLoader(
-            root=os.path.join(self.data_roots, "processed_train"),
-            files=os.listdir(os.path.join(self.data_roots, "processed_train")),
+        self.test_dataset = TUEVDataset(
+            root=os.path.join(self.data_roots, "test"),
+            files=os.listdir(os.path.join(self.data_roots, "test")),
+            sampling_rate=200,
         )
-        return CombinedLoader({"val": val_loader, "train": train_loader}, "max_size_cycle")
-
-    def test_dataloader(self):
-        test_loader = TUEVLoader(
-            root=os.path.join(self.data_roots, "processed_test"),
-            files=os.listdir(os.path.join(self.data_roots, "processed_test")),
-        )
-        train_loader = TUEVLoader(
-            root=os.path.join(self.data_roots, "processed_train"),
-            files=os.listdir(os.path.join(self.data_roots, "processed_train")),
-        )
-        return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
-
+        return
 
 __all__ = ["TSPFNDataset", "TSPFNDataModule", "FineTuneDataModule"]

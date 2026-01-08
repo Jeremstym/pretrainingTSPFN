@@ -51,7 +51,7 @@ standard_1020 = [
 ]
 
 
-class TUABLoader(torch.utils.data.Dataset):
+class TUABDataset(torch.utils.data.Dataset):
     def __init__(self, root, files, sampling_rate=200):
         self.root = root
         self.files = files
@@ -71,7 +71,7 @@ class TUABLoader(torch.utils.data.Dataset):
         return X, Y
 
 
-class TUEVLoader(torch.utils.data.Dataset):
+class TUEVDataset(torch.utils.data.Dataset):
     def __init__(self, root, files, sampling_rate=200):
         self.root = root
         self.files = files
