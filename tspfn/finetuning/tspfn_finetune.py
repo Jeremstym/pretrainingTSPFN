@@ -123,7 +123,7 @@ class TSPFNFineTuning(TSPFNSystem):
         """Tokenizes the input time-series attributes, providing a mask of non-missing attributes.
 
         Args:
-            time_series_attrs: (B, C, T), Batch of time-series datasets.
+            time_series_attrs: (B, C*T), Batch of time-series datasets.
             labels: (B, 1), Batch of labels corresponding to the multivariate time-series datasets.
 
         Returns:
@@ -147,11 +147,11 @@ class TSPFNFineTuning(TSPFNSystem):
         else:
             y_batch_support = labels.to(self.device)  # (Support, 1)
             y_batch_query = labels.to(self.device)  # (Query, 1)
-            time_series_attrs = time_series_attrs.to(self.device)  # (Support+Query, C, T)
+            time_series_attrs = time_series_attrs.to(self.device)  # (Support+Query, C*T)
 
         if time_series_attrs.ndim == 2:
             # Unsqueeze to comply with expected input shape for TabPFN encoder
-            time_series_attrs = time_series_attrs.unsqueeze(0)  # (1, C, T)
+            time_series_attrs = time_series_attrs.unsqueeze(0)  # (1, S+Q, C*T)
 
         return (
             y_batch_support,
@@ -225,7 +225,7 @@ class TSPFNFineTuning(TSPFNSystem):
             summary_mode = False
 
         y_batch_support, y_batch_query, ts = self.process_data(
-            time_series_attrs,
+            time_series_attrs.flatten(start_dim=1),
             labels,
             summary_mode=summary_mode,
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
@@ -292,12 +292,15 @@ class TSPFNFineTuning(TSPFNSystem):
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
         if self.training:
-            time_series_input, target_labels = batch  # (B, S, T)
+            time_series_input, target_labels = batch  # (B, C, T), (B,)
+            time_series_input = time_series_input.flatten(start_dim=1)  # (B, C*T)
             time_series_support = None
         else:
             batch_dict, _, _ = batch
-            time_series_input, target_labels = batch_dict["val"]  # (B, S, T)
-            time_series_support, support_labels = batch_dict["train"]  # (B, S, T)
+            time_series_input, target_labels = batch_dict["val"]  # (B, C, T), (B,)
+            time_series_support, support_labels = batch_dict["train"]  # (B, C, T), (B,)
+            time_series_input = time_series_input.flatten(start_dim=1)  # (B, C*T)
+            time_series_support = time_series_support.flatten(start_dim=1)  # (B, C*T)
 
         y_batch_support, y_batch_query, ts = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels
