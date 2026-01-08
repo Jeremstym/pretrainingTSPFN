@@ -319,11 +319,9 @@ class TSPFNFineTuning(TSPFNSystem):
         prediction = self.encode(
             y_batch_support, ts, y_inference_support=y_inference_support, ts_inference_support=ts_train
         )
-        print("Prediction shape in _prediction_shared_step:", prediction.shape)
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
             pred = prediction_head(prediction)
-            print("Pred shape for task", target_task, ":", pred.shape)
             predictions[target_task] = pred
 
         for target_task in self.predict_losses:
@@ -340,15 +338,12 @@ class TSPFNFineTuning(TSPFNSystem):
         losses, metrics = {}, {}
 
         target_batch = y_batch_query
-        print("Target batch shape in _prediction_shared_step:", target_batch.shape)
 
         for target_task, target_loss in self.predict_losses.items():
             for i, (target, y_hat) in enumerate(
                 zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
             ):
                 target = target.long()
-                print("Target shape for task", target_task, "dataset", i, ":", target.shape)
-                print("Prediction shape for task", target_task, "dataset", i, ":", y_hat.shape)
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}/dataset{i}"] = (
                     target_loss(
                         y_hat,
