@@ -23,7 +23,7 @@ data:
   batch_size: 64
 
 task:
-  _target_: tspfn.finetuning.tspfn_module.TSPFNFineTuning
+  _target_: tspfn.finetuning.tspfn_finetune.TSPFNFineTuning
   embed_dim: 192 # As in TabPFN_v2 paper
   split_finetuning: 0.5
   predict_losses:
