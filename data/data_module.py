@@ -162,8 +162,10 @@ class TSPFNDataModule(pl.LightningDataModule):
         self.pin_memory = pin_memory
         self.transform = transform
         self.seed = seed
-        self.subset_list = [subset_path for _, subset_path in subsets.items()]
-
+        if subsets is not None:
+            self.subset_list = [subset_path for _, subset_path in subsets.items()]
+        else:
+            self.subset_list = [Path(data_roots)]
         self.current_dataset_idx = 0
 
     def setup(self, stage: Optional[str] = None) -> None:
