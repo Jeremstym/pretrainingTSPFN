@@ -23,6 +23,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
+from evaluation_datasets import TUABLoader, TUEVLoader
 
 
 class TSPFNDataset(Dataset):
@@ -44,7 +45,7 @@ class TSPFNDataset(Dataset):
         self.split = split
         self.split_ratio = split_ratio
         self.label_encoder = LabelEncoder()
-        
+
         data_list = []
         for subset_path in self.subset_paths:
             data_ts = self._load_subset(subset_path)
@@ -70,7 +71,7 @@ class TSPFNDataset(Dataset):
         # Encode labels to integers
         df_label = self.label_encoder.fit_transform(df.iloc[:, -1])
         df_features = df.iloc[:, :-1]
-        
+
         df_values = df_features.values
         if df_values.shape[1] < 499:
             # Pad with zeros to have consistent feature size
@@ -80,8 +81,7 @@ class TSPFNDataset(Dataset):
             # Truncate to 499 features
             df_values = df_values[:, :499]
         df_values = np.hstack((df_values, df_label.reshape(-1, 1)))
-        
-       
+
         # Split dataset
         indices = np.arange(len(df_values))
         labels = df_values[:, -1]
@@ -95,7 +95,7 @@ class TSPFNDataset(Dataset):
                 indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=None
             )
         df_train = df_values[train_indices]
-        
+
         data_train_ts = []
         data_val_ts = []
         if df_train.shape[0] // 1024 > 1:
@@ -117,11 +117,11 @@ class TSPFNDataset(Dataset):
         else:
             data_train_ts = []
             data_val_ts = []
-        
+
         if self.split == "train":
             return data_train_ts
         elif self.split == "val":
-            return data_val_ts 
+            return data_val_ts
         else:
             raise ValueError(f"Unknown split: {self.split}")
 
@@ -133,6 +133,7 @@ class TSPFNDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
         return sample
+
 
 class TSPFNDataModule(pl.LightningDataModule):
     """LightningDataModule for TSP datasets.
@@ -168,14 +169,13 @@ class TSPFNDataModule(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
         # TODO: fow now, train/val/test use the same subset. Later, we can modify to have different subsets for each.
-            
+
         self.train_dataset = TSPFNDataset(
             data_roots=self.data_roots,
             subsets=self.subset_list,
             split="train",
             split_ratio=0.8,
             transform=self.transform,
-
         )
         self.val_dataset = TSPFNDataset(
             data_roots=self.data_roots,
@@ -225,4 +225,62 @@ class TSPFNDataModule(pl.LightningDataModule):
         return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
 
 
-__all__ = ["TSPFNDataset", "TSPFNDataModule"]
+class FineTuneTUEVDataModule(TSPFNDataModule):
+    """LightningDataModule for TSP datasets during finetuning.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            subsets=subsets,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+    def train_dataloader(self):
+        return TUEVLoader(
+            root=os.path.join(self.data_roots, "processed_train"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_train")),
+        )
+
+    def val_dataloader(self):
+        val_loader = TUEVLoader(
+            root=os.path.join(self.data_roots, "processed_eval"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_eval")),
+        )
+        train_loader = TUEVLoader(
+            root=os.path.join(self.data_roots, "processed_train"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_train")),
+        )
+        return CombinedLoader({"val": val_loader, "train": train_loader}, "max_size_cycle")
+
+    def test_dataloader(self):
+        test_loader = TUEVLoader(
+            root=os.path.join(self.data_roots, "processed_test"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_test")),
+        )
+        train_loader = TUEVLoader(
+            root=os.path.join(self.data_roots, "processed_train"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_train")),
+        )
+        return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
+
+
+__all__ = ["TSPFNDataset", "TSPFNDataModule", "FineTuneDataModule"]
