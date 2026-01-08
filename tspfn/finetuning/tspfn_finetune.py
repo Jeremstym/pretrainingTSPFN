@@ -139,10 +139,6 @@ class TSPFNFineTuning(TSPFNSystem):
             # Unsqueeze to prepare for concatenation with support
             labels = labels.unsqueeze(1)  # (B, 1)
 
-        print("time_series_attrs shape in process_data:", time_series_attrs.shape)
-        print("labels shape in process_data:", labels.shape)
-        raise Exception("Debugging stop")
-
         if self.training or summary_mode:
             # TODO: set split size coeff as parameter with size = coeff * batch_size
             half_size = time_series_attrs.shape[0] // 2  # Split equally between support and query sets
@@ -178,7 +174,12 @@ class TSPFNFineTuning(TSPFNSystem):
             ts: (B, S (=Support+Query), T), Tokens to feed to the encoder.
         Returns: (B, Query, E), Embeddings of the input sequences.
         """
-
+        print(f"ts shape: {ts.shape}")
+        print(f"y_batch_support shape: {y_batch_support.shape}")
+        if y_inference_support is None and ts_inference_support is None:
+            # Standard training/inference pass
+            print(f"y_inference_support shape: {y_inference_support.shape}")
+            print(f"ts_inference_support shape: {ts_inference_support.shape}")
         if self.training or y_inference_support is None:
             out_features = self.encoder(
                 ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
