@@ -373,31 +373,31 @@ class TSPFNPretraining(TSPFNSystem):
 
         return metrics
 
-    def _on_epoch_start(self, dataloader: DataLoader):
-        if dataloader is None:
-            return "No training dataloader found while setting up inference storage tensors"
-        else:
-            if callable(dataloader):
-                dataloader = dataloader()
+    # def _on_epoch_start(self, dataloader: DataLoader):
+    #     if dataloader is None:
+    #         return "No training dataloader found while setting up inference storage tensors"
+    #     else:
+    #         if callable(dataloader):
+    #             dataloader = dataloader()
 
-            ts_batch_list = [ts_batch for ts_batch in dataloader]
-            ts_tokens_support = torch.vstack(ts_batch_list)
+    #         ts_batch_list = [ts_batch for ts_batch in dataloader]
+    #         ts_tokens_support = torch.vstack(ts_batch_list)
 
-            # if ts_tokens_support.shape[0] > self.hparams["max_batches_stored_for_inference"]:
-            #     # Randomly subsample to limit RAM usage
-            #     perm = torch.randperm(ts_tokens_support.shape[0])
-            #     ts_tokens_support = ts_tokens_support[perm[: self.hparams["max_batches_stored_for_inference"]]]
+    #         # if ts_tokens_support.shape[0] > self.hparams["max_batches_stored_for_inference"]:
+    #         #     # Randomly subsample to limit RAM usage
+    #         #     perm = torch.randperm(ts_tokens_support.shape[0])
+    #         #     ts_tokens_support = ts_tokens_support[perm[: self.hparams["max_batches_stored_for_inference"]]]
 
-            assert ts_tokens_support.ndim == 3, "Input time-series tokens must have 3 dimensions (B, S, T+1)."
+    #         assert ts_tokens_support.ndim == 3, "Input time-series tokens must have 3 dimensions (B, S, T+1)."
 
-            # Store and remove label
-            self.y_train_for_inference = ts_tokens_support[:, :, -1].to(self.device)
-            ts_tokens_support = ts_tokens_support[:, :, :-1].to(self.device)
+    #         # Store and remove label
+    #         self.y_train_for_inference = ts_tokens_support[:, :, -1].to(self.device)
+    #         ts_tokens_support = ts_tokens_support[:, :, :-1].to(self.device)
 
-            if ts_tokens_support.ndim == 2:
-                ts_tokens_support = ts_tokens_support.unsqueeze(1)
+    #         if ts_tokens_support.ndim == 2:
+    #             ts_tokens_support = ts_tokens_support.unsqueeze(1)
 
-            self.ts_train_for_inference = ts_tokens_support
+    #         self.ts_train_for_inference = ts_tokens_support
 
     # def on_validation_epoch_start(self):
     #     self._on_epoch_start(self.trainer.val_dataloaders)
