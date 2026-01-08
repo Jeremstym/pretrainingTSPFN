@@ -176,7 +176,7 @@ class TSPFNFineTuning(TSPFNSystem):
         """
         print(f"ts shape: {ts.shape}")
         print(f"y_batch_support shape: {y_batch_support.shape}")
-        if y_inference_support is None and ts_inference_support is None:
+        if y_inference_support is not None and ts_inference_support is not None:
             # Standard training/inference pass
             print(f"y_inference_support shape: {y_inference_support.shape}")
             print(f"ts_inference_support shape: {ts_inference_support.shape}")
@@ -319,9 +319,8 @@ class TSPFNFineTuning(TSPFNSystem):
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
         else:
-            # y_inference_support = None
-            # ts_train = None
-            raise Exception("Debugging stop")
+            y_inference_support = None
+            ts_train = None
 
         prediction = self.encode(
             y_batch_support, ts, y_inference_support=y_inference_support, ts_inference_support=ts_train
