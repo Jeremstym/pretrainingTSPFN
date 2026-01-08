@@ -259,18 +259,18 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
         self.train_dataset = TUEVDataset(
-            root=os.path.join(self.data_roots, "train"),
-            files=os.listdir(os.path.join(self.data_roots, "train")),
+            root=os.path.join(self.data_roots, "processed_train"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_train")),
             sampling_rate=200,
         )
         self.val_dataset = TUEVDataset(
-            root=os.path.join(self.data_roots, "eval"),
-            files=os.listdir(os.path.join(self.data_roots, "eval")),
+            root=os.path.join(self.data_roots, "processed_eval"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_eval")),
             sampling_rate=200,
         )
         self.test_dataset = TUEVDataset(
-            root=os.path.join(self.data_roots, "test"),
-            files=os.listdir(os.path.join(self.data_roots, "test")),
+            root=os.path.join(self.data_roots, "processed_test"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_test")),
             sampling_rate=200,
         )
         return
