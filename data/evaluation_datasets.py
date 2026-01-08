@@ -24,7 +24,6 @@ import argparse
 import torch
 import torch.distributed as dist
 from torch import inf
-import h5py
 
 import pickle
 from scipy.signal import resample
