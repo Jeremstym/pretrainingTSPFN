@@ -303,8 +303,8 @@ class TSPFNFineTuning(TSPFNSystem):
         else:
             batch_dict, _, _ = batch
             time_series_input, target_labels = batch_dict["val"]  # (B, C, T), (B,)
-            time_series_support, support_labels = batch_dict["train"]  # (B, C, T), (B,)
             time_series_input = time_series_input.flatten(start_dim=1)  # (B, C*T)
+            time_series_support, support_labels = batch_dict["train"]  # (B, C, T), (B,)
             time_series_support = time_series_support.flatten(start_dim=1)  # (B, C*T)
 
         y_batch_support, y_batch_query, ts = self.process_data(
@@ -319,8 +319,9 @@ class TSPFNFineTuning(TSPFNSystem):
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
         else:
-            y_inference_support = None
-            ts_train = None
+            # y_inference_support = None
+            # ts_train = None
+            raise Exception("Debugging stop")
 
         prediction = self.encode(
             y_batch_support, ts, y_inference_support=y_inference_support, ts_inference_support=ts_train
