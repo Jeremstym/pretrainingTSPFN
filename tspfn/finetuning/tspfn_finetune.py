@@ -30,7 +30,7 @@ from tspfn.system import TSPFNSystem
 logger = logging.getLogger(__name__)
 
 
-class TSPFNPretraining(TSPFNSystem):
+class TSPFNFineTuning(TSPFNSystem):
     """Multi-modal transformer to learn a representation from cardiac imaging and patient records data."""
 
     def __init__(

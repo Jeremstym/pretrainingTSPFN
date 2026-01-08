@@ -12,7 +12,7 @@ defaults:
   - /task/model/encoder: tspfn-encoder
   - override /task/model: null
   - override /task/optim: adamw
-  - override /data: pretraining-csv
+  - override /data: finetuning-tuev # pretraining-csv
 
 
 
@@ -30,7 +30,7 @@ data:
   batch_size: 1
 
 task:
-  _target_: tspfn.pretraining.tspfn_module.TSPFNPretraining
+  _target_: tspfn.pretraining.tspfn_module.TSPFNFineTuning
   embed_dim: 192 # As in TabPFN_v2 paper
   split_finetuning: 0.5
   predict_losses:
