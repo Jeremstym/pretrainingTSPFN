@@ -1,18 +1,11 @@
 # @package _global_
 
 defaults:
-  # - /task/time_series_tokenizer/model: transformer
-  # - /task/data/preprocessors: tabpfn-ensemble-config
-  # - /task/model/contrastive_head: mlp
-  # - /task/model/fusion_module: dafted-fusion
-  # - /task/model/fusion_module: null
-  # - /task/model/ts_encoder: time-series-pfn-encoder
-  # - /task/model/prediction_head@task.model.ordinal_head: unimodal-logits
   - /task/model/prediction_head: pfn-prediction
   - /task/model/encoder: tspfn-encoder
   - override /task/model: null
   - override /task/optim: adamw
-  - override /data: pretraining-csv
+  - override /data: finetuning-tuev
 
 
 
@@ -27,10 +20,10 @@ output_dir: ${sys.getcwd:}
 updated_pfn_path: null
 
 data:
-  batch_size: 1
+  batch_size: 64
 
 task:
-  _target_: tspfn.pretraining.tspfn_module.TSPFNPretraining
+  _target_: tspfn.pretraining.tspfn_module.TSPFNFineTuning
   embed_dim: 192 # As in TabPFN_v2 paper
   split_finetuning: 0.5
   predict_losses:
