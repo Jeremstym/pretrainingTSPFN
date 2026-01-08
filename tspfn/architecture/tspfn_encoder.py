@@ -178,6 +178,8 @@ class TSPFNEncoder(nn.Module, ABC):
             raise ValueError(f"Unknown ts_pe option: {ts_pe}")
 
         # (N, Seq, num_features, d_model) + (N, Seq, 1, d_model) -> (N, Seq, num_features + 1, d_model)
+        print("emb_x shape:", emb_x.shape)
+        print("emb_y shape:", emb_y.shape)
         embedded_input = torch.cat((emb_x, emb_y.unsqueeze(2)), dim=2)
         assert not torch.isnan(
             embedded_input
@@ -189,6 +191,6 @@ class TSPFNEncoder(nn.Module, ABC):
             cache_trainset_representation=False,
         )
         out_query = output[:, single_eval_pos:, :]
-        query_encoder_out = out_query.squeeze(1)  # (B, Query, T+1, E)
+        query_encoder_out = out_query.squeeze(1)  # (B, Query, C*T, E)
 
         return query_encoder_out
