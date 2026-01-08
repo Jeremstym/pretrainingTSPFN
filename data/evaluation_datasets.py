@@ -70,7 +70,7 @@ class TUABDataset(torch.utils.data.Dataset):
 
 
 class TUEVDataset(torch.utils.data.Dataset):
-    def __init__(self, root, files, sampling_rate=10):
+    def __init__(self, root, files, sampling_rate=200):
         self.root = root
         self.files = files
         self.default_rate = 200
@@ -84,6 +84,7 @@ class TUEVDataset(torch.utils.data.Dataset):
         X = sample["signal"]
         if self.sampling_rate != self.default_rate:
             X = resample(X, 5 * self.sampling_rate, axis=-1)
+        # Truncate temporarly time series
         print("Original X shape:", X.shape)
         Y = int(sample["label"][0] - 1)
         X = torch.FloatTensor(X)
