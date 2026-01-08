@@ -39,7 +39,7 @@ class PFNPredictionHead(nn.Module):
             version="v2",
             download=False,
         )
-        self.n_classes = 10 # Default number of classes in TabPFN prediction head
+        self.n_classes = 6 # Default number of classes in TabPFN prediction head
         
         # TODO: for now, we only support the standard prediction head
         # if updated_pfn_path is not None:
