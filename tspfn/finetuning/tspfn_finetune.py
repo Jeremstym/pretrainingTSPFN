@@ -135,10 +135,6 @@ class TSPFNFineTuning(TSPFNSystem):
         # Tokenize the attributes
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        if labels.ndim == 1:
-            # Unsqueeze to prepare for concatenation with support
-            labels = labels.unsqueeze(1)  # (B, 1)
-
         if self.training or summary_mode:
             # TODO: set split size coeff as parameter with size = coeff * batch_size
             half_size = time_series_attrs.shape[0] // 2  # Split equally between support and query sets
@@ -152,6 +148,11 @@ class TSPFNFineTuning(TSPFNSystem):
         if time_series_attrs.ndim == 2:
             # Unsqueeze to comply with expected input shape for TabPFN encoder
             time_series_attrs = time_series_attrs.unsqueeze(0)  # (1, S+Q, C*T)
+
+        if y_batch_support.ndim == 1:
+            y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
+        if y_batch_query.ndim == 1:
+            y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
 
         return (
             y_batch_support,
