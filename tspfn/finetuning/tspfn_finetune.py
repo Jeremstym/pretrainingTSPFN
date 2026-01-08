@@ -139,6 +139,10 @@ class TSPFNFineTuning(TSPFNSystem):
             # Unsqueeze to prepare for concatenation with support
             labels = labels.unsqueeze(1)  # (B, 1)
 
+        print("time_series_attrs shape in process_data:", time_series_attrs.shape)
+        print("labels shape in process_data:", labels.shape)
+        raise Exception("Debugging stop")
+
         if self.training or summary_mode:
             # TODO: set split size coeff as parameter with size = coeff * batch_size
             half_size = time_series_attrs.shape[0] // 2  # Split equally between support and query sets
