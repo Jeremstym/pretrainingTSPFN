@@ -1,0 +1,380 @@
+import os
+import csv
+import logging
+from typing import Any, Callable, Dict, Literal, Optional, Sequence, Tuple, cast, Union
+
+import hydra
+from omegaconf import DictConfig
+import torch
+from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
+from torch.utils.data import DataLoader
+from torch import Tensor, nn
+import torch.nn.functional as F
+import pytorch_lightning as pl
+from torchmetrics.classification import (
+    BinaryAccuracy,
+    BinaryAUROC,
+    BinaryF1Score,
+    BinaryAveragePrecision,
+    MulticlassAccuracy,
+    MulticlassAUROC,
+    MulticlassAveragePrecision,
+    MulticlassF1Score,
+)
+from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError
+from torchmetrics import MetricCollection
+
+from data.utils.decorators import auto_move_data
+from tspfn.system import TSPFNSystem
+
+logger = logging.getLogger(__name__)
+
+
+class TSPFNPretraining(TSPFNSystem):
+    """Multi-modal transformer to learn a representation from cardiac imaging and patient records data."""
+
+    def __init__(
+        self,
+        embed_dim: int,
+        split_finetuning: float = 0.5,
+        predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
+        time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
+        *args,
+        **kwargs,
+    ):
+        """Initializes class instance.
+
+        Args:
+            embed_dim: Size of the tokens/embedding for all the modalities.
+            predict_losses: Supervised criteria to measure the error between the predicted attributes and their real
+                value.
+            *args: Positional arguments to pass to the parent's constructor.
+            **kwargs: Keyword arguments to pass to the parent's constructor.
+        """
+        # Ensure string tags are converted to their appropriate enum types
+        # And do it before call to the parent's `init` so that the converted values are saved in `hparams`
+
+        super().__init__(*args, **kwargs)
+
+        # Add shortcut to lr to work with Lightning's learning rate finder
+        self.hparams["lr"] = None
+
+        # Configure losses/metrics to compute at each train/val/test step
+        self.metrics = nn.ModuleDict()
+
+        # Supervised losses and metrics
+        self.predict_losses = {}
+        if predict_losses:
+            self.predict_losses = {
+                target_task: (
+                    hydra.utils.instantiate(target_loss) if isinstance(target_loss, DictConfig) else target_loss
+                )
+                for target_task, target_loss in predict_losses.items()
+            }
+
+        # Initialize transformer encoder and self-supervised + prediction heads
+        self.encoder, self.prediction_heads = self.configure_model()
+
+        self.time_series_positional_encoding = time_series_positional_encoding
+
+    @property
+    def example_input_array(self) -> Tensor:
+        """Redefine example input array based on the cardiac attributes provided to the model."""
+        # 2 is the size of the batch in the example
+        num_classes = 10  # Default number of classes in TabPFN prediction head
+        # labels = torch.cat([torch.randperm(5)]*2)
+        labels = torch.arange(10) % num_classes
+        labels = labels.repeat(16, 1)
+        time_series_attrs = torch.randn(16, 10, 499)  # (B, S, T)
+        ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(-1)], dim=2)  # (B, S, T+1)
+        # num_classes = len(torch.unique(labels))
+        return ts_example_input
+
+    def configure_model(
+        self,
+    ) -> Tuple[nn.Module, nn.Module, Optional[nn.ModuleDict]]:
+        """Build the model, which must return a transformer encoder, and self-supervised or prediction heads."""
+        # Build the transformer encoder
+        encoder = hydra.utils.instantiate(self.hparams["model"]["encoder"])
+
+        # Build the prediction heads following the architecture proposed in
+        # https://arxiv.org/pdf/2106.11959
+        prediction_heads = None
+        if self.predict_losses:
+            prediction_heads = nn.ModuleDict()
+            for target_task in self.predict_losses:
+                prediction_heads[target_task] = hydra.utils.instantiate(
+                    self.hparams["model"]["prediction_head"],
+                )
+
+        return encoder, prediction_heads
+
+    def configure_optimizers(self) -> OptimizerLRSchedulerConfig:
+        """Configure optimizer to ignore parameters that should remain frozen (e.g. tokenizers)."""
+        # Frozen tabpfn encoder
+        if self.hparams["model"].get("freeze_encoder", False):
+            for param in self.encoder.parameters():
+                param.requires_grad = False
+        return super().configure_optimizers()
+
+    @auto_move_data
+    def process_data(
+        self,
+        time_series_attrs: Tensor,
+        summary_mode: bool = False,
+    ) -> Tuple[Tensor, Tensor, Tensor]:
+        """Tokenizes the input time-series attributes, providing a mask of non-missing attributes.
+
+        Args:
+            time_series_attrs: (B, S, T), Batch of time-series datasets, where the last feature for each sample is the label.
+
+        Returns:
+            - (B, Support, 1), Support set labels.
+            - (B, Query, 1), Query set labels.
+            - (B, S (=Support+Query), T), Time series input for .
+        """
+
+        # Tokenize the attributes
+        assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
+
+        ts = time_series_attrs[:, :, :-1]  # (B, S, T)
+        # indices = torch.arange(ts.shape[0])
+        indices = torch.arange(1024)  # Fix for pretraining with sequence length S =1024
+        y = time_series_attrs[:, :, -1]  # (B, S, 1)
+
+        if self.training or summary_mode:
+            half_size = ts.shape[1] // 2
+            y_batch_support = y[:, :half_size]  # (B, Support, 1)
+            y_batch_query = y[:, half_size:]  # (B, Query, 1)
+        else:
+            y_batch_support = y.to(self.device)  # (B, S, 1)
+            y_batch_query = y.to(self.device)  # (B, S, 1)
+            ts = ts.to(self.device)  # (B, S, T)
+
+        if ts.ndim == 2:
+            ts = ts.unsqueeze(0)  # (1, S, T)
+
+        return (
+            y_batch_support,
+            y_batch_query,
+            ts,
+        )
+
+    @auto_move_data
+    def encode(
+        self,
+        y_batch_support: Tensor,
+        ts: Tensor,
+        y_inference_support: Optional[Tensor] = None,
+        ts_inference_support: Optional[Tensor] = None,
+    ) -> Tensor:
+        """Embeds input sequences using the encoder model, optionally selecting/pooling output ts for the embedding.
+
+        Args:
+            y_batch_support: (S, 1), Support set labels.
+            ts: (B, S (=Support+Query), T), Tokens to feed to the encoder.
+        Returns: (B, Query, E), Embeddings of the input sequences.
+        """
+
+        if self.training or y_inference_support is None:
+            out_features = self.encoder(
+                ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
+            )[:, :, -1, :]
+
+        elif y_inference_support is not None and ts_inference_support is not None:
+            # Use train set as context for predicting the query set on val/test inference
+            ts_full = torch.cat([ts_inference_support, ts], dim=1)
+            y_train = y_inference_support
+            out_features = self.encoder(
+                ts_full.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
+            )[:, :, -1, :]
+
+        else:
+            raise ValueError("During inference, both support ts and labels must be provided.")
+
+        return out_features  # (B, Query, E)
+
+    @auto_move_data
+    def forward(
+        self,
+        time_series_attrs: Tensor,
+        task: Literal["encode", "predict"] = "encode",
+    ) -> Tensor | Dict[str, Tensor]:
+        """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the prediction head.
+
+        Args:
+            time_series_attrs: (B, S, T): time series inputs.
+            task: Flag indicating which type of inference task to perform.
+
+        Returns:
+            if `task` == 'encode':
+                (B, Query, E), Batch of features extracted by the encoder.
+            if `task` == 'predict' (and the model includes prediction heads):
+                1 * (B, Query), Prediction for each target in `losses`.
+        """
+        if task != "encode" and not self.prediction_heads:
+            raise ValueError(
+                "You requested to perform a prediction task, but the model does not include any prediction heads."
+            )
+
+        if hasattr(self, "example_input_array") and torch.equal(
+            time_series_attrs, self.example_input_array.to(self.device)
+        ):
+            summary_mode = True
+        else:
+            summary_mode = False
+
+        y_batch_support, y_batch_query, ts = self.process_data(
+            time_series_attrs,
+            summary_mode=summary_mode,
+        )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+
+        out_features = self.encode(y_batch_support, ts)  # (B, S, E) -> (B, E)
+
+        # Early return if requested task requires no prediction heads
+        if task == "encode":
+            return out_features
+
+        elif task == "predict":
+            assert (
+                self.prediction_heads is not None
+            ), "You requested to perform a prediction task, but the model does not include any prediction heads."
+
+            # Forward pass through each target's prediction head
+            predictions = {
+                target_task: prediction_head(out_features)
+                for target_task, prediction_head in self.prediction_heads.items()
+            }
+
+            # Squeeze out the singleton dimension from the predictions' features (only relevant for scalar predictions)
+            predictions = {target_task: prediction.squeeze(dim=1) for target_task, prediction in predictions.items()}
+            return predictions
+
+        else:
+            raise ValueError(f"Unknown task '{task}' requested for forward pass.")
+
+    @auto_move_data
+    def get_latent_vectors(
+        self,
+        batch: Tensor,
+        batch_idx: int,
+    ) -> Tensor:
+        """Extracts the latent vectors from the encoder for the given batch."""
+        time_series_input = batch  # (B, S, T)
+
+        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (B, S, E), (B, S)
+        return self.encode(
+            y_batch_support,
+            ts,
+        )  # (B, S, E) -> (B, E)
+
+    def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
+        # Shared step for training, validation and testing
+        metrics = {}
+        losses = []
+        if self.predict_losses is not None:
+            metrics.update(self._prediction_shared_step(batch, num_classes=10))
+            losses.append(metrics["s_loss"])
+
+        # Compute the sum of the (weighted) losses
+        metrics["loss"] = sum(losses)
+
+        return metrics
+
+    def _prediction_shared_step(
+        self,
+        batch: Union[Tensor, Tuple[Tensor, ...]],
+        num_classes: int,
+    ) -> Dict[str, Tensor]:
+        # Forward pass through the encoder without gradient computation to fine-tune only the prediction heads
+        assert (
+            self.prediction_heads is not None
+        ), "You requested to perform a prediction task, but the model does not include any prediction heads."
+        if self.training:
+            time_series_input = batch  # (B, S, T)
+            time_series_for_inference = None
+        else:
+            batch_dict, _, _ = batch
+            time_series_input = batch_dict["val"]  # (B, S, T)
+            time_series_for_inference = batch_dict["train"]  # (B, S, T)
+
+        y_batch_support, y_batch_query, ts = self.process_data(
+            time_series_attrs=time_series_input,
+        )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+
+        if time_series_for_inference is not None:
+            # Store inference data for val/test steps
+            y_train_support, _, ts_train = self.process_data(
+                time_series_attrs=time_series_for_inference,
+            )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+            y_inference_support = y_train_support
+        else:
+            ts_train = None
+            y_inference_support = None
+
+        prediction = self.encode(
+            y_batch_support, ts, y_inference_support=y_inference_support, ts_inference_support=ts_train
+        )
+        predictions = {}
+        for target_task, prediction_head in self.prediction_heads.items():
+            pred = prediction_head(prediction)
+            predictions[target_task] = pred
+
+        for target_task in self.predict_losses:
+            self.metrics[target_task] = MetricCollection(
+                [
+                    MulticlassAccuracy(num_classes=num_classes, average="micro"),
+                    MulticlassAUROC(num_classes=num_classes, average="macro"),
+                    MulticlassAveragePrecision(num_classes=num_classes, average="macro"),
+                    MulticlassF1Score(num_classes=num_classes, average="macro"),
+                ]
+            ).to(self.device)
+
+        # Compute the loss/metrics for each target label, ignoring items for which targets are missing
+        losses, metrics = {}, {}
+
+        target_batch = y_batch_query
+
+        for target_task, target_loss in self.predict_losses.items():
+            for i, (target, y_hat) in enumerate(
+                zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
+            ):
+                target = target.long()
+
+                losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}/dataset{i}"] = (
+                    target_loss(
+                        y_hat,
+                        target,
+                    )
+                )
+
+                for metric_tag, metric in self.metrics[target_task].items():
+                    metric.update(y_hat, target)
+
+        losses["s_loss"] = torch.stack(list(losses.values())).mean()
+        metrics.update(losses)
+
+        return metrics
+
+    def on_test_epoch_end(self):
+        all_metrics = {}
+        for target_task in self.predict_losses:
+            for metric_tag, metric in self.metrics[target_task].items():
+                metrics_value = metric.compute()
+                self.log(f"test_{metric_tag}/{target_task}", metrics_value)
+                all_metrics[f"{metric_tag}/{target_task}"] = (
+                    metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
+                )
+                metric.reset()
+        output_dir = os.getcwd()
+        csv_file = "test_metrics.csv"
+        with open(csv_file, mode="a", newline="") as f:
+            writer = csv.writer(f)
+            # Write headers
+            writer.writerow(["metric", "value"])
+            # Write metric data
+            for key, value in all_metrics.items():
+                writer.writerow([key, value])
+
+        # Print metrics to terminal
+        logger.info(f"Test metrics: {all_metrics}")
