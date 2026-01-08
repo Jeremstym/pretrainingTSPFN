@@ -22,7 +22,11 @@ chOrder_standard = ['EEG FP1-REF', 'EEG FP2-REF', 'EEG F3-REF', 'EEG F4-REF', 'E
 
 
 def BuildEvents(signals, times, EventData, keep_channels):
-    [numEvents, z] = EventData.shape  # numEvents is equal to # of rows of the .rec file
+    # [numEvents, z] = EventData.shape  # numEvents is equal to # of rows of the .rec file
+    # Filter EventData to only include rows where the channel is in keep_channels
+    mask = np.isin(EventData[:, 0], keep_channels)
+    filtered_EventData = EventData[mask]
+    numEvents = len(filtered_EventData)
     fs = 200.0
     # [numChan, numPoints] = signals.shape
     # for i in range(numChan):  # standardize each channel
