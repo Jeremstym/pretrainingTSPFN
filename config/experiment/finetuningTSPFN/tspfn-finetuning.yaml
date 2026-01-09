@@ -20,7 +20,7 @@ output_dir: ${sys.getcwd:}
 updated_pfn_path: null
 
 data:
-  batch_size: 32
+  batch_size: 64
 
 task:
   _target_: tspfn.finetuning.tspfn_finetune.TSPFNFineTuning
