@@ -12,6 +12,7 @@ import hydra
 import numpy as np
 import torch
 from tspfn.pretraining.tspfn_module import TSPFNPretraining
+from tspfn.finetuning.tspfn_finetune import TSPFNFineTuning
 from data.data_module import TSPFNDataModule
 from data.utils.config import register_omegaconf_resolvers, instantiate_config_node_leaves
 from data.utils.saving import resolve_model_checkpoint_path
@@ -135,18 +136,26 @@ class TSPFNRunner(ABC):
         trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
 
         # Instantiate system (which will handle instantiating the model and optimizer).
-        model: TSPFNPretraining = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
+        model = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
         datamodule.setup()
-        if cfg.train:
-            trainer.fit(model, datamodule=datamodule)
-            # Copy best model checkpoint to a predictable path + online tracker (if used)
-            # Ensure we use the best weights (and not the latest ones) by loading back the best model
-            model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
-            torch.save(model.encoder.state_dict(), cfg.output_dir + "/tspfn_encoder_weights.pt")
-            cfg.updated_pfn_path = cfg.output_dir + "/tspfn_encoder_weights.pt"
-            print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
-        if cfg.test:
-            trainer.test(model, datamodule=datamodule)
+        if isinstance(model, TSPFNPretraining):
+            if cfg.train:
+                trainer.fit(model, datamodule=datamodule)
+                # Copy best model checkpoint to a predictable path + online tracker (if used)
+                # Ensure we use the best weights (and not the latest ones) by loading back the best model
+                model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
+                torch.save(model.encoder.state_dict(), cfg.output_dir + "/tspfn_encoder_weights.pt")
+                cfg.updated_pfn_path = cfg.output_dir + "/tspfn_encoder_weights.pt"
+                print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
+            if cfg.test:
+                trainer.test(model, datamodule=datamodule)
+        elif isinstance(model, TSPFNFineTuning):
+            if cfg.train:
+                trainer.fit(model, datamodule=datamodule)
+                best_model_path = trainer.checkpoint_callback.best_model_path
+                print(f"Best model checkpoint saved at {best_model_path}")
+            if cfg.test:
+                trainer.test(model, datamodule=datamodule)
 
     @staticmethod
     def _check_cfg(cfg: DictConfig) -> DictConfig:
