@@ -55,7 +55,7 @@ def BuildEvents(signals, times, EventData, keep_channels):
     for i in range(numEvents):  # for each event
         chan = int(EventData[i, 0])  # chan is channel
         if chan not in keep_channels:
-            continue
+            raise Exception("Channel not in keep_channels")
         # chan = get_channel(chan, keep_channels)
         start = np.where((times) >= EventData[i, 1])[0][0]
         end = np.where((times) >= EventData[i, 2])[0][0]
