@@ -81,11 +81,11 @@ class TSPFNFineTuning(TSPFNSystem):
         # Use ModuleDict so metrics move to GPU automatically
         metrics_template = MetricCollection(
             [
-                MulticlassAccuracy(num_classes=num_classes, average="micro"),
-                MulticlassAUROC(num_classes=num_classes, average="macro"),
-                MulticlassAveragePrecision(num_classes=num_classes, average="macro"),
-                MulticlassF1Score(num_classes=num_classes, average="weighted"),
-                MulticlassCohenKappa(num_classes=num_classes),
+                MulticlassAccuracy(num_classes=6, average="micro"),
+                MulticlassAUROC(num_classes=6, average="macro"),
+                MulticlassAveragePrecision(num_classes=6, average="macro"),
+                MulticlassF1Score(num_classes=6, average="weighted"),
+                MulticlassCohenKappa(num_classes=6),
             ]
         )
         # Store them in a dict of ModuleDicts
