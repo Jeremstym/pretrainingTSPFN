@@ -173,7 +173,7 @@ class TSPFNFineTuning(TSPFNSystem):
             time_series_attrs = time_series_attrs.to(self.device)  # (Support+Query, C, T)
 
         time_series_attrs = self.time_series_convolution(time_series_attrs)
-        time_series_attrs = time_series_attrs.flatten(start_dim=1)  # (B, C*T)
+        time_series_attrs = time_series_attrs.flatten(start_dim=1)  # (Support+Query, C*T)
 
         if time_series_attrs.ndim == 2:
             # Unsqueeze to comply with expected input shape for TabPFN encoder
