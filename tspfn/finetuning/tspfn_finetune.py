@@ -349,6 +349,7 @@ class TSPFNFineTuning(TSPFNSystem):
         losses, metrics = {}, {}
 
         target_batch = y_batch_query
+        print(f"target batch unique shapes: {target_batch.shape}")
 
         if self.trainer.training:
             stage = "train_metrics"
@@ -361,6 +362,7 @@ class TSPFNFineTuning(TSPFNSystem):
             target = target_batch.squeeze(dim=-1)  # (B=Query,)
             # Convert target to long if classification with >2 classes, float otherwise
             target = target.long() if torch.unique(target).numel() > 2 else target.float()
+            print(f"y_hat shape: {y_hat.shape}, target shape: {target.shape}")
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                 y_hat,
                 target,
