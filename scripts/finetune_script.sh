@@ -11,3 +11,4 @@ uname -a
 nvidia-smi
 
 poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-zeroshot/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 updated_pfn_path=/home/stympopper/didacticJerem/ckpts/tspfn_encoder_weights_v2.pt train=False
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TRASH-TEST/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 updated_pfn_path=/home/stympopper/didacticJerem/ckpts/tspfn_encoder_weights_v2.pt train=False
