@@ -274,7 +274,7 @@ class TSPFNFineTuning(TSPFNSystem):
         metrics = {}
         losses = []
         if self.predict_losses is not None:
-            metrics.update(self._prediction_shared_step(batch, num_classes=10))
+            metrics.update(self._prediction_shared_step(batch, num_classes=6))  # Assuming 6 classes for TUEV dataset
             losses.append(metrics["s_loss"])
 
         # Compute the sum of the (weighted) losses
