@@ -248,7 +248,7 @@ class TSPFNFineTuning(TSPFNSystem):
             )
 
         if hasattr(self, "example_input_array") and torch.equal(
-            time_series_attrs, self.example_input_array[0]
+            time_series_attrs, self.example_input_array[0].to(time_series_attrs.device)
         ):
             summary_mode = True
         else:
