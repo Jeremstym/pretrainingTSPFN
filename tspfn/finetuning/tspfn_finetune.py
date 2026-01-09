@@ -344,10 +344,7 @@ class TSPFNFineTuning(TSPFNSystem):
             for i, (target, y_hat) in enumerate(
                 zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
             ):
-                print("y_hat shape:", y_hat.shape)
-                print("target shape:", target.shape)
                 target = target.long()
-                print("target:", target)
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}/dataset{i}"] = (
                     target_loss(
                         y_hat,
