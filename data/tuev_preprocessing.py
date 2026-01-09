@@ -22,16 +22,11 @@ chOrder_standard = ['EEG FP1-REF', 'EEG FP2-REF', 'EEG F3-REF', 'EEG F4-REF', 'E
 
 
 def BuildEvents(signals, times, EventData, keep_channels):
-    # [numEvents, z] = EventData.shape  # numEvents is equal to # of rows of the .rec file
     # Filter EventData to only include rows where the channel is in keep_channels
     mask = np.isin(EventData[:, 0], keep_channels)
     filtered_EventData = EventData[mask]
     numEvents = len(filtered_EventData)
     fs = 200.0
-    # [numChan, numPoints] = signals.shape
-    # for i in range(numChan):  # standardize each channel
-    #     if np.std(signals[i, :]) > 0:
-    #         signals[i, :] = (signals[i, :] - np.mean(signals[i, :])) / np.std(signals[i, :])
     features = np.zeros([numEvents, len(keep_channels), int(fs) * 5])
     # # Replace the triple concatenation with padding
     # # Pad only the time axis (axis 1) with 2 seconds worth of samples
@@ -42,29 +37,21 @@ def BuildEvents(signals, times, EventData, keep_channels):
     # features[i, :] = signals_padded[:, pad_width + start - 2*int(fs) : pad_width + end + 2*int(fs)]
     offending_channel = np.zeros([numEvents, 1])  # channel that had the detected thing
     labels = np.zeros([numEvents, 1])
-    def get_channel(chan_idx, keep_channels):
-        if chan_idx not in keep_channels:
-            raise ValueError("Channel index not in keep channels")
-        if chan_idx < 8:
-            return chan_idx
-        else:
-            return chan_idx - 6
 
     offset = signals.shape[1]
     signals = np.concatenate([signals, signals, signals], axis=1)
     for i in range(numEvents):  # for each event
-        chan = int(EventData[i, 0])  # chan is channel
+        chan = int(filtered_EventData[i, 0])  # chan is channel
         if chan not in keep_channels:
             raise Exception("Channel not in keep_channels")
-        # chan = get_channel(chan, keep_channels)
-        start = np.where((times) >= EventData[i, 1])[0][0]
-        end = np.where((times) >= EventData[i, 2])[0][0]
+        start = np.where((times) >= filtered_EventData[i, 1])[0][0]
+        end = np.where((times) >= filtered_EventData[i, 2])[0][0]
         # print (offset + start - 2 * int(fs), offset + end + 2 * int(fs), signals.shape)
         features[i, :] = signals[
             :, offset + start - 2 * int(fs) : offset + end + 2 * int(fs)
         ]
         offending_channel[i, :] = int(chan)
-        labels[i, :] = int(EventData[i, 3])
+        labels[i, :] = int(filtered_EventData[i, 3])
     return [features, offending_channel, labels]
 
 
