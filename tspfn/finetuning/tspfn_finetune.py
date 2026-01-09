@@ -20,6 +20,7 @@ from torchmetrics.classification import (
     MulticlassAUROC,
     MulticlassAveragePrecision,
     MulticlassF1Score,
+    MulticlassCohenKappa,
 )
 from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError
 from torchmetrics import MetricCollection
@@ -76,6 +77,19 @@ class TSPFNFineTuning(TSPFNSystem):
         self.encoder, self.prediction_heads = self.configure_model()
 
         self.time_series_positional_encoding = time_series_positional_encoding
+
+        # Use ModuleDict so metrics move to GPU automatically
+        self.metrics = nn.ModuleDict()
+        for target_task in self.predict_losses:
+            self.metrics[target_task] = MetricCollection(
+                [
+                    MulticlassAccuracy(num_classes=num_classes, average="micro"),
+                    MulticlassAUROC(num_classes=num_classes, average="macro"),
+                    MulticlassAveragePrecision(num_classes=num_classes, average="macro"),
+                    MulticlassF1Score(num_classes=num_classes, average="weighted"),
+                    MulticlassCohenKappa(num_classes=num_classes),
+                ]
+            )
 
     @property
     def example_input_array(self) -> Tensor:
@@ -325,60 +339,67 @@ class TSPFNFineTuning(TSPFNSystem):
             pred = prediction_head(prediction)
             predictions[target_task] = pred
 
-        for target_task in self.predict_losses:
-            self.metrics[target_task] = MetricCollection(
-                [
-                    MulticlassAccuracy(num_classes=num_classes, average="micro"),
-                    MulticlassAUROC(num_classes=num_classes, average="macro"),
-                    MulticlassAveragePrecision(num_classes=num_classes, average="macro"),
-                    MulticlassF1Score(num_classes=num_classes, average="macro"),
-                ]
-            ).to(self.device)
-
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
 
         target_batch = y_batch_query
 
         for target_task, target_loss in self.predict_losses.items():
-            for i, (target, y_hat) in enumerate(
-                zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
-            ):
-                target = target.long()
-                losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}/dataset{i}"] = (
-                    target_loss(
-                        y_hat,
-                        target,
-                    )
-                )
+            y_hat = predictions[target_task]  # (B=Query, num_classes)
+            target = target_batch.squeeze(dim=-1)  # (B=Query,)
+            # Convert target to long if classification with >2 classes, float otherwise
+            target = target.long() if torch.unique(target).numel() > 2 else target.float()
+            losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
+                y_hat,
+                target,
+            )
 
-                for metric_tag, metric in self.metrics[target_task].items():
-                    metric.update(y_hat, target)
+        # Update metrics automatically
+        self.metrics[target_task].update(y_hat, target)
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
         metrics.update(losses)
 
         return metrics
 
-    def on_test_epoch_end(self):
-        all_metrics = {}
-        for target_task in self.predict_losses:
-            for metric_tag, metric in self.metrics[target_task].items():
-                metrics_value = metric.compute()
-                self.log(f"test_{metric_tag}/{target_task}", metrics_value)
-                all_metrics[f"{metric_tag}/{target_task}"] = (
-                    metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
-                )
-                metric.reset()
-        output_dir = os.getcwd()
-        csv_file = "test_metrics.csv"
-        with open(csv_file, mode="a", newline="") as f:
-            writer = csv.writer(f)
-            # Write headers
-            writer.writerow(["metric", "value"])
-            # Write metric data
-            for key, value in all_metrics.items():
-                writer.writerow([key, value])
+    # def on_test_epoch_end(self):
+    #     all_metrics = {}
+    #     for target_task in self.predict_losses:
+    #         for metric_tag, metric in self.metrics[target_task].items():
+    #             metrics_value = metric.compute()
+    #             self.log(f"test_{metric_tag}/{target_task}", metrics_value)
+    #             all_metrics[f"{metric_tag}/{target_task}"] = (
+    #                 metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
+    #             )
+    #             metric.reset()
+    #     output_dir = os.getcwd()
+    #     csv_file = "test_metrics.csv"
+    #     with open(csv_file, mode="a", newline="") as f:
+    #         writer = csv.writer(f)
+    #         # Write headers
+    #         writer.writerow(["metric", "value"])
+    #         # Write metric data
+    #         for key, value in all_metrics.items():
+    #             writer.writerow([key, value])
 
-        # Print metrics to terminal
-        logger.info(f"Test metrics: {all_metrics}")
+    #     # Print metrics to terminal
+    #     logger.info(f"Test metrics: {all_metrics}")
+
+    def on_test_epoch_end(self):
+        output_data = []
+        
+        for target_task, collection in self.metrics.items():
+            # compute() returns a dict of results for this task
+            results = collection.compute() 
+            
+            for metric_name, value in results.items():
+                tag = f"{metric_name}/{target_task}"
+                self.log(f"test_{tag}", value) # Log to logger
+                output_data.append({"metric": tag, "value": value.item()})
+            
+            # Reset is handled by Lightning if logged, but manual reset is safe here
+            collection.reset()
+
+        # Save CSV once at the very end
+        df = pd.DataFrame(output_data)
+        df.to_csv("test_metrics.csv", index=False)
