@@ -91,9 +91,9 @@ class TSPFNFineTuning(TSPFNSystem):
         # Store them in a dict of ModuleDicts
         self.metrics = nn.ModuleDict(
             {
-                "train": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
-                "val": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
-                "test": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
+                "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
+                "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
+                "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
             }
         )
 
@@ -349,14 +349,13 @@ class TSPFNFineTuning(TSPFNSystem):
         losses, metrics = {}, {}
 
         target_batch = y_batch_query
-        
-        if self.trainer.training:
-            stage = "train"
-        elif self.trainer.validating:
-            stage = "val"
-        else:
-            stage = "test"
 
+        if self.trainer.training:
+            stage = "train_metrics"
+        elif self.trainer.validating:
+            stage = "val_metrics"
+        else:
+            stage = "test_metrics"
         for target_task, target_loss in self.predict_losses.items():
             y_hat = predictions[target_task]  # (B=Query, num_classes)
             target = target_batch.squeeze(dim=-1)  # (B=Query,)
@@ -401,7 +400,7 @@ class TSPFNFineTuning(TSPFNSystem):
     def on_test_epoch_end(self):
         output_data = []
 
-        for target_task, collection in self.metrics["test"].items():
+        for target_task, collection in self.metrics["test_metrics"].items():
             # compute() returns a dict of results for this task
             results = collection.compute()
 
