@@ -376,29 +376,6 @@ class TSPFNFineTuning(TSPFNSystem):
 
         return metrics
 
-    # def on_test_epoch_end(self):
-    #     all_metrics = {}
-    #     for target_task in self.predict_losses:
-    #         for metric_tag, metric in self.metrics[target_task].items():
-    #             metrics_value = metric.compute()
-    #             self.log(f"test_{metric_tag}/{target_task}", metrics_value)
-    #             all_metrics[f"{metric_tag}/{target_task}"] = (
-    #                 metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
-    #             )
-    #             metric.reset()
-    #     output_dir = os.getcwd()
-    #     csv_file = "test_metrics.csv"
-    #     with open(csv_file, mode="a", newline="") as f:
-    #         writer = csv.writer(f)
-    #         # Write headers
-    #         writer.writerow(["metric", "value"])
-    #         # Write metric data
-    #         for key, value in all_metrics.items():
-    #             writer.writerow([key, value])
-
-    #     # Print metrics to terminal
-    #     logger.info(f"Test metrics: {all_metrics}")
-
     def on_test_epoch_end(self):
         output_data = []
 
