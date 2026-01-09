@@ -79,17 +79,23 @@ class TSPFNFineTuning(TSPFNSystem):
         self.time_series_positional_encoding = time_series_positional_encoding
 
         # Use ModuleDict so metrics move to GPU automatically
-        self.metrics = nn.ModuleDict()
-        for target_task in self.predict_losses:
-            self.metrics[target_task] = MetricCollection(
-                [
-                    MulticlassAccuracy(num_classes=num_classes, average="micro"),
-                    MulticlassAUROC(num_classes=num_classes, average="macro"),
-                    MulticlassAveragePrecision(num_classes=num_classes, average="macro"),
-                    MulticlassF1Score(num_classes=num_classes, average="weighted"),
-                    MulticlassCohenKappa(num_classes=num_classes),
-                ]
-            )
+        metrics_template = MetricCollection(
+            [
+                MulticlassAccuracy(num_classes=num_classes, average="micro"),
+                MulticlassAUROC(num_classes=num_classes, average="macro"),
+                MulticlassAveragePrecision(num_classes=num_classes, average="macro"),
+                MulticlassF1Score(num_classes=num_classes, average="weighted"),
+                MulticlassCohenKappa(num_classes=num_classes),
+            ]
+        )
+        # Store them in a dict of ModuleDicts
+        self.metrics = nn.ModuleDict(
+            {
+                "train": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
+                "val": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
+                "test": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
+            }
+        )
 
     @property
     def example_input_array(self) -> Tensor:
@@ -343,6 +349,13 @@ class TSPFNFineTuning(TSPFNSystem):
         losses, metrics = {}, {}
 
         target_batch = y_batch_query
+        
+        if self.trainer.training:
+            stage = "train"
+        elif self.trainer.validating:
+            stage = "val"
+        else:
+            stage = "test"
 
         for target_task, target_loss in self.predict_losses.items():
             y_hat = predictions[target_task]  # (B=Query, num_classes)
@@ -354,8 +367,8 @@ class TSPFNFineTuning(TSPFNSystem):
                 target,
             )
 
-        # Metrics are automatically updated inside the Metric objects
-        self.metrics[target_task].update(y_hat, target)
+            # Metrics are automatically updated inside the Metric objects
+            self.metrics[stage][target_task].update(y_hat, target)
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
         metrics.update(losses)
@@ -387,16 +400,16 @@ class TSPFNFineTuning(TSPFNSystem):
 
     def on_test_epoch_end(self):
         output_data = []
-        
-        for target_task, collection in self.metrics.items():
+
+        for target_task, collection in self.metrics["test"].items():
             # compute() returns a dict of results for this task
-            results = collection.compute() 
-            
+            results = collection.compute()
+
             for metric_name, value in results.items():
                 tag = f"{metric_name}/{target_task}"
-                self.log(f"test_{tag}", value) # Log to logger
+                self.log(f"test_{tag}", value)  # Log to logger
                 output_data.append({"metric": tag, "value": value.item()})
-            
+
             # Reset is handled by Lightning if logged, but manual reset is safe here
             collection.reset()
 
