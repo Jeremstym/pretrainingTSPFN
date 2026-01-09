@@ -354,7 +354,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 target,
             )
 
-        # Update metrics automatically
+        # Metrics are automatically updated inside the Metric objects
         self.metrics[target_task].update(y_hat, target)
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
