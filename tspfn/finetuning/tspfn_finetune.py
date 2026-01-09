@@ -368,7 +368,7 @@ class TSPFNFineTuning(TSPFNSystem):
             y_hat = predictions[target_task].squeeze(dim=0)  # (B=Query, num_classes)
             target = target_batch.squeeze(dim=0)  # (B=Query,)
             # Convert target to long if classification with >2 classes, float otherwise
-            target = target.long() if torch.unique(target).numel() > 2 else target.float()
+            target = target.long() #TODO: adapt for binary classification
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                 y_hat,
                 target,
