@@ -83,9 +83,9 @@ class TSPFNFineTuning(TSPFNSystem):
 
         self.time_series_positional_encoding = time_series_positional_encoding
         self.time_series_convolution = nn.Sequential(
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=10, stride=10, groups=16),
+            nn.Conv1d(in_channels=23, out_channels=23, kernel_size=10, stride=10, groups=23),
             nn.ReLU(),
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=5, groups=16),
+            nn.Conv1d(in_channels=23, out_channels=23, kernel_size=5, stride=5, groups=23),
         )
 
         # Use ModuleDict so metrics move to GPU automatically
