@@ -26,6 +26,29 @@ from lightning.pytorch.utilities.combined_loader import CombinedLoader
 from data.evaluation_datasets import TUABDataset, TUEVDataset
 
 
+def stratified_batch_collate(batch):
+    xs, ys = zip(*batch)
+    xs = torch.stack(xs)
+    ys = torch.tensor(ys)
+
+    unique_labels = torch.unique(ys)
+    first_half_idxs = []
+    second_half_idxs = []
+
+    for label in unique_labels:
+        label_indices = (ys == label).nonzero(as_tuple=True)[0]
+
+        # Split these specific label indices in half
+        mid = len(label_indices) // 2
+        first_half_idxs.append(label_indices[:mid])
+        second_half_idxs.append(label_indices[mid:])
+
+    # Combine indices for both halves
+    new_order = torch.cat(first_half_idxs + second_half_idxs)
+
+    return xs[new_order], ys[new_order]
+
+
 class TSPFNDataset(Dataset):
     """Minimal dataset for TSP-style tensors.
 
@@ -203,13 +226,14 @@ class TSPFNDataModule(pl.LightningDataModule):
     #         return True
     #     return False
 
-    def _dataloader(self, dataset: Dataset, shuffle: bool, batch_size: int) -> DataLoader:
+    def _dataloader(self, dataset: Dataset, shuffle: bool, batch_size: int, collate_fn=None) -> DataLoader:
         return DataLoader(
             dataset,
             batch_size=batch_size,
             shuffle=shuffle,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
+            collate_fn=collate_fn,
         )
 
     def train_dataloader(self):
@@ -273,5 +297,41 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             sampling_rate=200,
         )
         return
+
+    def train_dataloader(self):
+        return self._dataloader(
+            self.train_dataset, shuffle=True, batch_size=self.batch_size, collate_fn=stratified_batch_collate
+        )
+
+    def val_dataloader(self):
+        val_loader = self._dataloader(
+            self.val_dataset,
+            shuffle=False,
+            batch_size=self.batch_size,
+            collate_fn=stratified_batch_collate
+        )
+        train_loader = self._dataloader(
+            self.train_dataset,
+            shuffle=False,
+            batch_size=self.batch_size,
+            collate_fn=stratified_batch_collate
+        )
+        return CombinedLoader({"val": val_loader, "train": train_loader}, "max_size_cycle")
+
+    def test_dataloader(self):
+        test_loader = self._dataloader(
+            self.test_dataset,
+            shuffle=False,
+            batch_size=self.batch_size,
+            collate_fn=stratified_batch_collate
+        )
+        train_loader = self._dataloader(
+            self.train_dataset,
+            shuffle=False,
+            batch_size=self.batch_size,
+            collate_fn=stratified_batch_collate
+        )
+        return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
+
 
 __all__ = ["TSPFNDataset", "TSPFNDataModule", "FineTuneDataModule"]
