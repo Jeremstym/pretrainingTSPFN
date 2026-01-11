@@ -88,16 +88,24 @@ def BuildEvents(signals, times, EventData, keep_channels):
 
     offset = signals.shape[1]
     signals = np.concatenate([signals, signals, signals], axis=1)
+    # for i in range(numEvents):  # for each event
+    #     chan = int(filtered_EventData[i, 0])  # chan is channel
+    #     if chan not in keep_channels:
+    #         raise Exception("Channel not in keep_channels")
+    #     start = np.where((times) >= filtered_EventData[i, 1])[0][0]
+    #     end = np.where((times) >= filtered_EventData[i, 2])[0][0]
+    #     # print (offset + start - 2 * int(fs), offset + end + 2 * int(fs), signals.shape)
+    #     features[i, :] = signals[:, offset + start - 2 * int(fs) : offset + end + 2 * int(fs)]
+    #     offending_channel[i, :] = int(chan)
+    #     labels[i, :] = int(filtered_EventData[i, 3])
     for i in range(numEvents):  # for each event
-        chan = int(filtered_EventData[i, 0])  # chan is channel
-        # if chan not in keep_channels:
-        #     raise Exception("Channel not in keep_channels")
-        start = np.where((times) >= filtered_EventData[i, 1])[0][0]
-        end = np.where((times) >= filtered_EventData[i, 2])[0][0]
+        chan = int(EventData[i, 0])  # chan is channel
+        start = np.where((times) >= EventData[i, 1])[0][0]
+        end = np.where((times) >= EventData[i, 2])[0][0]
         # print (offset + start - 2 * int(fs), offset + end + 2 * int(fs), signals.shape)
         features[i, :] = signals[:, offset + start - 2 * int(fs) : offset + end + 2 * int(fs)]
         offending_channel[i, :] = int(chan)
-        labels[i, :] = int(filtered_EventData[i, 3])
+        labels[i, :] = int(EventData[i, 3])
     return [features, offending_channel, labels]
 
 
