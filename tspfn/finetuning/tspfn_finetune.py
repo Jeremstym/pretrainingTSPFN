@@ -166,7 +166,6 @@ class TSPFNFineTuning(TSPFNSystem):
         # Tokenize the attributes
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        print(f"labels shape: {labels.shape}, time_series_attrs shape: {time_series_attrs.shape}")
         if self.training or summary_mode:
             # TODO: set split size coeff as parameter with size = coeff * batch_size
             half_size = time_series_attrs.shape[0] // 2  # Split equally between support and query sets
@@ -189,7 +188,6 @@ class TSPFNFineTuning(TSPFNSystem):
         if y_batch_query.ndim == 1:
             y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
 
-        print(f"y_batch_support shape: {y_batch_support.shape}, y_batch_query shape: {y_batch_query.shape}, time_series_attrs shape: {time_series_attrs.shape}")
 
         return (
             y_batch_support,
