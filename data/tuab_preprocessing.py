@@ -46,53 +46,93 @@ def split_and_dump(params):
     fetch_folder, sub, dump_folder, label = params
     for file in os.listdir(fetch_folder):
         if sub in file:
-            # --- ADDED: RESUME LOGIC ---
-            # Check if at least the first segment of this file exists to skip processing
-            first_chunk_name = file.split(".")[0] + "_0.pkl"
-            if os.path.exists(os.path.join(dump_folder, first_chunk_name)):
-                # Optional: print("skipping", file) 
-                continue
-            # ---------------------------
-
             print("process", file)
             file_path = os.path.join(fetch_folder, file)
-            
+            raw = mne.io.read_raw_edf(file_path, preload=True)
             try:
-                raw = mne.io.read_raw_edf(file_path, preload=True, verbose=False)
                 if drop_channels is not None:
-                    useless_chs = [ch for ch in drop_channels if ch in raw.ch_names]
+                    useless_chs = []
+                    for ch in drop_channels:
+                        if ch in raw.ch_names:
+                            useless_chs.append(ch)
                     raw.drop_channels(useless_chs)
-                
                 if chOrder_standard is not None and len(chOrder_standard) == len(raw.ch_names):
                     raw.reorder_channels(chOrder_standard)
-                
                 if raw.ch_names != chOrder_standard:
-                    raise Exception(f"channel order is wrong in {file}!")
+                    raise Exception("channel order is wrong!")
 
-                raw.filter(l_freq=0.1, h_freq=75.0, verbose=False)
-                raw.notch_filter(50.0, verbose=False)
-                raw.resample(200, n_jobs=1, verbose=False) # Changed n_jobs to 1 inside Pool
+                raw.filter(l_freq=0.1, h_freq=75.0)
+                raw.notch_filter(50.0)
+                raw.resample(200, n_jobs=5)
 
+                ch_name = raw.ch_names
                 raw_data = raw.get_data(units='uV')
-                
-                # Each chunk is 2000 samples (10 seconds at 200Hz)
-                for i in range(raw_data.shape[1] // 2000):
-                    dump_path = os.path.join(
-                        dump_folder, file.split(".")[0] + "_" + str(i) + ".pkl"
-                    )
-                    # Double check per chunk if you want to be extremely safe
-                    if not os.path.exists(dump_path):
-                        with open(dump_path, "wb") as f:
-                            pickle.dump({"X": raw_data[:, i * 2000 : (i + 1) * 2000], "y": label}, f)
-                
-                # Explicitly close and delete to free memory
-                raw.close()
-                del raw, raw_data
-                
-            except Exception as e:
+                channeled_data = raw_data.copy()
+            except:
                 with open("tuab-process-error-files.txt", "a") as f:
-                    f.write(f"{file} : {str(e)}\n")
+                    f.write(file + "\n")
                 continue
+            for i in range(channeled_data.shape[1] // 2000):
+                dump_path = os.path.join(
+                    dump_folder, file.split(".")[0] + "_" + str(i) + ".pkl"
+                )
+                pickle.dump(
+                    {"X": channeled_data[:, i * 2000 : (i + 1) * 2000], "y": label},
+                    open(dump_path, "wb"),
+                )
+
+# def split_and_dump(params):
+#     fetch_folder, sub, dump_folder, label = params
+#     for file in os.listdir(fetch_folder):
+#         if sub in file:
+#             # --- ADDED: RESUME LOGIC ---
+#             # Check if at least the first segment of this file exists to skip processing
+#             first_chunk_name = file.split(".")[0] + "_0.pkl"
+#             if os.path.exists(os.path.join(dump_folder, first_chunk_name)):
+#                 # Optional: print("skipping", file) 
+#                 continue
+#             # ---------------------------
+
+#             print("process", file)
+#             file_path = os.path.join(fetch_folder, file)
+            
+#             try:
+#                 raw = mne.io.read_raw_edf(file_path, preload=True, verbose=False)
+#                 if drop_channels is not None:
+#                     useless_chs = [ch for ch in drop_channels if ch in raw.ch_names]
+#                     raw.drop_channels(useless_chs)
+                
+#                 if chOrder_standard is not None and len(chOrder_standard) == len(raw.ch_names):
+#                     raw.reorder_channels(chOrder_standard)
+                
+#                 if raw.ch_names != chOrder_standard:
+#                     raise Exception(f"channel order is wrong in {file}!")
+
+#                 raw.filter(l_freq=0.1, h_freq=75.0, verbose=False)
+#                 raw.notch_filter(50.0, verbose=False)
+#                 raw.resample(200, n_jobs=1, verbose=False) # Changed n_jobs to 1 inside Pool
+
+#                 raw_data = raw.get_data(units='uV')
+                
+#                 # Each chunk is 2000 samples (10 seconds at 200Hz)
+#                 for i in range(raw_data.shape[1] // 2000):
+#                     dump_path = os.path.join(
+#                         dump_folder, file.split(".")[0] + "_" + str(i) + ".pkl"
+#                     )
+#                     # Double check per chunk if you want to be extremely safe
+#                     if not os.path.exists(dump_path):
+#                         with open(dump_path, "wb") as f:
+#                             pickle.dump({"X": raw_data[:, i * 2000 : (i + 1) * 2000], "y": label}, f)
+                
+#                 # Explicitly close and delete to free memory
+#                 raw.close()
+#                 del raw, raw_data
+                
+#             except Exception as e:
+#                 with open("tuab-process-error-files.txt", "a") as f:
+#                     f.write(f"{file} : {str(e)}\n")
+#                 continue
+
 
 if __name__ == "__main__":
     """
