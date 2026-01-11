@@ -190,7 +190,4 @@ class TSPFNEncoder(nn.Module, ABC):
         )
         out_query = output[:, single_eval_pos:, :] # (B, Query, num_features + 1, d_model)
 
-        # If number of datasets B=1, remove the dataset dimension
-        out_query = out_query.squeeze(0)  # (Query, num_features + 1, d_model)
-
         return out_query
