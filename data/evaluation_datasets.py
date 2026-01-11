@@ -84,7 +84,6 @@ class TUEVDataset(torch.utils.data.Dataset):
         X = sample["signal"]
         if self.sampling_rate != self.default_rate:
             X = resample(X, 5 * self.sampling_rate, axis=-1)
-        # Truncate temporarly time series
         Y = int(sample["label"][0]-1)  # make label start from 0
         X = torch.FloatTensor(X)
         return X, Y
