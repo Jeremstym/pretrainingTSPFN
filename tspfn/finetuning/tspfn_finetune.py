@@ -18,11 +18,14 @@ from torchmetrics.classification import (
     BinaryAUROC,
     BinaryF1Score,
     BinaryAveragePrecision,
+    BinaryCohenKappa,
+    BinaryRecall,
     MulticlassAccuracy,
     MulticlassAUROC,
-    MulticlassAveragePrecision,
     MulticlassF1Score,
+    MulticlassAveragePrecision,
     MulticlassCohenKappa,
+    MulticlassRecall
 )
 from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError
 from torchmetrics import MetricCollection
@@ -93,6 +96,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 MulticlassAveragePrecision(num_classes=6, average="macro"),
                 MulticlassF1Score(num_classes=6, average="weighted"),
                 MulticlassCohenKappa(num_classes=6),
+                MulticlassRecall(num_classes=6, average="macro"),
             ]
         )
         # Store them in a dict of ModuleDicts
