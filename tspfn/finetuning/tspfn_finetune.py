@@ -355,7 +355,7 @@ class TSPFNFineTuning(TSPFNSystem):
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
             pred = prediction_head(prediction)
-            predictions[target_task] = pred.squeeze(dim=0)  # (B=Query, num_classes)
+            predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
