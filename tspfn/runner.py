@@ -98,17 +98,17 @@ class TSPFNRunner(ABC):
         # Instantiate datamodule
         datamodule: TSPFNDataModule = hydra.utils.instantiate(cfg.data, _recursive_=False)
 
-        # if cfg.ckpt:  # Load pretrained model if checkpoint is provided
-        #     if cfg.weights_only:
-        #         logger.info(f"Loading weights from {ckpt_path}")
-        #         model.load_state_dict(torch.load(ckpt_path, map_location=model.device)["state_dict"], strict=cfg.strict)
+        if cfg.ckpt:  # Load pretrained model if checkpoint is provided
+            if cfg.weights_only:
+                logger.info(f"Loading weights from {ckpt_path}")
+                model.load_state_dict(torch.load(ckpt_path, map_location=model.device)["state_dict"], strict=cfg.strict)
         #         modelkeys = list(model.state_dict().keys())
         #         loadkeys = list(torch.load(ckpt_path, map_location=model.device)["state_dict"].keys())
         #         commonkeys = list(set(modelkeys).intersection(loadkeys))
         #         print(commonkeys)
-        #     else:
-        #         logger.info(f"Loading model from {ckpt_path}")
-        #         model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
+            else:
+                logger.info(f"Loading model from {ckpt_path}")
+                model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
 
         # while True:
         #     # Instantiate Lightning Trainer
