@@ -226,7 +226,7 @@ class TSPFNDataModule(pl.LightningDataModule):
     #         return True
     #     return False
 
-    def _dataloader(self, dataset: Dataset, shuffle: bool, batch_size: int, collate_fn=None) -> DataLoader:
+    def _dataloader(self, dataset: Dataset, shuffle: bool, batch_size: int, collate_fn=None, drop_last=False) -> DataLoader:
         return DataLoader(
             dataset,
             batch_size=batch_size,
@@ -234,6 +234,7 @@ class TSPFNDataModule(pl.LightningDataModule):
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
             collate_fn=collate_fn,
+            drop_last=drop_last,
         )
 
     def train_dataloader(self):
@@ -300,7 +301,11 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
 
     def train_dataloader(self):
         return self._dataloader(
-            self.train_dataset, shuffle=True, batch_size=self.batch_size, collate_fn=stratified_batch_collate
+            self.train_dataset, 
+            shuffle=True,
+            batch_size=self.batch_size,
+            collate_fn=stratified_batch_collate,
+            drop_last=True,
         )
 
     def val_dataloader(self):
@@ -308,13 +313,15 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             self.val_dataset,
             shuffle=False,
             batch_size=self.batch_size,
-            collate_fn=stratified_batch_collate
+            collate_fn=stratified_batch_collate,
+            drop_last=True,
         )
         train_loader = self._dataloader(
             self.train_dataset,
             shuffle=False,
             batch_size=self.batch_size,
-            collate_fn=stratified_batch_collate
+            collate_fn=stratified_batch_collate,
+            drop_last=True,
         )
         return CombinedLoader({"val": val_loader, "train": train_loader}, "max_size_cycle")
 
@@ -323,13 +330,15 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             self.test_dataset,
             shuffle=False,
             batch_size=self.batch_size,
-            collate_fn=stratified_batch_collate
+            collate_fn=stratified_batch_collate,
+            drop_last=True,
         )
         train_loader = self._dataloader(
             self.train_dataset,
             shuffle=False,
             batch_size=self.batch_size,
-            collate_fn=stratified_batch_collate
+            collate_fn=stratified_batch_collate,
+            drop_last=True,
         )
         return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
 
