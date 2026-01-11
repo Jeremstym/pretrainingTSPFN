@@ -212,7 +212,7 @@ class TSPFNFineTuning(TSPFNSystem):
         if self.training or y_inference_support is None:
             out_features = self.encoder(
                 ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
-            )[:, -1, :]
+            )[:, -1, :] # Single dataset case for finetuning
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
@@ -220,7 +220,7 @@ class TSPFNFineTuning(TSPFNSystem):
             y_train = y_inference_support
             out_features = self.encoder(
                 ts_full.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
-            )[:, -1, :]
+            )[:, -1, :] # Single dataset case for finetuning
 
         else:
             raise ValueError("During inference, both support ts and labels must be provided.")
