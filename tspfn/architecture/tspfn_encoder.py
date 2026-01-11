@@ -96,9 +96,9 @@ class TSPFNEncoder(nn.Module, ABC):
         if y.ndim == 1:
             y = y.unsqueeze(-1)
         if y.ndim == 2:
-            y = y.unsqueeze(-1)  # (S, B) -> (S, B, 1)
+            y = y.unsqueeze(-1)  # (Seq, B) -> (Seq, B, 1)
 
-        y = y.transpose(0, 1)  # (B, S, 1)
+        y = y.transpose(0, 1)  # (B, Seq, 1)
 
         X = einops.rearrange(X, "s b (f n) -> b s f n", n=self.features_per_group)
         y = torch.cat(
@@ -116,7 +116,7 @@ class TSPFNEncoder(nn.Module, ABC):
             dim=1,
         )
 
-        y = y.transpose(0, 1)  # (S, B, 1)
+        y = y.transpose(0, 1)  # (Seq, B, 1)
         y[single_eval_pos_:] = torch.nan  # Make sure that no label leakage ever happens
 
         embedded_y = self.y_encoder(
@@ -149,7 +149,7 @@ class TSPFNEncoder(nn.Module, ABC):
         if ts_pe == "sinusoidal":
             # Add sinusoidal positional encodings to time series attributes
             pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
-            # Broadcast to (B, S, T, E)
+            # Broadcast to (B, Seq, T, E)
             pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
             emb_x += pos_broadcasted
         elif ts_pe == "none":
@@ -164,7 +164,7 @@ class TSPFNEncoder(nn.Module, ABC):
         elif ts_pe == "mixed":
             # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
             pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
-            # Broadcast to (B, S, T, E)
+            # Broadcast to (B, Seq, T, E)
             pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
@@ -188,8 +188,6 @@ class TSPFNEncoder(nn.Module, ABC):
             single_eval_pos=single_eval_pos,
             cache_trainset_representation=False,
         )
-        out_query = output[:, single_eval_pos:, :]
-        print(f"out_query shape: {out_query.shape}")
-        query_encoder_out = out_query.squeeze(1)  # (B, Query, C*T, E)
+        out_query = output[:, single_eval_pos:, :] # (B, Query, num_features + 1, d_model)
 
-        return query_encoder_out
+        return out_query
