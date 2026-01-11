@@ -223,7 +223,6 @@ class TSPFNDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         test_loader = self._dataloader(self.test_dataset, shuffle=False, batch_size=self.batch_size)
         train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
-        # Notice that the test set is the same as the val set
         return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
 
 
