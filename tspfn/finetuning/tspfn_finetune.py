@@ -371,9 +371,11 @@ class TSPFNFineTuning(TSPFNSystem):
             stage = "test_metrics"
         for target_task, target_loss in self.predict_losses.items():
             y_hat = predictions[target_task]  # (B=Query, num_classes)
+            print("y_hat shape:", y_hat.shape)
             target = target_batch.squeeze(dim=0)  # (B=Query,)
             # Convert target to long if classification with >2 classes, float otherwise
             target = target.long() #TODO: adapt for binary classification
+            print("target shape:", target.shape)
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                 y_hat,
                 target,
