@@ -52,7 +52,7 @@ task:
 # Change checkpoint loading defaults to:
 ckpt: ??? # Make it mandatory to provide a checkpoint
 weights_only: True  # Only load the weights and ignore the hyperparameters
-strict: False # Only load weights where they match the defined network, to only some changes (e.g. heads, etc.)
+strict: True # Only load weights where they match the defined network, to only some changes (e.g. heads, etc.)
 
 
 experiment_dirname: data=${hydra:runtime.choices.task/data}/contrastive=${oc.select:task.contrastive_loss_weight,0}/time_series_tokenizer=${hydra:runtime.choices.task/time_series_tokenizer/model}
