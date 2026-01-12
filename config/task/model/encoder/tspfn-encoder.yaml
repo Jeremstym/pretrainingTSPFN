@@ -5,7 +5,6 @@ tabpfn_kwargs:
   check_bar_distribution_criterion: False
   cache_trainset_representation: False
   which: classifier
-  fit_mode: fit_preprocessors
   version: v2
   download_if_not_exists: False # needed for v2.5 but unknown for v2
   # download: False # Deprecated for v2.5 but needed for v2
