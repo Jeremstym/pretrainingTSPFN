@@ -20,7 +20,7 @@ class PFNPredictionHead(nn.Module):
     def __init__(
         self,
         in_features: int,
-        model_path: Path,
+        tabpfn_kwargs: dict,
         updated_pfn_path: Union[Path, None] = None,
         **kwargs,
     ):
@@ -31,14 +31,8 @@ class PFNPredictionHead(nn.Module):
             out_features: Number of features to output.
         """
         super().__init__()
-        model, _, _ = load_model_criterion_config(
-            model_path=model_path,
-            check_bar_distribution_criterion=False,
-            cache_trainset_representation=False,
-            which="classifier",
-            version="v2",
-            download=False,
-        )
+        list_model, _, _, _ = load_model_criterion_config(**tabpfn_kwargs)
+        model = list_model[0]
         self.n_classes = 6 # Default number of classes in TabPFN prediction head
         
         # TODO: for now, we only support the standard prediction head

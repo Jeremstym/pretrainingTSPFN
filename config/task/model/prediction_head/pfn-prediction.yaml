@@ -1,4 +1,4 @@
 _target_: tspfn.architecture.prediction_heads.PFNPredictionHead
 in_features: ${task.embed_dim}
-model_path: ${task.model.encoder.tabpfn_kwargs.model_path}
+tabpfn_kwargs: ${task.model.encoder.tabpfn_kwargs}
 updated_pfn_path: ${task.model.encoder.updated_pfn_path}
