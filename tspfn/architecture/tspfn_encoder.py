@@ -19,6 +19,7 @@ class TSPFNEncoder(nn.Module, ABC):
         tabpfn_kwargs: dict,
         updated_pfn_path: Union[Path, None] = None,
         random_init: bool = False,
+        recompute_layer: bool = True,
         **kwargs,
     ):
         super().__init__()
@@ -47,6 +48,7 @@ class TSPFNEncoder(nn.Module, ABC):
         self.y_encoder = self.model.y_encoder
         self.transformer_encoder = self.model.transformer_encoder
         self.features_per_group = 1  # Each feature is its own group
+        self.recompute_layer = recompute_layer
 
         if random_init:  # random_init:
             self.model.apply(self._init_weights)
@@ -185,6 +187,7 @@ class TSPFNEncoder(nn.Module, ABC):
             embedded_input,
             single_eval_pos=single_eval_pos,
             cache_trainset_representation=False,
+            recompute_layer=self.recompute_layer,
         )
         out_query = output[:, single_eval_pos:, :] # (B, Query, num_features + 1, d_model)
 
