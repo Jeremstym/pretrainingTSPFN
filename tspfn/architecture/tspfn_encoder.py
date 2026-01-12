@@ -189,7 +189,6 @@ class TSPFNEncoder(nn.Module, ABC):
             cache_trainset_representation=False,
             recompute_layer=self.recompute_layer,
             save_peak_mem_factor=None,
-            force_recompute_layer=False,
         )
         out_query = output[:, single_eval_pos:, :] # (B, Query, num_features + 1, d_model)
 
