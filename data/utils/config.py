@@ -55,13 +55,6 @@ def register_omegaconf_resolvers() -> None:
         return tuple(args)
 
     OmegaConf.register_new_resolver("tuple", resolve_tuple)
-    
-    def tabpfn_version_args(version, download_val):
-        if str(version) == "v2":
-            return {"download": download_val}
-        return {"download_if_not_exists": download_val}
-
-    OmegaConf.register_new_resolver("tabpfn_args", tabpfn_version_args)
 
 
 def instantiate_config_node_leaves(
