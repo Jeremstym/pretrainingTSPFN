@@ -1,7 +1,12 @@
 _target_: tspfn.architecture.tspfn_encoder.TSPFNEncoder
-model_path: ${oc.env:TABPFN_MODEL_PATH}
 seed: ${seed}
-which: classifier # regressor
-fit_mode: fit_preprocessors # fit_preprocessors, low_memory, fit_with_cache
+tabpfn_kwargs:
+  model_path: ${oc.env:TABPFN_MODEL_PATH}
+  check_bar_distribution_criterion: False
+  cache_trainset_representation: False
+  which: classifier
+  fit_mode: fit_preprocessors
+  version: v2
+  <<: ${tabpfn_args: ${.version}, False}
 updated_pfn_path: ${updated_pfn_path} # Path to updated TabPFN model weights after pretraining
 random_init: False # Whether to randomly initialize the TabPFN weights instead of loading pretrained weights

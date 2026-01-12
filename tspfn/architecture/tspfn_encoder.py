@@ -15,23 +15,20 @@ import logging
 class TSPFNEncoder(nn.Module, ABC):
     def __init__(
         self,
-        model_path: Path,
-        which: str,
-        fit_mode: str,
         seed: int,
+        tabpfn_kwargs: dict,
         updated_pfn_path: Union[Path, None] = None,
         random_init: bool = False,
         **kwargs,
     ):
         super().__init__()
-        self.model, _, self.model_config = load_model_criterion_config(
-            model_path=model_path,
-            check_bar_distribution_criterion=False,
-            cache_trainset_representation=(fit_mode == "fit_with_cache"),
-            which="classifier",
-            version="v2",
-            download=False,
-        )
+        if tabpfn_kwargs["version"] == "v2.5":
+            self.model, _, self.model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
+        elif tabpfn_kwargs["version"] == "v2":
+            self.model, _, self.model_config = load_model_criterion_config(**tabpfn_kwargs)
+            
+        else:
+            raise ValueError(f"Unknown TabPFN version: {tabpfn_kwargs['version']}") 
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
             logging.info(f"Loading updated TabPFN model weights from {updated_pfn_path}")
