@@ -1,18 +1,19 @@
-# Define a hidden node for common settings
-_base_tabpfn_vars:
+# 1. Define the base common settings
+base_tabpfn:
   model_path: ${oc.env:TABPFN_MODEL_PATH}
   check_bar_distribution_criterion: False
   cache_trainset_representation: False
   which: classifier
   fit_mode: fit_preprocessors
-  version: v2
+  version: v2  # Change to v2.5 here
 
-# The actual target
+# 2. The main config
 _target_: tspfn.architecture.tspfn_encoder.TSPFNEncoder
 seed: ${seed}
 
-# Merge them here using OmegaConf's merge syntax
-tabpfn_kwargs: ${oc.dict.merge: ${_base_tabpfn_vars}, ${tabpfn_args: ${_base_tabpfn_vars.version}, False}}
+# This is the "Magic" line:
+# It merges the base dict with the dict returned by your custom resolver
+tabpfn_kwargs: ${oc.dict.merge: ${base_tabpfn}, ${tabpfn_args: ${base_tabpfn.version}, False}}
 
 updated_pfn_path: ${updated_pfn_path}
 random_init: False
