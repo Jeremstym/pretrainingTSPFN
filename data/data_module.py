@@ -307,7 +307,7 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             self.train_dataset, 
             shuffle=True,
             batch_size=self.batch_size,
-            collate_fn=stratified_batch_collate,
+            collate_fn=None,
             drop_last=True,
         )
 
@@ -316,14 +316,14 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             self.val_dataset,
             shuffle=False,
             batch_size=self.batch_size,
-            collate_fn=stratified_batch_collate,
+            collate_fn=None,
             drop_last=True,
         )
         train_loader = self._dataloader(
             self.train_dataset,
             shuffle=False,
             batch_size=self.batch_size,
-            collate_fn=stratified_batch_collate,
+            collate_fn=None,
             drop_last=True,
         )
         return CombinedLoader({"val": val_loader, "train": train_loader}, "max_size_cycle")
@@ -333,14 +333,14 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             self.test_dataset,
             shuffle=False,
             batch_size=self.batch_size,
-            collate_fn=stratified_batch_collate,
+            collate_fn=None,
             drop_last=True,
         )
         train_loader = self._dataloader(
             self.train_dataset,
             shuffle=False,
             batch_size=self.batch_size,
-            collate_fn=stratified_batch_collate,
+            collate_fn=None,
             drop_last=True,
         )
         return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
