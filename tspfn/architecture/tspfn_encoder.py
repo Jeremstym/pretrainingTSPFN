@@ -23,14 +23,8 @@ class TSPFNEncoder(nn.Module, ABC):
         **kwargs,
     ):
         super().__init__()
-        # if tabpfn_kwargs["version"] == "v2.5":
         list_model, _, self.model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
         self.model = list_model[0]
-        # elif tabpfn_kwargs["version"] == "v2":
-        #     self.model, _, self.model_config = load_model_criterion_config(**tabpfn_kwargs)
-            
-        # else:
-        #     raise ValueError(f"Unknown TabPFN version: {tabpfn_kwargs['version']}") 
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
             logging.info(f"Loading updated TabPFN model weights from {updated_pfn_path}")
