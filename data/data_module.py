@@ -235,6 +235,7 @@ class TSPFNDataModule(pl.LightningDataModule):
             pin_memory=self.pin_memory,
             collate_fn=collate_fn,
             drop_last=drop_last,
+            persistent_workers=self.num_workers > 0,
         )
 
     def train_dataloader(self):
