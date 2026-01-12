@@ -281,7 +281,7 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             seed=seed,
         )
 
-    print(f"num workers: {self.num_workers}")
+        print(f"num workers: {self.num_workers}")
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
