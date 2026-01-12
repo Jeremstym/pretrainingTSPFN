@@ -23,7 +23,8 @@ class TSPFNEncoder(nn.Module, ABC):
     ):
         super().__init__()
         # if tabpfn_kwargs["version"] == "v2.5":
-        self.model, _, self.model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
+        list_model, _, self.model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
+        self.model = list_model[0]
         # elif tabpfn_kwargs["version"] == "v2":
         #     self.model, _, self.model_config = load_model_criterion_config(**tabpfn_kwargs)
             
