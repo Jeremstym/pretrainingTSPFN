@@ -83,9 +83,9 @@ class TSPFNFineTuning(TSPFNSystem):
 
         self.time_series_positional_encoding = time_series_positional_encoding
         self.time_series_convolution = nn.Sequential(
-            nn.Conv1d(in_channels=23, out_channels=23, kernel_size=10, stride=10, groups=23),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=10, stride=10, groups=16),
             nn.ReLU(),
-            nn.Conv1d(in_channels=23, out_channels=23, kernel_size=5, stride=5, groups=23),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=5, groups=16),
         )
 
         # Use ModuleDict so metrics move to GPU automatically
@@ -113,7 +113,7 @@ class TSPFNFineTuning(TSPFNSystem):
         """Redefine example input array based on the cardiac attributes provided to the model."""
         batch_size = 10
         num_classes = 6  # Default number of classes in TUEV dataset
-        time_series_attrs = torch.randn(batch_size, 23, 1000)  # (B, S, T)
+        time_series_attrs = torch.randn(batch_size, 16, 1000)  # (B, S, T)
         labels = torch.randint(0, num_classes, (batch_size,))
         return time_series_attrs, labels
 
