@@ -25,7 +25,7 @@ from torchmetrics.classification import (
     MulticlassF1Score,
     MulticlassAveragePrecision,
     MulticlassCohenKappa,
-    MulticlassRecall
+    MulticlassRecall,
 )
 from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError
 from torchmetrics import MetricCollection
@@ -82,10 +82,18 @@ class TSPFNFineTuning(TSPFNSystem):
         self.encoder, self.prediction_heads = self.configure_model()
 
         self.time_series_positional_encoding = time_series_positional_encoding
+        # self.time_series_convolution = nn.Sequential(
+        #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=10, stride=10, groups=16),
+        #     nn.ReLU(),
+        #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=5, groups=16),
+        # )
         self.time_series_convolution = nn.Sequential(
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=10, stride=10, groups=16),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=8, stride=4, padding=2, groups=16),
             nn.ReLU(),
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=5, groups=16),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=2, padding=2, groups=16),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=2, padding=1, groups=16),
+            nn.AdaptiveAvgPool1d(60),
         )
 
         # Use ModuleDict so metrics move to GPU automatically
@@ -187,7 +195,6 @@ class TSPFNFineTuning(TSPFNSystem):
             y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
         if y_batch_query.ndim == 1:
             y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
-
 
         return (
             y_batch_support,
@@ -373,7 +380,7 @@ class TSPFNFineTuning(TSPFNSystem):
             y_hat = predictions[target_task]  # (B=Query, num_classes)
             target = target_batch.squeeze(dim=0)  # (B=Query,)
             # Convert target to long if classification with >2 classes, float otherwise
-            target = target.long() #TODO: adapt for binary classification
+            target = target.long()  # TODO: adapt for binary classification
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                 y_hat,
                 target,
