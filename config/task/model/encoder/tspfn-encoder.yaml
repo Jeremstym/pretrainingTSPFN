@@ -1,19 +1,13 @@
-# 1. Define the base common settings
-base_tabpfn:
+_target_: tspfn.architecture.tspfn_encoder.TSPFNEncoder
+seed: ${seed}
+tabpfn_kwargs:
   model_path: ${oc.env:TABPFN_MODEL_PATH}
   check_bar_distribution_criterion: False
   cache_trainset_representation: False
   which: classifier
   fit_mode: fit_preprocessors
-  version: v2  # Change to v2.5 here
-
-# 2. The main config
-_target_: tspfn.architecture.tspfn_encoder.TSPFNEncoder
-seed: ${seed}
-
-# This is the "Magic" line:
-# It merges the base dict with the dict returned by your custom resolver
-tabpfn_kwargs: ${oc.dict.merge: ${base_tabpfn}, ${tabpfn_args: ${base_tabpfn.version}, False}}
-
-updated_pfn_path: ${updated_pfn_path}
-random_init: False
+  version: v2
+  download_if_not_exists: False # needed for v2.5 but unknown for v2
+  # download: False # Deprecated for v2.5 but needed for v2
+updated_pfn_path: ${updated_pfn_path} # Path to updated TabPFN model weights after pretraining
+random_init: False # Whether to randomly initialize the TabPFN weights instead of loading pretrained weights
