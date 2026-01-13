@@ -238,8 +238,6 @@ class TSPFNFineTuning(TSPFNSystem):
         else:
             raise ValueError("During inference, both support ts and labels must be provided.")
 
-        print(f"Encoded output features shape: {out_features.shape}")
-
         return out_features  # (B, Query, E)
 
     @auto_move_data
@@ -370,7 +368,9 @@ class TSPFNFineTuning(TSPFNSystem):
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
             pred = prediction_head(prediction)
+            print(f"pred shape before squeeze: {pred.shape}")
             predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
+            print(f"pred shape after squeeze: {predictions[target_task].shape}")
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
