@@ -140,6 +140,9 @@ class TSPFNRunner(ABC):
 
         datamodule.setup()
 
+        #Print output dir
+        logger.info(f"Saving results in: {trainer.logger.log_dir}")
+
         if isinstance(model, TSPFNPretraining):
             if cfg.train:
                 trainer.fit(model, datamodule=datamodule)
