@@ -2,6 +2,7 @@ _target_: tspfn.architecture.tspfn_encoder.TSPFNEncoder
 seed: ${seed}
 tabpfn_kwargs:
   model_path: ${oc.env:TABPFNv25_MODEL_PATH}
+  # model_path: ${oc.env:TABPFN_MODEL_PATH}
   check_bar_distribution_criterion: False
   cache_trainset_representation: False
   which: classifier
