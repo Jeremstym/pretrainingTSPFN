@@ -96,9 +96,9 @@ class TSPFNFineTuning(TSPFNSystem):
         #     nn.AdaptiveAvgPool1d(60),
         # )
         self.time_series_convolution = nn.Sequential(
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2, stride=2, groups=16), # T: 1000 -> 500
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=20, stride=2, groups=16), # T = 1000 -> 491
             nn.GeLU(),
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=5, groups=16), # T: 500 -> 100
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=20, stride=5, groups=16), # T = 491 -> 95
         )
 
         # Use ModuleDict so metrics move to GPU automatically
