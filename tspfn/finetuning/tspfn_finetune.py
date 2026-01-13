@@ -45,6 +45,7 @@ class TSPFNFineTuning(TSPFNSystem):
         split_finetuning: float = 0.5,
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
         time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
+        time_series_num_channels: int = 16,
         *args,
         **kwargs,
     ):
@@ -81,24 +82,38 @@ class TSPFNFineTuning(TSPFNSystem):
         # Initialize transformer encoder and self-supervised + prediction heads
         self.encoder, self.prediction_heads = self.configure_model()
 
+        self.ts_num_channels = time_series_num_channels
+
         self.time_series_positional_encoding = time_series_positional_encoding
         self.time_series_convolution = nn.Sequential(
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=10, stride=10, groups=16),
+            nn.Conv1d(
+                in_channels=self.ts_num_channels,
+                out_channels=self.ts_num_channels,
+                kernel_size=10,
+                stride=10,
+                groups=self.ts_num_channels,
+            ),
             nn.ReLU(),
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=5, groups=16),
+            nn.Conv1d(
+                in_channels=self.ts_num_channels,
+                out_channels=self.ts_num_channels,
+                kernel_size=5,
+                stride=5,
+                groups=self.ts_num_channels,
+            ),
         )
         # self.time_series_convolution = nn.Sequential(
-        #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=8, stride=4, padding=2, groups=16),
+        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=8, stride=4, padding=2, groups=self.ts_num_channels),
         #     nn.ReLU(),
-        #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=2, padding=2, groups=16),
+        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=5, stride=2, padding=2, groups=self.ts_num_channels),
         #     nn.ReLU(),
-        #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=2, padding=1, groups=16),
+        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=5, stride=2, padding=1, groups=self.ts_num_channels),
         #     nn.AdaptiveAvgPool1d(60),
         # )
         # self.time_series_convolution = nn.Sequential(
-        #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=20, stride=2, groups=16), # T = 1000 -> 491
+        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=20, stride=2, groups=self.ts_num_channels), # T = 1000 -> 491
         #     nn.GELU(),
-        #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=20, stride=5, groups=16), # T = 491 -> 95
+        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=20, stride=5, groups=self.ts_num_channels), # T = 491 -> 95
         # )
 
         # Use ModuleDict so metrics move to GPU automatically
@@ -126,7 +141,7 @@ class TSPFNFineTuning(TSPFNSystem):
         """Redefine example input array based on the cardiac attributes provided to the model."""
         batch_size = 10
         num_classes = 6  # Default number of classes in TUEV dataset
-        time_series_attrs = torch.randn(batch_size, 16, 1000)  # (B, S, T)
+        time_series_attrs = torch.randn(batch_size, self.ts_num_channels, 1000)  # (B, S, T)
         labels = torch.randint(0, num_classes, (batch_size,))
         return time_series_attrs, labels
 
