@@ -368,9 +368,7 @@ class TSPFNFineTuning(TSPFNSystem):
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
             pred = prediction_head(prediction)
-            print(f"pred shape before squeeze: {pred.shape}")
             predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
-            print(f"pred shape after squeeze: {predictions[target_task].shape}")
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
@@ -385,6 +383,8 @@ class TSPFNFineTuning(TSPFNSystem):
             stage = "test_metrics"
         for target_task, target_loss in self.predict_losses.items():
             y_hat = predictions[target_task]  # (B=Query, num_classes)
+            if y_hat.ndim == 1:
+                y_hat = y_hat.unsqueeze(dim=0)  # (B=Query, num_classes=1)
             target = target_batch.squeeze(dim=0)  # (B=Query,)
             # Convert target to long if classification with >2 classes, float otherwise
             target = target.long()  # TODO: adapt for binary classification
