@@ -19,7 +19,7 @@ ulimit -n 4096
 #CHECK poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-collatefn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42
 #CHECK poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-TSPFNFinetune-collatefn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 updated_pfn_path=/home/stympopper/didacticJerem/ckpts/tspfn_encoder_weights_v2.pt
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/FullTUEV-Finetune/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50 task.time_series_num_channels=23
+#? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/FullTUEV-Finetune/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50 task.time_series_num_channels=23
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/FullTUEV-TSPFNFinetune/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 updated_pfn_path=/home/stympopper/didacticJerem/ckpts/tspfn_encoder_weights_v2.pt trainer.max_epochs=50
 
 #//#! all collate_fn below
@@ -39,3 +39,5 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/FullTUEV
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-longwindow/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-longwindow/seed42/checkpoints/epoch\=10-step\=4191.ckpt' train=False
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-collatefn-TabPFNv2.5/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/TUEV-Finetune-collatefn-TabPFNv2.5/seed42/checkpoints/epoch\=6-step\=2667.ckpt' train=False
+
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-newconvol/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-newconvol/seed42/checkpoints/epoch\=2-step\=1143.ckpt' train=False

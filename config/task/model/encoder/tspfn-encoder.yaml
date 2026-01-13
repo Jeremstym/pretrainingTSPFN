@@ -1,12 +1,12 @@
 _target_: tspfn.architecture.tspfn_encoder.TSPFNEncoder
 seed: ${seed}
 tabpfn_kwargs:
-  model_path: ${oc.env:TABPFN_MODEL_PATH}
-  # model_path: ${oc.env:TABPFNv25_MODEL_PATH}
+  # model_path: ${oc.env:TABPFN_MODEL_PATH}
+  model_path: ${oc.env:TABPFNv25_MODEL_PATH}
   check_bar_distribution_criterion: False
   cache_trainset_representation: False
   which: classifier
-  version: v2
+  version: v2.5
   download_if_not_exists: False # needed for v2.5 but unknown for v2
   # download: False # Deprecated for v2.5 but needed for v2
 updated_pfn_path: ${updated_pfn_path} # Path to updated TabPFN model weights after pretraining
