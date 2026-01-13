@@ -201,6 +201,10 @@ class TSPFNFineTuning(TSPFNSystem):
         if y_batch_query.ndim == 1:
             y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
 
+        print(f"time_series_attrs shape after conv: {time_series_attrs.shape}")
+        print(f"y_batch_support shape: {y_batch_support.shape}")
+        print(f"y_batch_query shape: {y_batch_query.shape}")
+
         return (
             y_batch_support,
             y_batch_query,
