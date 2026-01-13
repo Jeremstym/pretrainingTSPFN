@@ -19,7 +19,7 @@ ulimit -n 4096
 #CHECK poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-collatefn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42
 #CHECK poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-TSPFNFinetune-collatefn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 updated_pfn_path=/home/stympopper/didacticJerem/ckpts/tspfn_encoder_weights_v2.pt
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/FullTUEV-Finetune/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/FullTUEV-Finetune/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50 task.time_series_num_channels=23
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/FullTUEV-TSPFNFinetune/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 updated_pfn_path=/home/stympopper/didacticJerem/ckpts/tspfn_encoder_weights_v2.pt trainer.max_epochs=50
 
 #//#! all collate_fn below
