@@ -87,13 +87,18 @@ class TSPFNFineTuning(TSPFNSystem):
         #     nn.ReLU(),
         #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=5, groups=16),
         # )
+        # self.time_series_convolution = nn.Sequential(
+        #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=8, stride=4, padding=2, groups=16),
+        #     nn.ReLU(),
+        #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=2, padding=2, groups=16),
+        #     nn.ReLU(),
+        #     nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=2, padding=1, groups=16),
+        #     nn.AdaptiveAvgPool1d(60),
+        # )
         self.time_series_convolution = nn.Sequential(
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=8, stride=4, padding=2, groups=16),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=2, padding=2, groups=16),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=2, padding=1, groups=16),
-            nn.AdaptiveAvgPool1d(60),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2, stride=2, groups=16), # T: 1000 -> 500
+            nn.GeLU(),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=5, stride=5, groups=16), # T: 500 -> 100
         )
 
         # Use ModuleDict so metrics move to GPU automatically
