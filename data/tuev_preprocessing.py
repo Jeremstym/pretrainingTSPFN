@@ -88,8 +88,12 @@ def BuildEvents(signals, times, EventData, keep_channels):
     numEvents = len(unique_event_data)
 
     # We only take the rows of the signal that are in keep_channels
-    # If signals is (22, T), signals[keep_channels, :] will be (16, T)
-    selected_signals = signals[keep_channels, :]
+    if signals.shape[0] > len(keep_channels):
+        # Slice only if we haven't sliced before
+        selected_signals = signals[keep_channels, :]
+    else:
+        # It's already sliced, just use it
+        selected_signals = signals
     numChan = len(keep_channels)
 
     features = np.zeros([numEvents, numChan, window_samples])
