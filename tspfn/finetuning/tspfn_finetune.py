@@ -85,23 +85,23 @@ class TSPFNFineTuning(TSPFNSystem):
         self.ts_num_channels = time_series_num_channels
 
         self.time_series_positional_encoding = time_series_positional_encoding
-        # self.time_series_convolution = nn.Sequential(
-        #     nn.Conv1d(
-        #         in_channels=self.ts_num_channels,
-        #         out_channels=self.ts_num_channels,
-        #         kernel_size=10,
-        #         stride=10,
-        #         groups=self.ts_num_channels,
-        #     ),
-        #     nn.ReLU(),
-        #     nn.Conv1d(
-        #         in_channels=self.ts_num_channels,
-        #         out_channels=self.ts_num_channels,
-        #         kernel_size=5,
-        #         stride=5,
-        #         groups=self.ts_num_channels,
-        #     ),
-        # )
+        self.time_series_convolution = nn.Sequential(
+            nn.Conv1d(
+                in_channels=self.ts_num_channels,
+                out_channels=self.ts_num_channels,
+                kernel_size=10,
+                stride=10,
+                groups=self.ts_num_channels,
+            ),
+            nn.ReLU(),
+            nn.Conv1d(
+                in_channels=self.ts_num_channels,
+                out_channels=self.ts_num_channels,
+                kernel_size=5,
+                stride=5,
+                groups=self.ts_num_channels,
+            ),
+        )
         # self.time_series_convolution = nn.Sequential(
         #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=8, stride=4, padding=2, groups=self.ts_num_channels),
         #     nn.ReLU(),
@@ -110,23 +110,11 @@ class TSPFNFineTuning(TSPFNSystem):
         #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=5, stride=2, padding=1, groups=self.ts_num_channels),
         #     nn.AdaptiveAvgPool1d(60),
         # )
-        self.time_series_convolution = nn.Sequential(
-            nn.Conv1d(
-                in_channels=self.ts_num_channels,
-                out_channels=self.ts_num_channels,
-                kernel_size=20,
-                stride=2,
-                groups=self.ts_num_channels,
-            ),  # T = 1000 -> 491
-            nn.GELU(),
-            nn.Conv1d(
-                in_channels=self.ts_num_channels,
-                out_channels=self.ts_num_channels,
-                kernel_size=20,
-                stride=5,
-                groups=self.ts_num_channels,
-            ),  # T = 491 -> 95
-        )
+        # self.time_series_convolution = nn.Sequential(
+        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=20, stride=2, groups=self.ts_num_channels), # T = 1000 -> 491
+        #     nn.GELU(),
+        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=20, stride=5, groups=self.ts_num_channels), # T = 491 -> 95
+        # )
 
         # Use ModuleDict so metrics move to GPU automatically
         metrics_template = MetricCollection(
