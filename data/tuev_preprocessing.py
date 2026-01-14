@@ -241,13 +241,13 @@ if __name__ == "__main__":
 
     for file in train_files:
         os.system(
-            f"cp {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_train')}"
+            f"mv {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_train')}"
         )
     for file in val_files:
         os.system(
-            f"cp {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_eval')}"
+            f"mv {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_eval')}"
         )
     for file in test_files:
         os.system(
-            f"cp {os.path.join(root, 'processed_eval', file)} {os.path.join(root, 'processed', 'processed_test')}"
+            f"mv {os.path.join(root, 'processed_eval', file)} {os.path.join(root, 'processed', 'processed_test')}"
         )
