@@ -6,6 +6,7 @@
 # --------------------------------------------------------
 import mne
 import numpy as np
+import pandas as pd
 import os
 import pickle
 from tqdm import tqdm
@@ -67,45 +68,59 @@ chOrder_standard = [
 
 
 def BuildEvents(signals, times, EventData, keep_channels):
-    # Filter EventData to only include rows where the channel is in keep_channels
-    # mask = np.isin(EventData[:, 0], keep_channels)
-    # filtered_EventData = EventData[mask]
-    # numEvents = len(filtered_EventData)
-    [numEvents, _] = EventData.shape
+    """
+    signals: (22, timestamps) or (23, timestamps)
+    EventData: [.rec file contents]
+    keep_channels: [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21]
+    """
     fs = 200.0
-    # features = np.zeros([numEvents, len(keep_channels), int(fs) * 5])
-    [numChan, numPoints] = signals.shape
-    features = np.zeros([numEvents, numChan, int(fs) * 5])
-    # # Replace the triple concatenation with padding
-    # # Pad only the time axis (axis 1) with 2 seconds worth of samples
-    # pad_width = int(fs) * 2
-    # signals_padded = np.pad(signals, ((0, 0), (pad_width, pad_width)), mode='edge')
+    window_samples = int(fs * 5)
 
-    # # Now your offset is simply the pad_width
-    # features[i, :] = signals_padded[:, pad_width + start - 2*int(fs) : pad_width + end + 2*int(fs)]
-    offending_channel = np.zeros([numEvents, 1])  # channel that had the detected thing
+    # 1. Filter EventData to only include rows from the montages we care about
+    mask = np.isin(EventData[:, 0], keep_channels)
+    filtered_EventData = EventData[mask]
+
+    # 2. Deduplicate based on Start and End times
+    df = pd.DataFrame(filtered_EventData, columns=["chan", "start", "end", "label_id"])
+    df_unique = df.drop_duplicates(subset=["start", "end"])
+    unique_event_data = df_unique.to_numpy()
+
+    numEvents = len(unique_event_data)
+
+    # We only take the rows of the signal that are in keep_channels
+    # If signals is (22, T), signals[keep_channels, :] will be (16, T)
+    selected_signals = signals[keep_channels, :]
+    numChan = len(keep_channels)
+
+    features = np.zeros([numEvents, numChan, window_samples])
+    offending_channel = np.zeros([numEvents, 1])
     labels = np.zeros([numEvents, 1])
 
-    offset = signals.shape[1]
-    signals = np.concatenate([signals, signals, signals], axis=1)
-    # for i in range(numEvents):  # for each event
-    #     chan = int(filtered_EventData[i, 0])  # chan is channel
-    #     if chan not in keep_channels:
-    #         raise Exception("Channel not in keep_channels")
-    #     start = np.where((times) >= filtered_EventData[i, 1])[0][0]
-    #     end = np.where((times) >= filtered_EventData[i, 2])[0][0]
-    #     # print (offset + start - 2 * int(fs), offset + end + 2 * int(fs), signals.shape)
-    #     features[i, :] = signals[:, offset + start - 2 * int(fs) : offset + end + 2 * int(fs)]
-    #     offending_channel[i, :] = int(chan)
-    #     labels[i, :] = int(filtered_EventData[i, 3])
-    for i in range(numEvents):  # for each event
-        chan = int(EventData[i, 0])  # chan is channel
-        start = np.where((times) >= EventData[i, 1])[0][0]
-        end = np.where((times) >= EventData[i, 2])[0][0]
-        # print (offset + start - 2 * int(fs), offset + end + 2 * int(fs), signals.shape)
-        features[i, :] = signals[:, offset + start - 2 * int(fs) : offset + end + 2 * int(fs)]
-        offending_channel[i, :] = int(chan)
-        labels[i, :] = int(EventData[i, 3])
+    # EDGE PADDING (Safer context than triple buffer)
+    pad_width = int(fs * 5)
+    signals_padded = np.pad(selected_signals, ((0, 0), (pad_width, pad_width)), mode="edge")
+
+    for i in range(numEvents):
+        t_start = unique_event_data[i, 1]
+        t_end = unique_event_data[i, 2]
+
+        # Get indices from the times array
+        idx_start = np.searchsorted(times, t_start)
+        idx_end = np.searchsorted(times, t_end)
+
+        # Center the 5s window on the actual event duration
+        center_idx = (idx_start + idx_end) // 2
+
+        # Calculate slice boundaries relative to padded signal
+        start_slice = (center_idx + pad_width) - (window_samples // 2)
+        end_slice = start_slice + window_samples
+
+        features[i, :, :] = signals_padded[:, start_slice:end_slice]
+
+        # Save metadata
+        offending_channel[i, :] = int(unique_event_data[i, 0])
+        labels[i, :] = int(unique_event_data[i, 3])
+
     return [features, offending_channel, labels]
 
 
