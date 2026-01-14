@@ -171,8 +171,8 @@ def load_up_objects(BaseDir, Features, OffendingChannels, Labels, OutDir):
                     [signals, times, event, Rawdata] = readEDF(
                         dirName + "/" + fname
                     )  # event is the .rec file in the form of an array
-                    # signals, keep_channels = convert_signals(signals, Rawdata)
-                    keep_channels = list(range(len(chOrder_standard)))
+                    signals, keep_channels = convert_signals(signals, Rawdata)
+                    # keep_channels = list(range(len(chOrder_standard)))
                 except (ValueError, KeyError):
                     print("something funky happened in " + dirName + "/" + fname)
                     continue
