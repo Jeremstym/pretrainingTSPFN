@@ -85,23 +85,23 @@ class TSPFNFineTuning(TSPFNSystem):
         self.ts_num_channels = time_series_num_channels
 
         self.time_series_positional_encoding = time_series_positional_encoding
-        self.time_series_convolution = nn.Sequential(
-            nn.Conv1d(
-                in_channels=self.ts_num_channels,
-                out_channels=self.ts_num_channels,
-                kernel_size=10,
-                stride=10,
-                groups=self.ts_num_channels,
-            ),
-            nn.ReLU(),
-            nn.Conv1d(
-                in_channels=self.ts_num_channels,
-                out_channels=self.ts_num_channels,
-                kernel_size=5,
-                stride=5,
-                groups=self.ts_num_channels,
-            ),
-        )
+        # self.time_series_convolution = nn.Sequential(
+        #     nn.Conv1d(
+        #         in_channels=self.ts_num_channels,
+        #         out_channels=self.ts_num_channels,
+        #         kernel_size=10,
+        #         stride=10,
+        #         groups=self.ts_num_channels,
+        #     ),
+        #     nn.ReLU(),
+        #     nn.Conv1d(
+        #         in_channels=self.ts_num_channels,
+        #         out_channels=self.ts_num_channels,
+        #         kernel_size=5,
+        #         stride=5,
+        #         groups=self.ts_num_channels,
+        #     ),
+        # )
         # self.time_series_convolution = nn.Sequential(
         #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=8, stride=4, padding=2, groups=self.ts_num_channels),
         #     nn.ReLU(),
@@ -204,7 +204,7 @@ class TSPFNFineTuning(TSPFNSystem):
             y_batch_query = labels.to(self.device)  # (Query, 1)
             time_series_attrs = time_series_attrs.to(self.device)  # (Support+Query, C, T)
 
-        time_series_attrs = self.time_series_convolution(time_series_attrs)
+        # time_series_attrs = self.time_series_convolution(time_series_attrs)
         time_series_attrs = time_series_attrs.flatten(start_dim=1)  # (Support+Query, C*T)
 
         if time_series_attrs.ndim == 2:
