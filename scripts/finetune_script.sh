@@ -27,7 +27,7 @@ ulimit -n 4096
 #// poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-collatefn-TabPFNv2.5/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50
 #// poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-longwindow/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50
 #? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-newconvol/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50
+#? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50
 #? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50
 
 #! TESTING with ckpts
@@ -42,4 +42,5 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Fin
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-longwindow/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-longwindow/seed42/checkpoints/epoch\=10-step\=4191.ckpt' train=False
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-collatefn-TabPFNv2.5/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/TUEV-Finetune-collatefn-TabPFNv2.5/seed42/checkpoints/epoch\=6-step\=2667.ckpt' train=False
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-newconvol/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-newconvol/seed42/checkpoints/epoch\=3-step\=1524.ckpt' train=False
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-newconvol/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-newconvol/seed42/checkpoints/epoch\=3-step\=1524.ckpt' train=False
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5/seed42/checkpoints/epoch\=10-step\=5076.ckpt' train=False
