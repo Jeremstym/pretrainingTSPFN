@@ -66,6 +66,45 @@ chOrder_standard = [
     "EEG T2-REF",
 ]
 
+# Map your label IDs to a priority (Higher number = Higher priority)
+# Note: Check your specific mapping, but usually:
+# SPSW/GPED/PLED are the most important.
+priority_map = {
+    1: 10,  # GPED (High priority)
+    2: 10,  # PLED
+    3: 10,  # SPSW
+    4: 10,  # TRIP
+    5: 5,  # ARTF / EYEM (Medium priority)
+    0: 1,  # BCKG (Low priority)
+}
+
+
+def convert_signals(signals, Rawdata):
+    signal_names = {k: v for (k, v) in zip(Rawdata.info["ch_names"], list(range(len(Rawdata.info["ch_names"]))))}
+    new_signals = np.vstack(
+        (
+            signals[signal_names["EEG FP1-REF"]] - signals[signal_names["EEG F7-REF"]],  # 0
+            (signals[signal_names["EEG F7-REF"]] - signals[signal_names["EEG T3-REF"]]),  # 1
+            (signals[signal_names["EEG T3-REF"]] - signals[signal_names["EEG T5-REF"]]),  # 2
+            (signals[signal_names["EEG T5-REF"]] - signals[signal_names["EEG O1-REF"]]),  # 3
+            (signals[signal_names["EEG FP2-REF"]] - signals[signal_names["EEG F8-REF"]]),  # 4
+            (signals[signal_names["EEG F8-REF"]] - signals[signal_names["EEG T4-REF"]]),  # 5
+            (signals[signal_names["EEG T4-REF"]] - signals[signal_names["EEG T6-REF"]]),  # 6
+            (signals[signal_names["EEG T6-REF"]] - signals[signal_names["EEG O2-REF"]]),  # 7
+            (signals[signal_names["EEG FP1-REF"]] - signals[signal_names["EEG F3-REF"]]),  # 14
+            (signals[signal_names["EEG F3-REF"]] - signals[signal_names["EEG C3-REF"]]),  # 15
+            (signals[signal_names["EEG C3-REF"]] - signals[signal_names["EEG P3-REF"]]),  # 16
+            (signals[signal_names["EEG P3-REF"]] - signals[signal_names["EEG O1-REF"]]),  # 17
+            (signals[signal_names["EEG FP2-REF"]] - signals[signal_names["EEG F4-REF"]]),  # 18
+            (signals[signal_names["EEG F4-REF"]] - signals[signal_names["EEG C4-REF"]]),  # 19
+            (signals[signal_names["EEG C4-REF"]] - signals[signal_names["EEG P4-REF"]]),  # 20
+            (signals[signal_names["EEG P4-REF"]] - signals[signal_names["EEG O2-REF"]]),
+        )
+    )  # 21
+
+    keep_channels = [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21]
+    return new_signals, keep_channels
+
 
 def BuildEvents(signals, times, EventData, keep_channels):
     """
@@ -82,17 +121,20 @@ def BuildEvents(signals, times, EventData, keep_channels):
 
     # 2. Deduplicate based on Start and End times
     df = pd.DataFrame(filtered_EventData, columns=["chan", "start", "end", "label_id"])
-    df_unique = df.drop_duplicates(subset=["start", "end"])
-    unique_event_data = df_unique.to_numpy()
+    df["priority"] = df["label_id"].map(priority_map).fillna(0)
+    df_sorted = df.sort_values(by=["start", "end", "priority"], ascending=[True, True, False])
+    # df_unique = df.drop_duplicates(subset=["start", "end", "label_id"])
+    df_unique = df_sorted.drop_duplicates(
+        subset=["start", "end"], keep="first"
+    )  # We remove label_id to avoid multiple labels for same event
+    unique_event_data = df_unique.drop(columns=["priority"]).to_numpy()
 
     numEvents = len(unique_event_data)
 
     # We only take the rows of the signal that are in keep_channels
     if signals.shape[0] > len(keep_channels):
-        # Slice only if we haven't sliced before
-        selected_signals = signals[keep_channels, :]
+        raise ValueError("Signals shape does not match keep_channels length")
     else:
-        # It's already sliced, just use it
         selected_signals = signals
     numChan = len(keep_channels)
 
@@ -116,8 +158,11 @@ def BuildEvents(signals, times, EventData, keep_channels):
         center_idx = (idx_start + idx_end) // 2
 
         # Calculate slice boundaries relative to padded signal
-        start_slice = (center_idx + pad_width) - (window_samples // 2)
-        end_slice = start_slice + window_samples
+        # start_slice = (center_idx + pad_width) - (window_samples // 2)
+        # end_slice = start_slice + window_samples
+        start_slice = pad_width + idx_start - 2 * int(fs)
+        end_slice = pad_width + idx_end + 2 * int(fs)
+        assert end_slice - start_slice == window_samples, "Slice length mismatch"
 
         features[i, :, :] = signals_padded[:, start_slice:end_slice]
 
@@ -126,33 +171,6 @@ def BuildEvents(signals, times, EventData, keep_channels):
         labels[i, :] = int(unique_event_data[i, 3])
 
     return [features, offending_channel, labels]
-
-
-def convert_signals(signals, Rawdata):
-    signal_names = {k: v for (k, v) in zip(Rawdata.info["ch_names"], list(range(len(Rawdata.info["ch_names"]))))}
-    new_signals = np.vstack(
-        (
-            signals[signal_names["EEG FP1-REF"]] - signals[signal_names["EEG F7-REF"]], # 0
-            (signals[signal_names["EEG F7-REF"]] - signals[signal_names["EEG T3-REF"]]), # 1
-            (signals[signal_names["EEG T3-REF"]] - signals[signal_names["EEG T5-REF"]]), # 2
-            (signals[signal_names["EEG T5-REF"]] - signals[signal_names["EEG O1-REF"]]), # 3
-            (signals[signal_names["EEG FP2-REF"]] - signals[signal_names["EEG F8-REF"]]), # 4
-            (signals[signal_names["EEG F8-REF"]] - signals[signal_names["EEG T4-REF"]]), # 5
-            (signals[signal_names["EEG T4-REF"]] - signals[signal_names["EEG T6-REF"]]), # 6
-            (signals[signal_names["EEG T6-REF"]] - signals[signal_names["EEG O2-REF"]]), # 7
-            (signals[signal_names["EEG FP1-REF"]] - signals[signal_names["EEG F3-REF"]]), # 14
-            (signals[signal_names["EEG F3-REF"]] - signals[signal_names["EEG C3-REF"]]), # 15
-            (signals[signal_names["EEG C3-REF"]] - signals[signal_names["EEG P3-REF"]]), # 16
-            (signals[signal_names["EEG P3-REF"]] - signals[signal_names["EEG O1-REF"]]), # 17
-            (signals[signal_names["EEG FP2-REF"]] - signals[signal_names["EEG F4-REF"]]), # 18
-            (signals[signal_names["EEG F4-REF"]] - signals[signal_names["EEG C4-REF"]]), # 19
-            (signals[signal_names["EEG C4-REF"]] - signals[signal_names["EEG P4-REF"]]), # 20
-            (signals[signal_names["EEG P4-REF"]] - signals[signal_names["EEG O2-REF"]]), # 21
-        )
-    ) 
-
-    keep_channels = [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21]
-    return new_signals, keep_channels
 
 
 def readEDF(fileName):
@@ -174,6 +192,7 @@ def readEDF(fileName):
 
     _, times = Rawdata[:]
     signals = Rawdata.get_data(units="uV")
+    signals /= 100.0  # Normalize to 0.1mV units
     RecFile = fileName[0:-3] + "rec"
     eventData = np.genfromtxt(RecFile, delimiter=",")
     Rawdata.close()
@@ -191,7 +210,6 @@ def load_up_objects(BaseDir, Features, OffendingChannels, Labels, OutDir):
                         dirName + "/" + fname
                     )  # event is the .rec file in the form of an array
                     signals, keep_channels = convert_signals(signals, Rawdata)
-                    # keep_channels = list(range(len(chOrder_standard)))
                 except (ValueError, KeyError):
                     print("something funky happened in " + dirName + "/" + fname)
                     continue
