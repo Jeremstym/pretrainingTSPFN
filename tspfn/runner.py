@@ -74,6 +74,8 @@ class TSPFNRunner(ABC):
                 omegaconf.nodes.AnyNode,
                 typing.Any,  # <--- The one causing the current error
                 collections.OrderedDict,  # <--- Very common in state_dicts
+                omegaconf.base.ContainerMetadata,  # The one you just got an error for
+                omegaconf.base.Metadata,  # Usually the next one to fail
             ]
         )
 
