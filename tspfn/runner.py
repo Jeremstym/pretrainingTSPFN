@@ -25,7 +25,6 @@ from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.loggers import CometLogger, Logger
 
 logger = logging.getLogger(__name__)
-torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
 
 
 class TSPFNRunner(ABC):
