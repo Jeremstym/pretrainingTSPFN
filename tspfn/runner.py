@@ -66,6 +66,8 @@ class TSPFNRunner(ABC):
         # `dataprocessing` default value of is `high`, the middle-ground between performance and precision. For more details:
         # https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
         torch.set_float32_matmul_precision(cfg.float32_matmul_precision)
+        torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
+        torch.serialization.add_safe_globals([omegaconf.base.ContainerMetadata])
 
         if cfg.ckpt:
             ckpt_path = resolve_model_checkpoint_path(cfg.ckpt)
@@ -132,7 +134,6 @@ class TSPFNRunner(ABC):
         if cfg.ckpt:  # Load pretrained model if checkpoint is provided
             if cfg.weights_only:
                 logger.info(f"Loading weights from {ckpt_path}")
-                torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
                 model.load_state_dict(torch.load(ckpt_path, map_location=model.device)["state_dict"], strict=cfg.strict)
             #         modelkeys = list(model.state_dict().keys())
             #         loadkeys = list(torch.load(ckpt_path, map_location=model.device)["state_dict"].keys())
@@ -140,7 +141,6 @@ class TSPFNRunner(ABC):
             #         print(commonkeys)
             else:
                 logger.info(f"Loading model from {ckpt_path}")
-                torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
                 model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
 
         datamodule.setup()
@@ -153,7 +153,6 @@ class TSPFNRunner(ABC):
                 trainer.fit(model, datamodule=datamodule)
                 # Copy best model checkpoint to a predictable path + online tracker (if used)
                 # Ensure we use the best weights (and not the latest ones) by loading back the best model
-                torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
                 model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
                 torch.save(model.encoder.state_dict(), cfg.output_dir + "/tspfn_encoder_weights.pt")
                 cfg.updated_pfn_path = cfg.output_dir + "/tspfn_encoder_weights.pt"
@@ -165,7 +164,6 @@ class TSPFNRunner(ABC):
                 trainer.fit(model, datamodule=datamodule)
                 best_model_path = trainer.checkpoint_callback.best_model_path
                 print(f"Best model checkpoint saved at {best_model_path}")
-                torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
                 model = model.load_from_checkpoint(best_model_path)
             if cfg.test:
                 trainer.test(model, datamodule=datamodule)
