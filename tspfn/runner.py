@@ -78,7 +78,6 @@ class TSPFNRunner(ABC):
                 list,
                 tuple,
                 set,
-                omegaconf.base.BaseContainer,  # The base class of DictConfig and ListConfig
                 omegaconf.base.ContainerMetadata,  # The one you just got an error for
                 omegaconf.base.Metadata,  # Usually the next one to fail
             ]
