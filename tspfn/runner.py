@@ -74,6 +74,7 @@ class TSPFNRunner(ABC):
                 omegaconf.nodes.AnyNode,
                 typing.Any,  # <--- The one causing the current error
                 collections.OrderedDict,  # <--- Very common in state_dicts
+                collections.defaultdict,
                 dict,
                 list,
                 tuple,
