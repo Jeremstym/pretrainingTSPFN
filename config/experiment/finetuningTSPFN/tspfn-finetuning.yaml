@@ -41,9 +41,9 @@ task:
       _target_: torch.optim.AdamW
       lr: 1e-4
       weight_decay: 1e-5
-    # scheduler:
-    #   _target_: transformers.get_linear_schedule_with_warmup
-    #   num_warmup_steps: 0.1
+    scheduler:
+      _target_: transformers.get_linear_schedule_with_warmup
+      num_warmup_steps: 0.1
 
 
 # Change checkpoint loading defaults to:
