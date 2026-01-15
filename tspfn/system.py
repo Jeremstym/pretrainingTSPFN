@@ -85,18 +85,30 @@ class TSPFNSystem(pl.LightningModule, ABC):
             params = filter(lambda p: p.requires_grad, self.parameters())
 
         # Extract the optimizer and scheduler configs
+        # if optimizer_cfg := self.hparams["optim"].get("optimizer"):
+        #     scheduler_cfg = self.hparams["optim"].get("lr_scheduler")
+        # else:
+        #     optimizer_cfg = self.hparams["optim"]
+
+        optimizer_cfg = self.hparams["optim"]["optimizer"]
         scheduler_cfg = None
-        if optimizer_cfg := self.hparams["optim"].get("optimizer"):
-            scheduler_cfg = self.hparams["optim"].get("lr_scheduler")
-        else:
-            optimizer_cfg = self.hparams["optim"]
+        if scheduler_cfg := self.hparams["optim"].get("scheduler"):
+            total_steps = self.trainer.estimated_stepping_batches
+            warmup_ratio = scheduler_cfg.get("num_warmup_steps", 0)
+            num_warmup = int(total_steps * warmup_ratio)
 
         # Instantiate the optimizer and scheduler
         configured_optimizer = {"optimizer": hydra.utils.instantiate(optimizer_cfg, params=params)}
         if scheduler_cfg:
-            configured_optimizer["lr_scheduler"] = hydra.utils.instantiate(
-                scheduler_cfg, optimizer=configured_optimizer["optimizer"]
-            )
+            configured_optimizer["lr_scheduler"] = {
+                "scheduler": hydra.utils.instantiate(
+                    scheduler_cfg,
+                    optimizer=configured_optimizer["optimizer"],
+                    num_warmup_steps=num_warmup,
+                    num_training_steps=total_steps,
+                ),
+                "interval": "step",
+            }
 
         return configured_optimizer
 
