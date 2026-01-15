@@ -12,6 +12,7 @@ import hydra
 import numpy as np
 import torch
 import omegaconf
+import typing
 from tspfn.pretraining.tspfn_module import TSPFNPretraining
 from tspfn.finetuning.tspfn_finetune import TSPFNFineTuning
 from data.data_module import TSPFNDataModule
