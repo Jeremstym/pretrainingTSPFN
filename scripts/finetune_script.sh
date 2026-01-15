@@ -33,7 +33,8 @@ ulimit -n 4096
 
 #? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2-hardsubsampling/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=50
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2-filteredTUEV/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
+#? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2-filteredTUEV/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2.5-filteredTUEV/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
 
 #! TESTING with ckpts
 
