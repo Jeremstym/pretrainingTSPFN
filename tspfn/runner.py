@@ -66,15 +66,7 @@ class TSPFNRunner(ABC):
         torch.set_float32_matmul_precision(cfg.float32_matmul_precision)
         torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
         torch.serialization.add_safe_globals(
-            [
-                omegaconf.dictconfig.DictConfig,
-                omegaconf.listconfig.ListConfig,
-                omegaconf.nodes.AnyNode,
-                omegaconf.base.Metadata,
-                omegaconf.base.ContainerMetadata,
-                # This is often the hidden culprit:
-                "omegaconf.dictconfig.DictConfig",
-            ]
+            [omegaconf.dictconfig.DictConfig, omegaconf.listconfig.ListConfig, omegaconf.nodes.AnyNode]
         )
 
         if cfg.ckpt:
@@ -142,7 +134,10 @@ class TSPFNRunner(ABC):
         if cfg.ckpt:  # Load pretrained model if checkpoint is provided
             if cfg.weights_only:
                 logger.info(f"Loading weights from {ckpt_path}")
-                model.load_state_dict(torch.load(ckpt_path, map_location=model.device, weights_only=cfg.weights_only)["state_dict"], strict=cfg.strict)
+                model.load_state_dict(
+                    torch.load(ckpt_path, map_location=model.device, weights_only=cfg.weights_only)["state_dict"],
+                    strict=cfg.strict,
+                )
             #         modelkeys = list(model.state_dict().keys())
             #         loadkeys = list(torch.load(ckpt_path, map_location=model.device)["state_dict"].keys())
             #         commonkeys = list(set(modelkeys).intersection(loadkeys))
