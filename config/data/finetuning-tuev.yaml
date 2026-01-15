@@ -2,5 +2,5 @@ defaults:
   - default
 
 _target_: data.data_module.FineTuneTUEVDataModule
-# data_roots: ${oc.env:FULLTUEV_DATA_PATH}
-data_roots: ${oc.env:TUEV_DATA_PATH}
+data_roots: ${oc.env:filteredTUEV_DATA_PATH}
+# data_roots: ${oc.env:TUEV_DATA_PATH}
