@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
 
 
-
 class TSPFNRunner(ABC):
     """Abstract runner that runs the main training/val loop, etc. using Lightning Trainer."""
 
@@ -67,7 +66,17 @@ class TSPFNRunner(ABC):
         # https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
         torch.set_float32_matmul_precision(cfg.float32_matmul_precision)
         torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
-        torch.serialization.add_safe_globals([omegaconf.base.ContainerMetadata])
+        torch.serialization.add_safe_globals(
+            [
+                omegaconf.dictconfig.DictConfig,
+                omegaconf.listconfig.ListConfig,
+                omegaconf.nodes.AnyNode,
+                omegaconf.base.Metadata,
+                omegaconf.base.ContainerMetadata,
+                # This is often the hidden culprit:
+                "omegaconf.dictconfig.DictConfig",
+            ]
+        )
 
         if cfg.ckpt:
             ckpt_path = resolve_model_checkpoint_path(cfg.ckpt)
@@ -145,7 +154,7 @@ class TSPFNRunner(ABC):
 
         datamodule.setup()
 
-        #Print output dir
+        # Print output dir
         logger.info(f"Saving results in: {trainer.logger.log_dir}")
 
         if isinstance(model, TSPFNPretraining):
