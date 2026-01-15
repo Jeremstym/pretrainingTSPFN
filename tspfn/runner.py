@@ -65,7 +65,7 @@ class TSPFNRunner(ABC):
         # https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
         torch.set_float32_matmul_precision(cfg.float32_matmul_precision)
         torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
-        ttorch.serialization.add_safe_globals(
+        torch.serialization.add_safe_globals(
             [
                 omegaconf.dictconfig.DictConfig,
                 omegaconf.listconfig.ListConfig,
