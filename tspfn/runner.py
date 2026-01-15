@@ -66,7 +66,6 @@ class TSPFNRunner(ABC):
         # `dataprocessing` default value of is `high`, the middle-ground between performance and precision. For more details:
         # https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
         torch.set_float32_matmul_precision(cfg.float32_matmul_precision)
-        torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
         torch.serialization.add_safe_globals(
             [
                 omegaconf.dictconfig.DictConfig,
