@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=electronic,hard
 #SBATCH --job-name=TUEV-finetuning
-#SBATCH --cpus-per-task=3
+#SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=8G
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
