@@ -129,6 +129,7 @@ class TSPFNRunner(ABC):
         if cfg.ckpt:  # Load pretrained model if checkpoint is provided
             if cfg.weights_only:
                 logger.info(f"Loading weights from {ckpt_path}")
+                torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
                 model.load_state_dict(torch.load(ckpt_path, map_location=model.device)["state_dict"], strict=cfg.strict)
             #         modelkeys = list(model.state_dict().keys())
             #         loadkeys = list(torch.load(ckpt_path, map_location=model.device)["state_dict"].keys())
