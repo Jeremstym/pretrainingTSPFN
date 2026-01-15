@@ -72,15 +72,15 @@ class TSPFNRunner(ABC):
                 omegaconf.dictconfig.DictConfig,
                 omegaconf.listconfig.ListConfig,
                 omegaconf.nodes.AnyNode,
-                typing.Any,  # <--- The one causing the current error
-                collections.OrderedDict,  # <--- Very common in state_dicts
+                typing.Any,
+                collections.OrderedDict,
                 collections.defaultdict,
                 dict,
                 list,
                 tuple,
                 set,
-                omegaconf.base.ContainerMetadata,  # The one you just got an error for
-                omegaconf.base.Metadata,  # Usually the next one to fail
+                omegaconf.base.ContainerMetadata,
+                omegaconf.base.Metadata,
             ]
         )
 
