@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 import torch
 import pytorch_lightning as pl
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -226,7 +226,9 @@ class TSPFNDataModule(pl.LightningDataModule):
     #         return True
     #     return False
 
-    def _dataloader(self, dataset: Dataset, shuffle: bool, batch_size: int, collate_fn=None, drop_last=False) -> DataLoader:
+    def _dataloader(
+        self, dataset: Dataset, shuffle: bool, batch_size: int, collate_fn=None, drop_last=False
+    ) -> DataLoader:
         return DataLoader(
             dataset,
             batch_size=batch_size,
@@ -304,7 +306,7 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
 
     def train_dataloader(self):
         return self._dataloader(
-            self.train_dataset, 
+            self.train_dataset,
             shuffle=True,
             batch_size=self.batch_size,
             collate_fn=None,
@@ -340,6 +342,133 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             self.train_dataset,
             shuffle=False,
             batch_size=self.batch_size,
+            collate_fn=None,
+            drop_last=True,
+        )
+        return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
+
+
+class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
+    """LightningDataModule for TSP datasets during finetuning.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            subsets=subsets,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+        print(f"num workers: {self.num_workers}")
+
+    def get_stratified_sampler(self, dataset):
+        """Create a WeightedRandomSampler to achieve stratified sampling."""
+        labels = [label for _, label in dataset]
+        labels = torch.tensor(labels)
+        class_counts = torch.bincount(labels)
+        print(f"Class distribution in training set: {class_counts.tolist()}")
+        class_weights = 1.0 / class_counts.float()
+        sample_weights = class_weights[labels]
+        sampler = WeightedRandomSampler(
+            weights=sample_weights,
+            num_samples=len(sample_weights),
+            replacement=True,
+        )
+        return sampler
+
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Create datasets. Called on every process in distributed settings."""
+        self.train_dataset = TUEVDataset(
+            root=os.path.join(self.data_roots, "processed_train"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_train")),
+            sampling_rate=200,
+        )
+        self.val_dataset = TUEVDataset(
+            root=os.path.join(self.data_roots, "processed_eval"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_eval")),
+            sampling_rate=200,
+        )
+        self.test_dataset = TUEVDataset(
+            root=os.path.join(self.data_roots, "processed_test"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_test")),
+            sampling_rate=200,
+        )
+        self.train_sampler = self.get_stratified_sampler(self.train_dataset)
+        self.val_sampler = self.get_stratified_sampler(self.val_dataset)
+        self.test_sampler = self.get_stratified_sampler(self.test_dataset)
+        return
+
+    def _dataloader(
+        self, dataset: Dataset, batch_size: int, sampler: WeightedRandomSampler, collate_fn=None, drop_last=False
+    ) -> DataLoader:
+        return DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=False, # Use weighted sampler instead
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+            collate_fn=collate_fn,
+            drop_last=drop_last,
+            persistent_workers=self.num_workers > 0,
+            sampler=sampler,
+        )
+
+    def train_dataloader(self):
+        return self._dataloader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            sampler=self.train_sampler,
+            collate_fn=None,
+            drop_last=True,
+        )
+
+    def val_dataloader(self):
+        val_loader = self._dataloader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            sampler=self.val_sampler,
+            collate_fn=None,
+            drop_last=True,
+        )
+        train_loader = self._dataloader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            sampler=self.train_sampler,
+            collate_fn=None,
+            drop_last=True,
+        )
+        return CombinedLoader({"val": val_loader, "train": train_loader}, "max_size_cycle")
+
+    def test_dataloader(self):
+        test_loader = self._dataloader(
+            self.test_dataset,
+            batch_size=self.batch_size,
+            sampler=self.test_sampler,
+            collate_fn=None,
+            drop_last=True,
+        )
+        train_loader = self._dataloader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            sampler=self.train_sampler,
             collate_fn=None,
             drop_last=True,
         )
