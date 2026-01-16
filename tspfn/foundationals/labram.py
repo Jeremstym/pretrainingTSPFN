@@ -18,7 +18,7 @@ if __name__ == "__main__":
         n_code=8192,
         code_dim=32
     )
-    x = torch.randn(4,16,1000)
+    x = torch.randn(4,16,1600)
     # tokens = model.get_tokens(x, input_chans=16)
     x = rearrange(x, 'B N (A T) -> B N A T', T=200)
     # x_fft = torch.fft.fft(x, dim=-1)
