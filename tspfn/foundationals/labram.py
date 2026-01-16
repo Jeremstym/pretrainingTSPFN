@@ -1,10 +1,4 @@
-import sys
-from pathlib import Path
-
-# Add LaBraM to path before any labram-specific imports
-labram_path = Path("submodules/labram").resolve()
-sys.path.append(str(labram_path))
-
+import tspfn.foundationals
 from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12
 
 if __name__ == "__main__":
