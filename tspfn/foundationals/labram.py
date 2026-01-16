@@ -11,6 +11,6 @@ if __name__ == "__main__":
         n_code=8192,
         code_dim=32
     )
-    x = torch.randn(4,128,8,200)
-    tokens = model.get_tokens(x)
+    x = torch.randn(4,16,8,200)
+    tokens = model.get_tokens(x, input_chans=16)
     print(tokens["token"].shape)
