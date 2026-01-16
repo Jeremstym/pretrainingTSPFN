@@ -422,13 +422,13 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
         return DataLoader(
             dataset,
             batch_size=batch_size,
-            shuffle=False, # Use weighted sampler instead
+            sampler=sampler,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
             collate_fn=collate_fn,
             drop_last=drop_last,
             persistent_workers=self.num_workers > 0,
-            sampler=sampler,
+            shuffle=False, # Use weighted sampler instead
         )
 
     def train_dataloader(self):
