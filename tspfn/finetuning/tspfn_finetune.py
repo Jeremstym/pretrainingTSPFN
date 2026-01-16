@@ -32,7 +32,7 @@ from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
-from tspfn.utils import get_sizes_per_class, MulticlassFaiss, SingleclassFaiss
+from tspfn.utils import get_sizes_per_class, MulticlassFaiss, SingleclassFaiss, stratified_batch_split
 
 logger = logging.getLogger(__name__)
 
@@ -196,12 +196,10 @@ class TSPFNFineTuning(TSPFNSystem):
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
         if self.training or summary_mode:
-            # TODO: set split size coeff as parameter with size = coeff * batch_size
-            half_size = time_series_attrs.shape[0] // 2  # Split equally between support and query sets
-            ts_batch_support = time_series_attrs[:half_size]  # (Support, C, T)
-            ts_batch_query = time_series_attrs[half_size:]  # (Query, C, T)
-            y_batch_support = labels[:half_size]  # (Support, 1)
-            y_batch_query = labels[half_size:]  # (Query, 1)
+            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = stratified_batch_split(
+                data=time_series_attrs,
+                labels=labels,
+            )
         else:
             ts_batch_support = time_series_attrs.to(self.device)  # (Support+Query, C, T)
             ts_batch_query = time_series_attrs.to(self.device)  # (Support+Query, C, T)
@@ -229,6 +227,15 @@ class TSPFNFineTuning(TSPFNSystem):
             ts_batch_support,
             ts_batch_query,
         )
+
+    def get_knn(
+        self,
+        y_support: Tensor,
+        y_query: Tensor,
+        ts_support: Tensor,
+        ts_query: Tensor,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, Sequence[np.ndarray]]:
+        pass
 
     @auto_move_data
     def encode(

@@ -5,10 +5,33 @@ import faiss
 # from faiss import StandardGpuResources
 import random
 import torch
+from torch import Tensor
+from typing import Tuple, Union, Dict
 import torch.nn as nn
 import shutil
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from torch.utils.data import TensorDataset, DataLoader
+
+
+def stratified_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    unique_labels = torch.unique(labels)
+    support_indices = []
+    query_indices = []
+
+    for label in unique_labels:
+        # Find all indices for this specific class
+        idx = (labels == label).nonzero(as_tuple=True)[0]
+
+        # Split these indices in half
+        mid = len(idx) // 2
+        support_indices.append(idx[:mid])
+        query_indices.append(idx[mid:])
+
+    # Concatenate indices
+    support_indices = torch.cat(support_indices)
+    query_indices = torch.cat(query_indices)
+
+    return data[support_indices], data[query_indices], labels[support_indices], labels[query_indices]
 
 
 def get_sizes_per_class(class_choice: str, y_train: np.ndarray, num_classes: int, context_length: int):
