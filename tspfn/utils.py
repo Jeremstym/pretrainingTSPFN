@@ -49,7 +49,7 @@ def get_sizes_per_class(class_choice: str, y_train: np.ndarray, num_classes: int
             max_idx = np.argmax(np.array(sizes_per_class))
             sizes_per_class[max_idx] += residual
         else:
-            min_idx = np.argmax(np.array(sizes_per_class))
+            min_idx = np.argmin(np.array(sizes_per_class))
             sizes_per_class[min_idx] += residual
     elif class_choice == "balance":
         sizes_per_class = [context_length // num_classes] * num_classes
