@@ -32,6 +32,7 @@ from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
+from tspfn.utils import get_sizes_per_class, MulticlassFaiss, SingleclassFaiss
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 kernel_size=10,
                 stride=10,
                 groups=self.ts_num_channels,
-            ), # T = 1000 -> 100
+            ),  # T = 1000 -> 100
             nn.ReLU(),
             nn.Conv1d(
                 in_channels=self.ts_num_channels,
@@ -100,7 +101,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 kernel_size=5,
                 stride=5,
                 groups=self.ts_num_channels,
-            ), # T = 100 -> 20
+            ),  # T = 100 -> 20
         )
         # self.time_series_convolution = nn.Sequential(
         #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=8, stride=4, padding=2, groups=self.ts_num_channels),
@@ -197,20 +198,26 @@ class TSPFNFineTuning(TSPFNSystem):
         if self.training or summary_mode:
             # TODO: set split size coeff as parameter with size = coeff * batch_size
             half_size = time_series_attrs.shape[0] // 2  # Split equally between support and query sets
+            ts_batch_support = time_series_attrs[:half_size]  # (Support, C, T)
+            ts_batch_query = time_series_attrs[half_size:]  # (Query, C, T)
             y_batch_support = labels[:half_size]  # (Support, 1)
             y_batch_query = labels[half_size:]  # (Query, 1)
         else:
+            ts_batch_support = time_series_attrs.to(self.device)  # (Support+Query, C, T)
+            ts_batch_query = time_series_attrs.to(self.device)  # (Support+Query, C, T)
             y_batch_support = labels.to(self.device)  # (Support, 1)
             y_batch_query = labels.to(self.device)  # (Query, 1)
-            time_series_attrs = time_series_attrs.to(self.device)  # (Support+Query, C, T)
 
-        time_series_attrs = self.time_series_convolution(time_series_attrs)
-        time_series_attrs = time_series_attrs.flatten(start_dim=1)  # (Support+Query, C*T)
+            ts_batch_support = self.time_series_convolution(ts_batch_support)
+            ts_batch_support = ts_batch_support.flatten(start_dim=1)  # (Support, C*T)
+            ts_batch_query = self.time_series_convolution(ts_batch_query)
+            ts_batch_query = ts_batch_query.flatten(start_dim=1)  # (Query, C*T)
 
-        if time_series_attrs.ndim == 2:
+        if ts_batch_support.ndim == 2:
             # Unsqueeze to comply with expected input shape for TabPFN encoder
-            time_series_attrs = time_series_attrs.unsqueeze(0)  # (1, S+Q, C*T)
-
+            ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C*T)
+        if ts_batch_query.ndim == 2:
+            ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C*T)
         if y_batch_support.ndim == 1:
             y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
         if y_batch_query.ndim == 1:
@@ -219,14 +226,16 @@ class TSPFNFineTuning(TSPFNSystem):
         return (
             y_batch_support,
             y_batch_query,
-            time_series_attrs,
+            ts_batch_support,
+            ts_batch_query,
         )
 
     @auto_move_data
     def encode(
         self,
         y_batch_support: Tensor,
-        ts: Tensor,
+        ts_batch_support: Tensor,
+        ts_batch_query: Tensor,
         y_inference_support: Optional[Tensor] = None,
         ts_inference_support: Optional[Tensor] = None,
     ) -> Tensor:
@@ -237,6 +246,7 @@ class TSPFNFineTuning(TSPFNSystem):
             ts: (B, S (=Support+Query), T), Tokens to feed to the encoder.
         Returns: (B, Query, E), Embeddings of the input sequences.
         """
+        ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
         if self.training or y_inference_support is None:
             out_features = self.encoder(
                 ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
@@ -286,13 +296,13 @@ class TSPFNFineTuning(TSPFNSystem):
         else:
             summary_mode = False
 
-        y_batch_support, y_batch_query, ts = self.process_data(
+        y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_attrs,
             labels=labels,
             summary_mode=summary_mode,
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
 
-        out_features = self.encode(y_batch_support, ts)  # (B, S, E) -> (B, E)
+        out_features = self.encode(y_batch_support, ts_support, ts_query)  # (B, S, E) -> (B, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
@@ -325,10 +335,13 @@ class TSPFNFineTuning(TSPFNSystem):
         """Extracts the latent vectors from the encoder for the given batch."""
         time_series_input = batch  # (B, S, T)
 
-        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (B, S, E), (B, S)
+        y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
+            time_series_attrs=time_series_input
+        )  # (B, S, E), (B, S)
         return self.encode(
             y_batch_support,
-            ts,
+            ts_support,
+            ts_query,
         )  # (B, S, E) -> (B, E)
 
     def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
@@ -360,25 +373,28 @@ class TSPFNFineTuning(TSPFNSystem):
             batch_dict, _, _ = batch
             time_series_input, target_labels = batch_dict["val"]  # (B, C, T), (B,)
             time_series_support, support_labels = batch_dict["train"]  # (B, C, T), (B,)
-            time_series_support = time_series_support  # (B, C, T)
 
-        y_batch_support, y_batch_query, ts = self.process_data(
+        y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
 
         if time_series_support is not None:
             assert support_labels is not None, "Support labels must be provided for inference."
             # Store inference data for val/test steps
-            y_train_support, _, ts_train = self.process_data(
+            y_train_support, _, ts_train_support, _ = self.process_data(
                 time_series_attrs=time_series_support, labels=support_labels
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
         else:
             y_inference_support = None
-            ts_train = None
+            ts_train_support = None
 
         prediction = self.encode(
-            y_batch_support, ts, y_inference_support=y_inference_support, ts_inference_support=ts_train
+            y_batch_support,
+            ts_support,
+            ts_query,
+            y_inference_support=y_inference_support,
+            ts_inference_support=ts_train_support,
         )
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
