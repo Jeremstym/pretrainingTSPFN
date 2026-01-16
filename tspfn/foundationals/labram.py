@@ -1,4 +1,5 @@
 import tspfn.foundationals
+import torch
 from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12
 
 if __name__ == "__main__":
@@ -10,4 +11,6 @@ if __name__ == "__main__":
         n_code=8192,
         code_dim=32
     )
-    print(model)
+    x = torch.randn(4,16,1000)
+    tokens = model.get_tokens(x)
+    print(tokens["quantize"].shape)
