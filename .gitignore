@@ -127,6 +127,7 @@ venv.bak/
 
 # ckpt
 *.ckpt
+/ckpts
 
 # IDEs
 .idea
