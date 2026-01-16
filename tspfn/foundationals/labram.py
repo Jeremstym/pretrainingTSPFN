@@ -13,4 +13,4 @@ if __name__ == "__main__":
     )
     x = torch.randn(4,128,8,200)
     tokens = model.get_tokens(x)
-    print(tokens["token"])
+    print(tokens["token"].shape)
