@@ -1,5 +1,6 @@
 import tspfn.foundationals
 import torch
+from einops import rearrange
 from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12
 
 def std_norm(self, x):
