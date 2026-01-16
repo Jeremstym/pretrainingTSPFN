@@ -191,8 +191,6 @@ class TSPFNFineTuning(TSPFNSystem):
             - (Query, 1), Query set labels.
             - (Support+Query, C, T), Time series input for support and query sets.
         """
-
-        # Tokenize the attributes
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
         if self.training or summary_mode:
