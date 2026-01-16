@@ -211,8 +211,8 @@ class TSPFNFineTuning(TSPFNSystem):
             ts_batch_query = self.time_series_convolution(ts_batch_query)
             ts_batch_query = ts_batch_query.flatten(start_dim=1)  # (Query, C*T)
 
+        # Unsqueeze to comply with expected input shape for TabPFN encoder
         if ts_batch_support.ndim == 2:
-            # Unsqueeze to comply with expected input shape for TabPFN encoder
             ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C*T)
         if ts_batch_query.ndim == 2:
             ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C*T)
