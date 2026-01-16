@@ -367,16 +367,17 @@ class TSPFNFineTuning(TSPFNSystem):
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
         if self.training:
-            time_series_input, target_labels = batch  # (B, C, T), (B,)
+            time_series_input, target_labels = batch  # (N, C, T), (N,)
             time_series_support = None
         else:
             batch_dict, _, _ = batch
-            time_series_input, target_labels = batch_dict["val"]  # (B, C, T), (B,)
-            time_series_support, support_labels = batch_dict["train"]  # (B, C, T), (B,)
+            time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
+            time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
 
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+        # B not equal to N (dataset batch size = 1 here)
 
         if time_series_support is not None:
             assert support_labels is not None, "Support labels must be provided for inference."
@@ -413,10 +414,10 @@ class TSPFNFineTuning(TSPFNSystem):
         else:
             stage = "test_metrics"
         for target_task, target_loss in self.predict_losses.items():
-            y_hat = predictions[target_task]  # (B=Query, num_classes)
+            y_hat = predictions[target_task]  # (N=Query, num_classes)
             if y_hat.ndim == 1:
-                y_hat = y_hat.unsqueeze(dim=0)  # (B=Query, num_classes=1)
-            target = target_batch.squeeze(dim=0)  # (B=Query,)
+                y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_classes=1)
+            target = target_batch.squeeze(dim=0)  # (N=Query,)
             # Convert target to long if classification with >2 classes, float otherwise
             target = target.long()  # TODO: adapt for binary classification
             losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
