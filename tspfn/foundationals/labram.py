@@ -7,7 +7,7 @@ if __name__ == "__main__":
         pretrained=True,
         pretrained_weights="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
         as_tokenizer=True,
-        EEG_size=1600,
+        EEG_size=1000,
         n_code=8192,
         code_dim=32
     )
