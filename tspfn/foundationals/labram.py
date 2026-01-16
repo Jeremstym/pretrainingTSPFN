@@ -9,7 +9,7 @@ if __name__ == "__main__":
         as_tokenizer=True,
         EEG_size=1000,
         n_code=8192,
-        code_dim=32
+        code_dim=16
     )
     x = torch.randn(4,16,8,200)
     tokens = model.get_tokens(x)
