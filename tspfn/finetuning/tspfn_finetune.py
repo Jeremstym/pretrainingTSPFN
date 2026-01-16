@@ -92,7 +92,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 kernel_size=10,
                 stride=10,
                 groups=self.ts_num_channels,
-            ),
+            ), # T = 1000 -> 100
             nn.ReLU(),
             nn.Conv1d(
                 in_channels=self.ts_num_channels,
@@ -100,7 +100,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 kernel_size=5,
                 stride=5,
                 groups=self.ts_num_channels,
-            ),
+            ), # T = 100 -> 20
         )
         # self.time_series_convolution = nn.Sequential(
         #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=8, stride=4, padding=2, groups=self.ts_num_channels),

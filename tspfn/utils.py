@@ -1,0 +1,130 @@
+import numpy as np
+import os
+import faiss
+
+# from faiss import StandardGpuResources
+import random
+import torch
+import torch.nn as nn
+import shutil
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from torch.utils.data import TensorDataset, DataLoader
+
+
+def get_sizes_per_class(class_choice: str, y_train: np.ndarray, num_classes: int, context_length: int):
+    assert num_classes <= 10, "can only handle up to 10 classes"
+
+    if class_choice == "equal":
+        min_num_items = 2
+        sizes_per_class = [
+            max(int(context_length * sum(y_train == c) / len(y_train)), min_num_items) for c in range(num_classes)
+        ]
+
+        # add the remaining in case of leftovers
+        residual = context_length - sum(sizes_per_class)
+        if residual <= 0:
+            max_idx = np.argmax(np.array(sizes_per_class))
+            sizes_per_class[max_idx] += residual
+        else:
+            min_idx = np.argmax(np.array(sizes_per_class))
+            sizes_per_class[min_idx] += residual
+    elif class_choice == "balance":
+        sizes_per_class = [context_length // num_classes] * num_classes
+        # add the remaining in case of leftovers
+        sizes_per_class[0] += context_length - sum(sizes_per_class)
+    else:
+        raise NotImplementedError
+
+    return sizes_per_class
+
+
+class SingleclassFaiss:
+    def __init__(self, X, y, metric="L2", gpu_id=0):
+        assert isinstance(X, np.ndarray), "X must be a numpy array"
+        assert isinstance(y, np.ndarray), "y must be a numpy array"
+        if X.dtype != np.float32:
+            X = X.astype(np.float32)
+        self.y = y
+
+        # self.gpu_resources = StandardGpuResources()
+        if metric == "L2":
+            self.index = faiss.IndexFlatL2(X.shape[1])
+        elif metric == "IP":
+            self.index = faiss.IndexFlatIP(X.shape[1])
+        else:
+            raise NotImplementedError
+
+        self.index.add(X)
+
+    def get_knn_indices(self, queries, k):
+        if isinstance(queries, torch.Tensor):
+            queries = queries.cpu().numpy()
+        assert isinstance(k, int)
+
+        knns = self.index.search(queries, k)
+        indices_Xs = knns[1]
+        ys = self.y[indices_Xs]
+        return indices_Xs, ys
+
+
+class MulticlassFaiss:
+    def __init__(self, embX, X_orig, y, metric="L2", gpu_id=0, sizes_per_class=None):
+        assert isinstance(embX, np.ndarray), "X must be a numpy array"
+        assert isinstance(y, np.ndarray), "y must be a numpy array"
+        if embX.dtype != np.float32:
+            embX = embX.astype(np.float32)
+
+        self.X = X_orig
+        self.y = y
+
+        self.sizes_per_class = sizes_per_class
+
+        self.n_classes = len(np.unique(y))
+        if metric == "L2":
+            self.indexes = [faiss.IndexFlatL2(embX.shape[1]) for _ in range(self.n_classes)]
+        elif metric == "IP":
+            self.indexes = [faiss.IndexFlatIP(embX.shape[1]) for _ in range(self.n_classes)]
+        else:
+            raise NotImplementedError
+
+        for index, Xs in zip(self.indexes, [embX[y == i] for i in range(self.n_classes)]):
+            index.add(Xs)
+
+    def get_knn_indices(self, queries, ks):
+        if isinstance(queries, torch.Tensor):
+            queries = queries.cpu().numpy()
+
+        if isinstance(ks, int):
+            ks = [ks] * self.n_classes
+        assert len(ks) == self.n_classes, "ks must have the same length as the number of classes"
+
+        knns = [index.search(queries, k) for index, k in zip(self.indexes, ks)]
+        indices_Xs = [x[1] for x in knns]
+        ys = np.concatenate([np.ones(k) * i for i, k in enumerate(ks)])
+        return indices_Xs, ys
+
+    def get_knn(self, queries, ks=None):
+        if isinstance(queries, torch.Tensor):
+            queries = queries.cpu().numpy()
+        queries = queries.astype(np.float32)
+
+        if ks is None:
+            assert self.sizes_per_class is not None
+            ks = self.sizes_per_class
+
+        if isinstance(ks, int):
+            ks = [ks] * self.n_classes
+        assert len(ks) == self.n_classes, "ks must have the same length as the number of classes"
+
+        knns = [index.search(queries, k) for index, k in zip(self.indexes, ks)]
+        indices_Xs = [x[1] for x in knns]
+        Xs = [self.X[self.y == i][indices] for i, indices in enumerate(indices_Xs)]
+        Xs = np.concatenate(Xs, axis=1)
+        ys = [self.y[self.y == i][indices] for i, indices in enumerate(indices_Xs)]
+        ys = np.concatenate(ys, axis=1)
+        distances = [x[0] for x in knns]
+        distances = np.concatenate(distances, axis=1)
+
+        # because TabPFN is seq len first, batch size second...
+        swap01 = lambda x: np.swapaxes(x, 0, 1)
+        return swap01(Xs), swap01(ys), swap01(distances), indices_Xs
