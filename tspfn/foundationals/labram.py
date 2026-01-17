@@ -1,5 +1,6 @@
 import tspfn.foundationals
 import torch
+import numpy as np
 from einops import rearrange
 from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12, vqnsp_encoder_large_decoder_3x200x24
 
@@ -10,7 +11,7 @@ def std_norm(self, x):
     return x
 
 if __name__ == "__main__":
-    torch.serialization.safe_globals([numpy.core.multiarray.scalar])
+    torch.serialization.safe_globals([np.core.multiarray.scalar])
     model = vqnsp_encoder_large_decoder_3x200x24(
         pretrained=True,
         pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
