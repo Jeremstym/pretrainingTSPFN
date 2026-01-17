@@ -37,11 +37,8 @@ class TimeSeriesNeuralTokenizer(torch.nn.Module):
         A = T // 200
         x = rearrange(x, "B N (A T) -> B N A T", A=A)
         input_chans = list(range(x.size(1)+1))  # +1 for cls token
-        quantize, embed_ind, emb_loss = self.model.encode(x, input_chans=input_chans)
+        quantize, embed_ind, emb_loss = self.model.encode(x, input_chans=input_chans, return_patch_tokens=True)
         # Remove cls token indices
-        print(f"embed_ind shape before removing cls token: {embed_ind.shape}")
-        embed_ind = embed_ind.view(B, N, A, -1)[:, :, 1:, :]  # (B, N, A, num_tokens)
-        print(f"embed_ind shape after removing cls token: {embed_ind.shape}")
         embed_ind = embed_ind.view(B, -1) # Leave B dimension, flatten the rest
         return embed_ind
 
