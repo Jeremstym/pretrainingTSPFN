@@ -57,7 +57,7 @@ if __name__ == "__main__":
     x = rearrange(x, "B N (A T) -> B N A T", T=200)
     input_chans = list(range(x.size(1)+1))
     quantize, embed_ind, emb_loss = model.encode(x, input_chans=input_chans)
-    decoded_output = model.decode(quantize, input_chans=input_chans)
+    decoded_output = model.decoder(quantize, input_chans=input_chans)
     print(f"quantize shape is {quantize.shape}")
     print(f"embed_ind shape is {embed_ind.shape}")
     print(f"decoded output shape is {decoded_output.shape}")
