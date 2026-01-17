@@ -49,7 +49,7 @@ if __name__ == "__main__":
         as_tokenzer=True,
         EEG_size=1000,
         n_code=8192,
-        code_dim=32,
+        code_dim=64,
     )
     x = torch.randn(4, 16, 1000)
     x = rearrange(x, "B N (A T) -> B N A T", T=200)
