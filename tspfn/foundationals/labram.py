@@ -37,7 +37,7 @@ class TimeSeriesNeuralTokenizer(torch.nn.Module):
         A = T // 200
         x = rearrange(x, "B N (A T) -> B N A T", A=A)
         input_chans = list(range(x.size(1)+1))  # +1 for cls token
-        quantize, embed_ind, emb_loss = self.model.encode(x, input_chans=input_chans, return_patch_tokens=True)
+        quantize, embed_ind, emb_loss = self.model.encode(x, input_chans=input_chans)
         # Random select channels
         indices = torch.randperm(quantize.size(-2))[:4]
         quantize = quantize[:, :, indices, :]
