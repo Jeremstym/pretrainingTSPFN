@@ -297,18 +297,18 @@ class TSPFNFineTuning(TSPFNSystem):
             ts: (B, S (=Support+Query), T), Tokens to feed to the encoder.
         Returns: (B, Query, E), Embeddings of the input sequences.
         """
-        ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
         if self.training or y_inference_support is None:
+            ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
             out_features = self.encoder(
                 ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
             )[:, :, -1, :]
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
-            ts_full = torch.cat([ts_inference_support, ts], dim=1)
+            ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
             y_train = y_inference_support
             out_features = self.encoder(
-                ts_full.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
+                ts.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
             )[:, :, -1, :]
 
         else:
