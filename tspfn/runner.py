@@ -160,7 +160,7 @@ class TSPFNRunner(ABC):
                 logger.info(f"Loading model from {ckpt_path}")
                 model = model.load_from_checkpoint(ckpt_path, strict=cfg.strict)
 
-        datamodule.setup()
+        # datamodule.setup() # Do not setup twice, already done in the datamodule init
 
         # Print output dir
         logger.info(f"Saving results in: {trainer.logger.log_dir}")
