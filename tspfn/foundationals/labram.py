@@ -10,6 +10,7 @@ def std_norm(self, x):
     return x
 
 if __name__ == "__main__":
+    torch.serialization.safe_globals([numpy.core.multiarray.scalar])
     model = vqnsp_encoder_large_decoder_3x200x24(
         pretrained=True,
         pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
