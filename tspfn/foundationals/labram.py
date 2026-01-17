@@ -1,13 +1,15 @@
 import tspfn.foundationals
 import torch
 import numpy
+import argparse
 from einops import rearrange
 from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12, vqnsp_encoder_large_decoder_3x200x24
 
 torch.serialization.add_safe_globals([
     numpy.dtypes.Float64DType, 
     numpy.core.multiarray.scalar,
-    numpy.dtype
+    numpy.dtype,
+    argparse.Namespace
 ])
 
 def std_norm(self, x):
