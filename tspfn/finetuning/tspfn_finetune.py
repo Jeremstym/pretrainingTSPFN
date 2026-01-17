@@ -32,6 +32,7 @@ from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
+from tspfn.fundational.labram import TimeSeriesNeuralTokenizer
 from tspfn.utils import get_sizes_per_class, MulticlassFaiss, SingleclassFaiss, stratified_batch_split
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,7 @@ class TSPFNFineTuning(TSPFNSystem):
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
         time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         time_series_num_channels: int = 16,
+        foundation_model_name: str = None,
         *args,
         **kwargs,
     ):
@@ -137,6 +139,16 @@ class TSPFNFineTuning(TSPFNSystem):
             }
         )
 
+        if foundation_model_name == "labram_vqnsp":
+            self.ts_tokenizer = TimeSeriesNeuralTokenizer(
+                pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
+                ts_size=1000,
+            )
+        elif foundation_model_name is None:
+            self.ts_tokenizer = None
+        else:
+            raise ValueError(f"Unknown foundation model name '{foundation_model_name}' provided.")
+
     @property
     def example_input_array(self) -> Tensor:
         """Redefine example input array based on the cardiac attributes provided to the model."""
@@ -204,10 +216,20 @@ class TSPFNFineTuning(TSPFNSystem):
             y_batch_support = labels.to(self.device)  # (Support, 1)
             y_batch_query = labels.to(self.device)  # (Query, 1)
 
+        if self.ts_tokenizer is None:
             ts_batch_support = self.time_series_convolution(ts_batch_support)
             ts_batch_support = ts_batch_support.flatten(start_dim=1)  # (Support, C*T)
             ts_batch_query = self.time_series_convolution(ts_batch_query)
             ts_batch_query = ts_batch_query.flatten(start_dim=1)  # (Query, C*T)
+        else:
+            ts_batch_support = self.ts_tokenizer(
+                ts_batch_support,
+                input_chans=list(range(self.ts_num_channels)),
+            ).squeeze(0)  # (Support, num_tokens)
+            ts_batch_query = self.ts_tokenizer(
+                ts_batch_query,
+                input_chans=list(range(self.ts_num_channels)),
+            ).squeeze(0)  # (Query, num_tokens)
 
         # Unsqueeze to comply with expected input shape for TabPFN encoder
         if ts_batch_support.ndim == 2:
