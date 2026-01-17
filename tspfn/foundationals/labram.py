@@ -55,11 +55,11 @@ if __name__ == "__main__":
     )
     x = torch.randn(4, 16, 1000)
     x = rearrange(x, "B N (A T) -> B N A T", T=200)
-    print(f"input shape is {x.shape}")
-    x = model.encoder.patch_embed(x)
-    print(f"patch embed shape is {x.shape}")
-    # input_chans = list(range(x.size(1)+1))
-    # quantize, embed_ind, emb_loss = model.encode(x, input_chans=input_chans)
+    input_chans = list(range(x.size(1)+1))
+    quantize, embed_ind, emb_loss = model.encode(x, input_chans=input_chans)
+    decoded_output = model.decode(quantize, input_chans=input_chans)
+    print(f"quantize shape is {quantize.shape}")
+    print(f"embed_ind shape is {embed_ind.shape}")
     # # Random select channels
     # indices = torch.randperm(quantize.size(-2))[:4]
     # quantize = quantize[:, :, indices, :]
