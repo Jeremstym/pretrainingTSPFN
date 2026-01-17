@@ -1,7 +1,7 @@
 import tspfn.foundationals
 import torch
 from einops import rearrange
-from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12
+from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12, vqnsp_encoder_large_decoder_3x200x24
 
 def std_norm(self, x):
     mean = torch.mean(x, dim=(1, 2, 3), keepdim=True)
@@ -10,7 +10,7 @@ def std_norm(self, x):
     return x
 
 if __name__ == "__main__":
-    model = vqnsp_encoder_base_decoder_3x200x12(
+    model = vqnsp_encoder_large_decoder_3x200x24(
         pretrained=True,
         pretrained_weights="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
         as_tokenizer=True,
