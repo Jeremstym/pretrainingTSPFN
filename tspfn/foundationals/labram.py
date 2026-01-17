@@ -21,6 +21,6 @@ if __name__ == "__main__":
     x = torch.randn(4,128,1600)
     # tokens = model.get_tokens(x, input_chans=16)
     x = rearrange(x, 'B N (A T) -> B N A T', T=200)
-    quantize, embed_ind, emb_loss = model.encode(x, input_chans=list(range(16)))
+    quantize, embed_ind, emb_loss = model.encode(x, input_chans=None)
     # print(tokens["token"].shape)
     print(f"token image is {embed_ind.shape}")
