@@ -20,7 +20,7 @@ def std_norm(self, x):
 
 
 if __name__ == "__main__":
-    model = vqnsp_encoder_large_decoder_3x200x12(
+    model = vqnsp_encoder_base_decoder_3x200x12(
         pretrained=True,
         pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
         as_tokenzer=True,
