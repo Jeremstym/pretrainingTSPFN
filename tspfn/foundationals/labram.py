@@ -12,7 +12,7 @@ def std_norm(self, x):
 if __name__ == "__main__":
     model = vqnsp_encoder_large_decoder_3x200x24(
         pretrained=True,
-        pretrained_weights="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
+        pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
         as_tokenzer=True,
         EEG_size=1000,
         n_code=8192,
