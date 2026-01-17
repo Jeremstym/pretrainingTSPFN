@@ -1,12 +1,14 @@
 import tspfn.foundationals
 import torch
-import numpy as np
+import numpy
 from einops import rearrange
 from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12, vqnsp_encoder_large_decoder_3x200x24
 
-torch.serialization.add_safe_globals([np.core.multiarray.scalar])
-torch.serialization.add_safe_globals([np.dtype])
-
+torch.serialization.add_safe_globals([
+    numpy.dtypes.Float64DType, 
+    numpy.core.multiarray.scalar,
+    numpy.dtype
+])
 
 def std_norm(self, x):
     mean = torch.mean(x, dim=(1, 2, 3), keepdim=True)
