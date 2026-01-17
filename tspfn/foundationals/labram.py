@@ -42,30 +42,30 @@ class TimeSeriesNeuralTokenizer(torch.nn.Module):
         decoded_output = self.model.decoder(quantize, input_chans=input_chans)
         return decoded_output
 
-if __name__ == "__main__":
-    model = vqnsp_encoder_base_decoder_3x200x12(
-        pretrained=True,
-        pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
-        as_tokenzer=True,
-        EEG_size=1000,
-        n_code=8192,
-        code_dim=64,
-    )
-    x = torch.randn(4, 16, 1000)
-    x = rearrange(x, "B N (A T) -> B N A T", T=200)
-    input_chans = list(range(x.size(1)+1))
-    quantize, embed_ind, emb_loss = model.encode(x, input_chans=input_chans)
-    # decoded_output = model.decoder(quantize, input_chans=input_chans)
-    # print(f"quantize shape is {quantize.shape}")
-    # print(f"embed_ind shape is {embed_ind.shape}")
-    # print(f"decoded output shape is {decoded_output.shape}")
-    # # Random select channels
-    # indices = torch.randperm(quantize.size(-2))[:4]
-    # quantize = quantize[:, :, indices, :]
-    # Pool quantize on channels
-    quantize = quantize.mean(dim=2, keepdim=True)
-    print(f"quantize before rearrange is {quantize.shape}")
-    quantize = rearrange(quantize, "B D C A -> B (A C) D")
-    # print(tokens["token"].shape)
-    print(f"token image is {embed_ind.view(x.size(0), -1).shape}")
-    print(f"quantize is {quantize.flatten(start_dim=1).shape}")
+# if __name__ == "__main__":
+#     model = vqnsp_encoder_base_decoder_3x200x12(
+#         pretrained=True,
+#         pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
+#         as_tokenzer=True,
+#         EEG_size=1000,
+#         n_code=8192,
+#         code_dim=64,
+#     )
+#     x = torch.randn(4, 16, 1000)
+#     x = rearrange(x, "B N (A T) -> B N A T", T=200)
+#     input_chans = list(range(x.size(1)+1))
+#     quantize, embed_ind, emb_loss = model.encode(x, input_chans=input_chans)
+#     # decoded_output = model.decoder(quantize, input_chans=input_chans)
+#     # print(f"quantize shape is {quantize.shape}")
+#     # print(f"embed_ind shape is {embed_ind.shape}")
+#     # print(f"decoded output shape is {decoded_output.shape}")
+#     # # Random select channels
+#     # indices = torch.randperm(quantize.size(-2))[:4]
+#     # quantize = quantize[:, :, indices, :]
+#     # Pool quantize on channels
+#     quantize = quantize.mean(dim=2, keepdim=True)
+#     print(f"quantize before rearrange is {quantize.shape}")
+#     quantize = rearrange(quantize, "B D C A -> B (A C) D")
+#     # print(tokens["token"].shape)
+#     print(f"token image is {embed_ind.view(x.size(0), -1).shape}")
+#     print(f"quantize is {quantize.flatten(start_dim=1).shape}")
