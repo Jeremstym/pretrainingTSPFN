@@ -48,7 +48,7 @@ class TSPFNFineTuning(TSPFNSystem):
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
         time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         time_series_num_channels: int = 16,
-        foundation_model_name: str = None #"labram_vqnsp",
+        foundation_model_name: str = None, #"labram_vqnsp",
         *args,
         **kwargs,
     ):
