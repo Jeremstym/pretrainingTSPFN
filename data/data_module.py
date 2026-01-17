@@ -379,12 +379,12 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
 
         print(f"num workers: {self.num_workers}")
 
-    def get_stratified_sampler(self, dataset):
+    def get_stratified_sampler(self, dataset, stage: str) -> WeightedRandomSampler:
         """Create a WeightedRandomSampler to achieve stratified sampling."""
         labels = [label for _, label in dataset]
         labels = torch.tensor(labels)
         class_counts = torch.bincount(labels)
-        print(f"Class distribution in training set: {class_counts.tolist()}")
+        print(f"Class distribution in {stage} set: {class_counts.tolist()}")
         class_weights = 1.0 / class_counts.float()
         sample_weights = class_weights[labels]
         sampler = WeightedRandomSampler(
@@ -411,9 +411,9 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
             files=os.listdir(os.path.join(self.data_roots, "processed_test")),
             sampling_rate=200,
         )
-        self.train_sampler = self.get_stratified_sampler(self.train_dataset)
-        self.val_sampler = self.get_stratified_sampler(self.val_dataset)
-        self.test_sampler = self.get_stratified_sampler(self.test_dataset)
+        self.train_sampler = self.get_stratified_sampler(self.train_dataset, stage="training")
+        self.val_sampler = self.get_stratified_sampler(self.val_dataset, stage="validation")
+        self.test_sampler = self.get_stratified_sampler(self.test_dataset, stage="testing")
         return
 
     def _dataloader(
