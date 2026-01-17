@@ -36,7 +36,7 @@ ulimit -n 4096
 
 #// poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/filteredTUEV-Finetune-TabPFNv2/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
 #// poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/filteredTUEV-Finetune-TabPFNv2.5/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
-
+#! Set startified dataset splits below
 #? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/filteredTUEV-Finetune-TabPFNv2-labram/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
 #? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/filteredTUEV-Finetune-TabPFNv2-labram-decoder/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
 
