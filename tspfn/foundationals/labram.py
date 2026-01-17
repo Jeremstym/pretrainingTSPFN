@@ -20,6 +20,7 @@ if __name__ == "__main__":
         code_dim=32
     )
     x = torch.randn(4,16,1600)
+    x = rearrange(x, 'B N (A T) -> B N A T', T=200)
     # # tokens = model.get_tokens(x, input_chans=16)
     # x = rearrange(x, 'B N (A T) -> B N A T', T=200)
     # input_chans = list(range(16))
