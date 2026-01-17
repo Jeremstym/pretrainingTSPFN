@@ -42,18 +42,19 @@ class TimeSeriesNeuralTokenizer(torch.nn.Module):
         embed_ind = embed_ind.view(B, -1) # Leave B dimension, flatten the rest
         return embed_ind
 
-# if __name__ == "__main__":
-#     model = vqnsp_encoder_base_decoder_3x200x12(
-#         pretrained=True,
-#         pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
-#         as_tokenzer=True,
-#         EEG_size=1000,
-#         n_code=8192,
-#         code_dim=64,
-#     )
-#     x = torch.randn(4, 16, 1000)
-#     x = rearrange(x, "B N (A T) -> B N A T", T=200)
-#     input_chans = list(range(x.size(1)+1))
-#     quantize, embed_ind, emb_loss = model.encode(x, input_chans=input_chans)
-#     # print(tokens["token"].shape)
-#     print(f"token image is {embed_ind.view(x.size(0), -1).shape}")
+if __name__ == "__main__":
+    model = vqnsp_encoder_base_decoder_3x200x12(
+        pretrained=True,
+        pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
+        as_tokenzer=True,
+        EEG_size=1000,
+        n_code=8192,
+        code_dim=64,
+    )
+    x = torch.randn(4, 16, 1000)
+    x = rearrange(x, "B N (A T) -> B N A T", T=200)
+    input_chans = list(range(x.size(1)+1))
+    quantize, embed_ind, emb_loss = model.encode(x, input_chans=input_chans)
+    # print(tokens["token"].shape)
+    print(f"token image is {embed_ind.view(x.size(0), -1).shape}")
+    print(f"quantize is {quantize.shape}")
