@@ -74,4 +74,4 @@ ulimit -n 4096
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/filteredTUEV-Finetune-TabPFNv2-labram-decoder-normalized/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/filteredTUEV-Finetune-TabPFNv2-labram-decoder-normalized/seed42/checkpoints/epoch\=6-step\=5334.ckpt' train=False
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2-warmup-normalized/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2-warmup-normalized/seed42/checkpoints/epoch\=4-step\=3810.ckpt' train=False
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2-warmup-normalized/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 'ckpt=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2-warmup-normalized/seed42/checkpoints/epoch\=10-step\=8382.ckpt' train=False
