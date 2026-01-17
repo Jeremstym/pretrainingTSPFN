@@ -5,6 +5,7 @@ from einops import rearrange
 from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12, vqnsp_encoder_large_decoder_3x200x24
 
 torch.serialization.add_safe_globals([np.core.multiarray.scalar])
+torch.serialization.add_safe_globals([np.dtype])
 
 
 def std_norm(self, x):
