@@ -246,12 +246,12 @@ class TSPFNDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         val_loader = self._dataloader(self.val_dataset, shuffle=False, batch_size=self.batch_size)
         train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
-        return CombinedLoader({"val": val_loader, "train": train_loader}, "max_size_cycle")
+        return CombinedLoader({"val": val_loader, "train": train_loader}, "min_size")
 
     def test_dataloader(self):
         test_loader = self._dataloader(self.test_dataset, shuffle=False, batch_size=self.batch_size)
         train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
-        return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
+        return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
 
 
 class FineTuneTUEVDataModule(TSPFNDataModule):
@@ -328,7 +328,7 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             collate_fn=None,
             drop_last=True,
         )
-        return CombinedLoader({"val": val_loader, "train": train_loader}, "max_size_cycle")
+        return CombinedLoader({"val": val_loader, "train": train_loader}, "min_size")
 
     def test_dataloader(self):
         test_loader = self._dataloader(
@@ -345,7 +345,7 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             collate_fn=None,
             drop_last=True,
         )
-        return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
+        return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
 
 
 class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
@@ -455,7 +455,7 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
             collate_fn=None,
             drop_last=True,
         )
-        return CombinedLoader({"val": val_loader, "train": train_loader}, "max_size_cycle")
+        return CombinedLoader({"val": val_loader, "train": train_loader}, "min_size")
 
     def test_dataloader(self):
         test_loader = self._dataloader(
@@ -472,7 +472,7 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
             collate_fn=None,
             drop_last=True,
         )
-        return CombinedLoader({"val": test_loader, "train": train_loader}, "max_size_cycle")
+        return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
 
 
 __all__ = ["TSPFNDataset", "TSPFNDataModule", "FineTuneDataModule"]
