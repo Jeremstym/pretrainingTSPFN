@@ -18,10 +18,10 @@ if __name__ == "__main__":
         n_code=8192,
         code_dim=32
     )
-    x = torch.randn(4,128,1600)
+    x = torch.randn(4,16,1600)
     # tokens = model.get_tokens(x, input_chans=16)
     x = rearrange(x, 'B N (A T) -> B N A T', T=200)
-    input_chans = list(range(x.size(1)))
+    input_chans = list(range(16))
     quantize, embed_ind, emb_loss = model.encode(x, input_chans=input_chans)
     # print(tokens["token"].shape)
     print(f"token image is {embed_ind.view(x.size(0), -1).shape}")
