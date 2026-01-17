@@ -23,4 +23,4 @@ if __name__ == "__main__":
     x = rearrange(x, 'B N (A T) -> B N A T', T=200)
     quantize, embed_ind, emb_loss = model.encode(x, input_chans=None)
     # print(tokens["token"].shape)
-    print(f"token image is {embed_ind.view(-1, embed_ind.shape[-1]).shape}")
+    print(f"token image is {embed_ind.view(embed_ind.size(0), -1).shape}")
