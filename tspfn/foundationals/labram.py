@@ -36,7 +36,8 @@ class TimeSeriesNeuralTokenizer(torch.nn.Module):
         assert T % 200 == 0, "Time dimension must be divisible by 200."
         A = T // 200
         x = rearrange(x, "B N (A T) -> (B N) A T", A=A)
-        quantize, embed_ind, emb_loss = self.model.encode(x, input_chans=input_chans+1)  # +1 for cls token
+        input_chans = list(range(x.size(1)+1))  # +1 for cls token
+        quantize, embed_ind, emb_loss = self.model.encode(x, input_chans=input_chans)
         # Remove cls token indices
         embed_ind = embed_ind.view(B, N, A, -1)[:, :, 1:, :]  # (B, N, A, num_tokens)
         embed_ind = embed_ind.view(B, -1) # Leave B dimension, flatten the rest
