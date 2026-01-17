@@ -10,10 +10,10 @@ def std_norm(self, x):
     return x
 
 if __name__ == "__main__":
-    model = vqnsp_encoder_base_decoder_3x200x12(
+    model = vqnsp_encoder_large_decoder_3x200x24(
         pretrained=True,
-        pretrained_weights="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
-        as_tokenizer=True,
+        pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
+        as_tokenzer=True,
         EEG_size=1000,
         n_code=8192,
         code_dim=32
