@@ -14,11 +14,11 @@ if __name__ == "__main__":
         pretrained=True,
         pretrained_weights="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
         as_tokenizer=True,
-        EEG_size=1600,
+        EEG_size=1000,
         n_code=8192,
         code_dim=32
     )
-    x = torch.randn(4,128,1600)
+    x = torch.randn(4,128,1000)
     # tokens = model.get_tokens(x, input_chans=16)
     x = rearrange(x, 'B N (A T) -> B N A T', T=200)
     quantize, embed_ind, emb_loss = model.encode(x, input_chans=None)
