@@ -58,6 +58,7 @@ if __name__ == "__main__":
     # Random select channels
     indices = torch.randperm(quantize.size(-1))[:8]
     quantize = quantize[:, :, :, indices]
+    print(f"quantize before rearrange is {quantize.shape}")
     quantize = rearrange(quantize, "B D C A -> B (A C) D")
     # print(tokens["token"].shape)
     print(f"token image is {embed_ind.view(x.size(0), -1).shape}")
