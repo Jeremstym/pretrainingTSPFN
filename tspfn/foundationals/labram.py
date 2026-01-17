@@ -60,6 +60,7 @@ if __name__ == "__main__":
     decoded_output = model.decode(quantize, input_chans=input_chans)
     print(f"quantize shape is {quantize.shape}")
     print(f"embed_ind shape is {embed_ind.shape}")
+    print(f"decoded output shape is {decoded_output.shape}")
     # # Random select channels
     # indices = torch.randperm(quantize.size(-2))[:4]
     # quantize = quantize[:, :, indices, :]
