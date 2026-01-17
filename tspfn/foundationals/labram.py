@@ -56,7 +56,7 @@ if __name__ == "__main__":
     input_chans = list(range(x.size(1)+1))
     quantize, embed_ind, emb_loss = model.encode(x, input_chans=input_chans)
     # Random select channels
-    indices = torch.randperm(quantize.size(-2))[:8]
+    indices = torch.randperm(quantize.size(-2))[:4]
     quantize = quantize[:, :, indices, :]
     print(f"quantize before rearrange is {quantize.shape}")
     quantize = rearrange(quantize, "B D C A -> B (A C) D")
