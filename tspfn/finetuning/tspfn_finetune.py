@@ -33,6 +33,7 @@ from torchmetrics import MetricCollection
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
 from tspfn.foundationals.labram import TimeSeriesNeuralTokenizer
+from tspnf.foundationals.convolution import TimeSeriesConvolutionTokenizer
 from tspfn.utils import get_sizes_per_class, MulticlassFaiss, SingleclassFaiss, stratified_batch_split
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,8 @@ class TSPFNFineTuning(TSPFNSystem):
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
         time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         time_series_num_channels: int = 16,
-        foundation_model_name: str = None, #"labram_vqnsp",
+        time_series_length: int = 1000,
+        foundation_model_name: str = "convolution",  # "labram_vqnsp",
         *args,
         **kwargs,
     ):
@@ -86,25 +88,26 @@ class TSPFNFineTuning(TSPFNSystem):
         self.encoder, self.prediction_heads = self.configure_model()
 
         self.ts_num_channels = time_series_num_channels
+        self.ts_length = time_series_length
 
         self.time_series_positional_encoding = time_series_positional_encoding
-        self.time_series_convolution = nn.Sequential(
-            nn.Conv1d(
-                in_channels=self.ts_num_channels,
-                out_channels=self.ts_num_channels,
-                kernel_size=10,
-                stride=10,
-                groups=self.ts_num_channels,
-            ),  # T = 1000 -> 100
-            nn.ReLU(),
-            nn.Conv1d(
-                in_channels=self.ts_num_channels,
-                out_channels=self.ts_num_channels,
-                kernel_size=5,
-                stride=5,
-                groups=self.ts_num_channels,
-            ),  # T = 100 -> 20
-        )
+        # self.time_series_convolution = nn.Sequential(
+        #     nn.Conv1d(
+        #         in_channels=self.ts_num_channels,
+        #         out_channels=self.ts_num_channels,
+        #         kernel_size=10,
+        #         stride=10,
+        #         groups=self.ts_num_channels,
+        #     ),  # T = 1000 -> 100
+        #     nn.ReLU(),
+        #     nn.Conv1d(
+        #         in_channels=self.ts_num_channels,
+        #         out_channels=self.ts_num_channels,
+        #         kernel_size=5,
+        #         stride=5,
+        #         groups=self.ts_num_channels,
+        #     ),  # T = 100 -> 20
+        # )
         # self.time_series_convolution = nn.Sequential(
         #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=8, stride=4, padding=2, groups=self.ts_num_channels),
         #     nn.ReLU(),
@@ -138,8 +141,12 @@ class TSPFNFineTuning(TSPFNSystem):
                 "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
             }
         )
-
-        if foundation_model_name == "labram_vqnsp":
+        if foundation_model_name == "convolution":
+            self.ts_tokenizer = TimeSeriesConvolutionTokenizer(
+                ts_size=time_series_length,
+                ts_num_channels=time_series_num_channels,
+            )
+        elif foundation_model_name == "labram_vqnsp":
             self.ts_tokenizer = TimeSeriesNeuralTokenizer(
                 pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
                 ts_size=1000,
@@ -222,20 +229,15 @@ class TSPFNFineTuning(TSPFNSystem):
         # print(f"Support set label distribution: {pd.Series(y_batch_support.cpu().numpy()).value_counts().to_dict()}")
         # print(f"Query set label distribution: {pd.Series(y_batch_query.cpu().numpy()).value_counts().to_dict()}")
 
-        if self.ts_tokenizer is None:
-            ts_batch_support = self.time_series_convolution(ts_batch_support)
-            ts_batch_support = ts_batch_support.flatten(start_dim=1)  # (Support, C*T)
-            ts_batch_query = self.time_series_convolution(ts_batch_query)
-            ts_batch_query = ts_batch_query.flatten(start_dim=1)  # (Query, C*T)
-        else:
+        if self.ts_tokenizer is not None:
             ts_batch_support = self.ts_tokenizer(
                 ts_batch_support,
                 input_chans=list(range(self.ts_num_channels)),
-            ).squeeze(0)  # (Support, num_tokens)
+            )  # (Support, num_tokens)
             ts_batch_query = self.ts_tokenizer(
                 ts_batch_query,
                 input_chans=list(range(self.ts_num_channels)),
-            ).squeeze(0)  # (Query, num_tokens)
+            )  # (Query, num_tokens)
 
         # Unsqueeze to comply with expected input shape for TabPFN encoder
         if ts_batch_support.ndim == 2:
