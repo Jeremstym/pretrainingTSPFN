@@ -205,8 +205,8 @@ class TSPFNFineTuning(TSPFNSystem):
         """
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        # Print value count on labels
-        print(f"Full batch label distribution: {pd.Series(labels.cpu().numpy()).value_counts().to_dict()}")
+        # # Print value count on labels
+        # print(f"Full batch label distribution: {pd.Series(labels.cpu().numpy()).value_counts().to_dict()}")
         if self.training or summary_mode:
             ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = stratified_batch_split(
                 data=time_series_attrs,
