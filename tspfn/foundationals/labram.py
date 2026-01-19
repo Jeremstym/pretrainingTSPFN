@@ -3,7 +3,8 @@ import torch
 import numpy
 import argparse
 from einops import rearrange
-from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12, labram_base_patch200_1600_8k_vocab
+from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12
+from modeling_pretrain import labram_base_patch200_1600_8k_vocab
 
 torch.serialization.add_safe_globals([
     numpy.dtypes.Float64DType, 
