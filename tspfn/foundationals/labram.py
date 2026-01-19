@@ -75,11 +75,11 @@ if __name__ == "__main__":
         init_ckpt="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
         init_values=0.1,
     )
-    student = transformerMEM.student
-    model = student.patch_embed
+    self.student = transformerMEM.student
     x = torch.randn(4, 16, 1000)
     x = rearrange(x, "B N (A T) -> B N A T", T=200)
-    tokens = model(x)
+    input_chans = list(range(x.size(1)+1))
+    tokens = self.student.patch_embed(x, input_chans=input_chans, bool_masked_pos=None, return_all_patch_tokens=True)
     print(f"token shape is {tokens.shape}")
 #     model = vqnsp_encoder_base_decoder_3x200x12(
 #         pretrained=True,
