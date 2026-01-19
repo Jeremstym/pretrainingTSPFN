@@ -52,7 +52,7 @@ class TimeSeriesLabramEncoder(torch.nn.Module):
         )
         self.student = transformerMEM.student
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         Args:
             x: (B, N, T) Time series input.

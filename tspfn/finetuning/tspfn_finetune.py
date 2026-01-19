@@ -32,7 +32,7 @@ from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
-from tspfn.foundationals.labram import TimeSeriesNeuralTokenizer
+from tspfn.foundationals.labram import TimeSeriesLabramEncoder
 from tspfn.foundationals.convolution import TimeSeriesConvolutionTokenizer
 from tspfn.utils import get_sizes_per_class, MulticlassFaiss, SingleclassFaiss, stratified_batch_split, half_batch_split
 
@@ -50,7 +50,7 @@ class TSPFNFineTuning(TSPFNSystem):
         time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         time_series_num_channels: int = 16,
         time_series_length: int = 1000,
-        foundation_model_name: Literal["convolution", "labram_vqnsp"] = "convolution",
+        foundation_model_name: Literal["convolution", "labram"] = "labram",
         *args,
         **kwargs,
     ):
@@ -146,10 +146,9 @@ class TSPFNFineTuning(TSPFNSystem):
                 ts_size=time_series_length,
                 ts_num_channels=time_series_num_channels,
             )
-        elif foundation_model_name == "labram_vqnsp":
-            self.ts_tokenizer = TimeSeriesNeuralTokenizer(
-                pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
-                ts_size=1000,
+        elif foundation_model_name == "labram":
+            self.ts_tokenizer = TimeSeriesLabramEncoder(
+                pretrained_weights="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
             )
         elif foundation_model_name is None:
             self.ts_tokenizer = None
