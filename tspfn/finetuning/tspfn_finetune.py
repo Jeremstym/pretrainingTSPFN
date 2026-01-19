@@ -216,6 +216,10 @@ class TSPFNFineTuning(TSPFNSystem):
             y_batch_support = labels.to(self.device)  # (Support, 1)
             y_batch_query = labels.to(self.device)  # (Query, 1)
 
+        # Print value count on labels
+        logger.debug(f"Support set label distribution: {pd.Series(y_batch_support.cpu().numpy()).value_counts().to_dict()}")
+        logger.debug(f"Query set label distribution: {pd.Series(y_batch_query.cpu().numpy()).value_counts().to_dict()}")
+
         if self.ts_tokenizer is None:
             ts_batch_support = self.time_series_convolution(ts_batch_support)
             ts_batch_support = ts_batch_support.flatten(start_dim=1)  # (Support, C*T)
