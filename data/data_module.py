@@ -426,7 +426,7 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
         )
 
     def _eval_dataloader(
-        self, dataset: Dataset, batch_size: int, collate_fn=None
+        self, dataset: Dataset, batch_size: int, collate_fn=None, drop_last=False
     ) -> DataLoader:
         return DataLoader(
             dataset,
