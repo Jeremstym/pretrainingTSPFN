@@ -33,7 +33,7 @@ from torchmetrics import MetricCollection
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
 from tspfn.foundationals.labram import TimeSeriesNeuralTokenizer
-from tspnf.foundationals.convolution import TimeSeriesConvolutionTokenizer
+from tspfn.foundationals.convolution import TimeSeriesConvolutionTokenizer
 from tspfn.utils import get_sizes_per_class, MulticlassFaiss, SingleclassFaiss, stratified_batch_split, half_batch_split
 
 logger = logging.getLogger(__name__)
