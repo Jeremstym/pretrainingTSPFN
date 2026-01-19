@@ -24,6 +24,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
 from data.evaluation_datasets import TUABDataset, TUEVDataset
+from data.utils.sampler import StratifiedBatchSampler
 
 
 def stratified_batch_collate(batch):
@@ -349,6 +350,124 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
 
 
 class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
+    """LightningDataModule for TSP datasets during finetuning with stratified batch sampling.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            subsets=subsets,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+        print(f"num workers: {self.num_workers}")
+
+    def get_stratified_sampler(self, dataset, stage: str) -> StratifiedBatchSampler:
+        """Create a StratifiedBatchSampler to achieve stratified sampling."""
+        labels = [label for _, label in dataset]
+        print(f"Class distribution in {stage} set: {pd.Series(labels).value_counts().to_dict()}")
+        sampler = StratifiedBatchSampler(labels, batch_size=self.batch_size)
+        return sampler
+
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Create datasets. Called on every process in distributed settings."""
+        self.train_dataset = TUEVDataset(
+            root=os.path.join(self.data_roots, "processed_train"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_train")),
+            sampling_rate=200,
+        )
+        self.val_dataset = TUEVDataset(
+            root=os.path.join(self.data_roots, "processed_eval"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_eval")),
+            sampling_rate=200,
+        )
+        self.test_dataset = TUEVDataset(
+            root=os.path.join(self.data_roots, "processed_test"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_test")),
+            sampling_rate=200,
+        )
+        self.train_sampler = self.get_stratified_sampler(self.train_dataset, stage="training")
+        self.val_sampler = self.get_stratified_sampler(self.val_dataset, stage="validation")
+        self.test_sampler = self.get_stratified_sampler(self.test_dataset, stage="testing")
+        return
+
+    def _dataloader(
+        self, dataset: Dataset, batch_size: int, sampler: StratifiedBatchSampler, collate_fn=None, drop_last=False
+    ) -> DataLoader:
+        return DataLoader(
+            dataset,
+            batch_size=batch_size,
+            sampler=sampler,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+            collate_fn=collate_fn,
+            drop_last=drop_last,
+            persistent_workers=self.num_workers > 0,
+            shuffle=False, # Use stratified sampler instead
+        )
+
+    def train_dataloader(self):
+        return self._dataloader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            sampler=self.train_sampler,
+            collate_fn=None,
+            drop_last=False,
+        )
+
+    def val_dataloader(self):
+        val_loader = self._dataloader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            sampler=self.val_sampler,
+            collate_fn=None,
+            drop_last=False,
+        )
+        train_loader = self._dataloader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            sampler=self.train_sampler,
+            collate_fn=None,
+            drop_last=False,
+        )
+        return CombinedLoader({"val": val_loader, "train": train_loader}, "min_size")
+
+    def test_dataloader(self):
+        test_loader = self._dataloader(
+            self.test_dataset,
+            batch_size=self.batch_size,
+            sampler=self.test_sampler,
+            collate_fn=None,
+            drop_last=False,
+        )
+        train_loader = self._dataloader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            sampler=self.train_sampler,
+            collate_fn=None,
+            drop_last=False,
+        )
+        return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
+
+class WeightedFineTuneTUEVDataModule(TSPFNDataModule):
     """LightningDataModule for TSP datasets during finetuning.
 
     Parameters
