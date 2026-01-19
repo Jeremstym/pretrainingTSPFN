@@ -34,7 +34,7 @@ class TimeSeriesConvolutionTokenizer(nn.Module):
             nn.BatchNorm1d(C*4), nn.ReLU(inplace=True),
             
             # LAYER 7: Downsize 40 -> 20 (Stride 2)
-            nn.Conv1d(C*4, C*2, kernel_size=3, stride=2, padding=1, groups=C*4),
+            nn.Conv1d(C*4, C*2, kernel_size=3, stride=2, padding=1, groups=C*2),
             nn.BatchNorm1d(C*2), nn.ReLU(inplace=True),
             
             # LAYER 8: Refine (Stride 1)
