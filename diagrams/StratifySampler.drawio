@@ -142,6 +142,24 @@
         <mxCell id="qBOFWrIKkXxZAE8hgka7-47" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Batch 3&lt;/b&gt;&lt;/font&gt;" vertex="1">
           <mxGeometry height="30" width="60" x="715" y="640" as="geometry" />
         </mxCell>
+        <mxCell id="qBOFWrIKkXxZAE8hgka7-48" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d80073;fontColor=#ffffff;strokeColor=light-dark(#000000, #ffa9e0);strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="40" width="40" x="860" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="qBOFWrIKkXxZAE8hgka7-49" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;" value="Label 1" vertex="1">
+          <mxGeometry height="30" width="60" x="910" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="qBOFWrIKkXxZAE8hgka7-51" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;" value="Label 2" vertex="1">
+          <mxGeometry height="30" width="60" x="910" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="qBOFWrIKkXxZAE8hgka7-53" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;autosize=1;resizable=0;" value="Label 3" vertex="1">
+          <mxGeometry height="30" width="60" x="910" y="235" as="geometry" />
+        </mxCell>
+        <mxCell id="qBOFWrIKkXxZAE8hgka7-54" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#1A1A1A;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="40" width="40" x="860" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="qBOFWrIKkXxZAE8hgka7-55" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffff88;strokeColor=#36393d;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="40" width="40" x="860" y="230" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
