@@ -22,7 +22,7 @@ TRAIN_ARGS="--nnodes=1 \
     --save_ckpt_freq 5 \
     --disable_rel_pos_bias \
     --abs_pos_emb \
-    --dataset TUAB \
+    --dataset TUEV \
     --disable_qkv_bias \
     --seed 0"
 
