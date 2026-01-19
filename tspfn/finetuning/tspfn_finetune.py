@@ -50,7 +50,7 @@ class TSPFNFineTuning(TSPFNSystem):
         time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         time_series_num_channels: int = 16,
         time_series_length: int = 1000,
-        foundation_model_name: str = "convolution",  # "labram_vqnsp",
+        foundation_model_name: Literal["convolution", "labram_vqnsp"] = "convolution",
         *args,
         **kwargs,
     ):
