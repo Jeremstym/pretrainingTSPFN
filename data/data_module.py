@@ -412,7 +412,7 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
         self.test_sampler = self.get_stratified_sampler(self.test_dataset, stage="testing")
         return
 
-    def _dataloader(
+    def _train_dataloader(
         self, dataset: Dataset, batch_sampler: StratifiedBatchSampler, collate_fn=None, drop_last=False
     ) -> DataLoader:
         return DataLoader(
@@ -425,8 +425,22 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
             persistent_workers=self.num_workers > 0,
         )
 
+    def _eval_dataloader(
+        self, dataset: Dataset, batch_size: int, collate_fn=None
+    ) -> DataLoader:
+        return DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+            collate_fn=collate_fn,
+            drop_last=False,
+            persistent_workers=self.num_workers > 0,
+            shuffle=False,
+        )
+
     def train_dataloader(self):
-        return self._dataloader(
+        return self._train_dataloader(
             self.train_dataset,
             batch_sampler=self.train_sampler,
             collate_fn=None,
@@ -434,13 +448,13 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
         )
 
     def val_dataloader(self):
-        val_loader = self._dataloader(
+        val_loader = self._eval_dataloader(
             self.val_dataset,
-            batch_sampler=self.val_sampler,
+            batch_size=self.batch_size,
             collate_fn=None,
             drop_last=False,
         )
-        train_loader = self._dataloader(
+        train_loader = self._train_dataloader(
             self.train_dataset,
             batch_sampler=self.train_sampler,
             collate_fn=None,
@@ -449,13 +463,13 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
         return CombinedLoader({"val": val_loader, "train": train_loader}, "min_size")
 
     def test_dataloader(self):
-        test_loader = self._dataloader(
+        test_loader = self._eval_dataloader(
             self.test_dataset,
-            batch_sampler=self.test_sampler,
+            batch_size=self.batch_size,
             collate_fn=None,
             drop_last=False,
         )
-        train_loader = self._dataloader(
+        train_loader = self._train_dataloader(
             self.train_dataset,
             batch_sampler=self.train_sampler,
             collate_fn=None,
