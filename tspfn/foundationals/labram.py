@@ -84,7 +84,7 @@ if __name__ == "__main__":
     x = torch.randn(4, 16, 1000)
     x = rearrange(x, "B N (A T) -> B N A T", T=200)
     tokens = model(x)
-    print(f"token shape is {tokens['token'].shape}")
+    print(f"token shape is {tokens.shape}")
 #     model = vqnsp_encoder_base_decoder_3x200x12(
 #         pretrained=True,
 #         pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
