@@ -80,6 +80,7 @@ if __name__ == "__main__":
     x = rearrange(x, "B N (A T) -> B N A T", T=200)
     input_chans = list(range(x.size(1)+1))
     tokens = student(x, input_chans=input_chans, bool_masked_pos=None, return_all_patch_tokens=True, return_patch_tokens=False)
+    token_cls = tokens[:, 0]
     print(f"token shape is {tokens.shape}")
 #     model = vqnsp_encoder_base_decoder_3x200x12(
 #         pretrained=True,
