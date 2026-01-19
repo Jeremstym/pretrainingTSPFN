@@ -73,6 +73,7 @@ if __name__ == "__main__":
     transformerMEM = labram_base_patch200_1600_8k_vocab(
         pretrained=True,
         init_ckpt="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
+        init_values=0.1,
     )
     student = transformerMEM.student
     model = student.patch_embed
