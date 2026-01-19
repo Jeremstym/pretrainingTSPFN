@@ -67,7 +67,7 @@ class TimeSeriesLabramEncoder(torch.nn.Module):
         assert T % 200 == 0, "Time dimension must be divisible by 200."
         A = T // 200
         x = rearrange(x, "B N (A T) -> B N A T", A=A)
-        intput_chans = list(range(x.size(1) + 1))  # +1 for cls token
+        input_chans = list(range(x.size(1) + 1))  # +1 for cls token
         tokens = self.student(
             x,
             input_chans=input_chans,
