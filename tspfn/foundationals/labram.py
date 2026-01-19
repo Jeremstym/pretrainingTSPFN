@@ -6,12 +6,10 @@ from einops import rearrange
 from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12
 from modeling_pretrain import labram_base_patch200_1600_8k_vocab
 
-torch.serialization.add_safe_globals([
-    numpy.dtypes.Float64DType, 
-    numpy.core.multiarray.scalar,
-    numpy.dtype,
-    argparse.Namespace
-])
+torch.serialization.add_safe_globals(
+    [numpy.dtypes.Float64DType, numpy.core.multiarray.scalar, numpy.dtype, argparse.Namespace]
+)
+
 
 class TimeSeriesNeuralTokenizer(torch.nn.Module):
     def __init__(self, pretrained_weight: str = None, ts_size: int = 1000):
@@ -37,51 +35,63 @@ class TimeSeriesNeuralTokenizer(torch.nn.Module):
         assert T % 200 == 0, "Time dimension must be divisible by 200."
         A = T // 200
         x = rearrange(x, "B N (A T) -> B N A T", A=A)
-        input_chans = list(range(x.size(1)+1))  # +1 for cls token
+        input_chans = list(range(x.size(1) + 1))  # +1 for cls token
         quantize, embed_ind, emb_loss = self.model.encode(x, input_chans=input_chans)
         # Decoder
         decoded_output = self.model.decoder(quantize, input_chans=input_chans)
         return decoded_output
 
-class TimeSeriesPatchEmbedder(torch.nn.Module):
+
+class TimeSeriesLabramEncoder(torch.nn.Module):
     def __init__(self, pretrained_weights: str = None):
         super().__init__()
         transformerMEM = labram_base_patch200_1600_8k_vocab(
-            pretrained= pretrained_weights is not None,
+            pretrained=pretrained_weights is not None,
             init_ckpt=pretrained_weights,
+            init_values=0.1,
         )
-
-        student = transformerMEM.student
-
-        self.patch_embed = student.patch_embed
+        self.student = transformerMEM.student
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Args:
             x: (B, N, T) Time series input.
+            input_chans: List of input channels to consider for tokenization.
+            bool_masked_pos: (B, num_patches) Boolean tensor indicating masked positions.
+            return_all_patch_tokens: Whether to return all patch tokens.
+            return_patch_tokens: Whether to return patch tokens.
         Returns:
-            embed_ind: (B, N, num_tokens) Token indices.
+            embed: (B, num_tokens, D) Token embeddings.
         """
         B, N, T = x.size()
         assert T % 200 == 0, "Time dimension must be divisible by 200."
         A = T // 200
         x = rearrange(x, "B N (A T) -> B N A T", A=A)
-        tokens = self.patch_embed(x)
-        return tokens
+        intput_chans = list(range(x.size(1) + 1))  # +1 for cls token
+        tokens = self.student(
+            x,
+            input_chans=input_chans,
+            bool_masked_pos=None,
+            return_all_patch_tokens=True,
+            return_patch_tokens=False,
+        )
+        ts_encoded = tokens[:, 0]  # CLS token
+        return ts_encoded
 
-if __name__ == "__main__":
-    transformerMEM = labram_base_patch200_1600_8k_vocab(
-        pretrained=True,
-        init_ckpt="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
-        init_values=0.1,
-    )
-    student = transformerMEM.student
-    x = torch.randn(4, 16, 1000)
-    x = rearrange(x, "B N (A T) -> B N A T", T=200)
-    input_chans = list(range(x.size(1)+1))
-    tokens = student(x, input_chans=input_chans, bool_masked_pos=None, return_all_patch_tokens=True, return_patch_tokens=False)
-    token_cls = tokens[:, 0]
-    print(f"token shape is {token_cls.shape}")
+
+# if __name__ == "__main__":
+# transformerMEM = labram_base_patch200_1600_8k_vocab(
+#     pretrained=True,
+#     init_ckpt="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
+#     init_values=0.1,
+# )
+# student = transformerMEM.student
+# x = torch.randn(4, 16, 1000)
+# x = rearrange(x, "B N (A T) -> B N A T", T=200)
+# input_chans = list(range(x.size(1)+1))
+# tokens = student(x, input_chans=input_chans, bool_masked_pos=None, return_all_patch_tokens=True, return_patch_tokens=False)
+# token_cls = tokens[:, 0]
+# print(f"token shape is {token_cls.shape}")
 #     model = vqnsp_encoder_base_decoder_3x200x12(
 #         pretrained=True,
 #         pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
