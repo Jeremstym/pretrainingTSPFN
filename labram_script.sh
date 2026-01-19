@@ -5,7 +5,7 @@ export OMP_NUM_THREADS=1
 
 # Define your arguments in a variable for readability
 TRAIN_ARGS="--nnodes=1 \
-    --nproc_per_node=1 \
+    --nproc_per_node=2 \
     /home/stympopper/pretrainingTSPFN/submodules/labram/run_class_finetuning.py \
     --output_dir /data/stympopper/LabramResults/ \
     --log_dir /data/stympopper/LabramResults/log/finetune_tuab_base \
