@@ -33,6 +33,17 @@ def stratified_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor
 
     return data[support_indices], data[query_indices], labels[support_indices], labels[query_indices]
 
+def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    total_size = data.size(0)
+    half_size = total_size // 2
+
+    all_indices = list(range(total_size))
+
+    support_indices = all_indices[:half_size]
+    query_indices = all_indices[half_size:]
+
+    return data[support_indices], data[query_indices], labels[support_indices], labels[query_indices]
+
 
 def get_sizes_per_class(class_choice: str, y_train: np.ndarray, num_classes: int, context_length: int):
     assert num_classes <= 10, "can only handle up to 10 classes"
