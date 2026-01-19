@@ -71,20 +71,16 @@ class TimeSeriesPatchEmbedder(torch.nn.Module):
 
 if __name__ == "__main__":
     transformerMEM = labram_base_patch200_1600_8k_vocab(
-        pretrained=False,
-        # init_ckpt="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
+        pretrained=True,
+        init_ckpt="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
         init_values=0.1,
     )
-    ckpt_path = "/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth"
-    checkpoint = torch.load(ckpt_path, map_location="cpu")
-    msg = transformerMEM.load_state_dict(checkpoint["model"], strict=True)
-    print(f"Load ckpt msg: {msg}")
     student = transformerMEM.student
     model = student.patch_embed
     x = torch.randn(4, 16, 1000)
     x = rearrange(x, "B N (A T) -> B N A T", T=200)
     tokens = model(x)
-    print(f"token shape is {tokens.shape}")
+    print(f"token shape is {tokens['token'].shape}")
 #     model = vqnsp_encoder_base_decoder_3x200x12(
 #         pretrained=True,
 #         pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
