@@ -429,7 +429,6 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
         return self._dataloader(
             self.train_dataset,
             batch_sampler=self.train_sampler,
-            sampler=self.train_sampler,
             collate_fn=None,
             drop_last=False,
         )
