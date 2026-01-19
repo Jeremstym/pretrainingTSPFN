@@ -413,24 +413,22 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
         return
 
     def _dataloader(
-        self, dataset: Dataset, batch_size: int, sampler: StratifiedBatchSampler, collate_fn=None, drop_last=False
+        self, dataset: Dataset, batch_sampler: StratifiedBatchSampler, collate_fn=None, drop_last=False
     ) -> DataLoader:
         return DataLoader(
             dataset,
-            batch_size=batch_size,
-            sampler=sampler,
+            batch_sampler=batch_sampler,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
             collate_fn=collate_fn,
             drop_last=drop_last,
             persistent_workers=self.num_workers > 0,
-            shuffle=False, # Use stratified sampler instead
         )
 
     def train_dataloader(self):
         return self._dataloader(
             self.train_dataset,
-            batch_size=None, # Use sampler to define batch size
+            batch_sampler=self.train_sampler,
             sampler=self.train_sampler,
             collate_fn=None,
             drop_last=False,
@@ -439,15 +437,13 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
     def val_dataloader(self):
         val_loader = self._dataloader(
             self.val_dataset,
-            batch_size=None,
-            sampler=self.val_sampler,
+            batch_sampler=self.val_sampler,
             collate_fn=None,
             drop_last=False,
         )
         train_loader = self._dataloader(
             self.train_dataset,
-            batch_size=None,
-            sampler=self.train_sampler,
+            batch_sampler=self.train_sampler,
             collate_fn=None,
             drop_last=False,
         )
@@ -456,15 +452,13 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
     def test_dataloader(self):
         test_loader = self._dataloader(
             self.test_dataset,
-            batch_size=self.batch_size,
-            sampler=self.test_sampler,
+            batch_sampler=self.test_sampler,
             collate_fn=None,
             drop_last=False,
         )
         train_loader = self._dataloader(
             self.train_dataset,
-            batch_size=self.batch_size,
-            sampler=self.train_sampler,
+            batch_sampler=self.train_sampler,
             collate_fn=None,
             drop_last=False,
         )
