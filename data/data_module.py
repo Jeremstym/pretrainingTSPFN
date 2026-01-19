@@ -382,7 +382,10 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
 
     def get_stratified_sampler(self, dataset, stage: str) -> StratifiedBatchSampler:
         """Create a StratifiedBatchSampler to achieve stratified sampling."""
-        labels = [label for _, label in dataset]
+        labels = []
+        for label in tqdm(dataset, total=len(dataset), desc=f"Extracting labels for {stage} set"):
+            labels.append(label[1])
+        # labels = [label for _, label in dataset]
         print(f"Class distribution in {stage} set: {pd.Series(labels).value_counts().to_dict()}")
         sampler = StratifiedBatchSampler(labels, batch_size=self.batch_size)
         return sampler
