@@ -506,5 +506,11 @@ class TSPFNFineTuning(TSPFNSystem):
             collection.reset()
 
         # Save CSV once at the very end
-        df = pd.DataFrame(output_data)
-        df.to_csv("test_metrics.csv", index=False)
+        # df = pd.DataFrame(output_data)
+        # df.to_csv("test_metrics.csv", index=False)
+        with open("test_metrics.csv", mode="w", newline="") as csv_file:
+            writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
+            writer.writeheader()
+            writer.writerows(output_data)
+            # for row in output_data:
+            #     writer.writerow(row)
