@@ -3,7 +3,7 @@ import torch
 import numpy
 import argparse
 from einops import rearrange
-from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12, vqnsp_encoder_large_decoder_3x200x24
+from modeling_vqnsp import vqnsp_encoder_base_decoder_3x200x12, labram_base_patch200_1600_8k_vocab
 
 torch.serialization.add_safe_globals([
     numpy.dtypes.Float64DType, 
@@ -42,7 +42,43 @@ class TimeSeriesNeuralTokenizer(torch.nn.Module):
         decoded_output = self.model.decoder(quantize, input_chans=input_chans)
         return decoded_output
 
-# if __name__ == "__main__":
+class TimeSeriesPatchEmbedder(torch.nn.Module):
+    def __init__(self, pretrained_weights: str = None):
+        super().__init__()
+        transformerMEM = labram_base_patch200_1600_8k_vocab(
+            pretrained= pretrained_weights is not None,
+            init_ckpt=pretrained_weights,
+        )
+
+        student = transformerMEM.student
+
+        self.patch_embed = student.patch_embed
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x: (B, N, T) Time series input.
+        Returns:
+            embed_ind: (B, N, num_tokens) Token indices.
+        """
+        B, N, T = x.size()
+        assert T % 200 == 0, "Time dimension must be divisible by 200."
+        A = T // 200
+        x = rearrange(x, "B N (A T) -> B N A T", A=A)
+        tokens = self.patch_embed(x)
+        return tokens
+
+if __name__ == "__main__":
+    transformerMEM = labram_base_patch200_1600_8k_vocab(
+        pretrained=True,
+        init_ckpt="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
+    )
+    student = transformerMEM.student
+    model = student.patch_embed
+    x = torch.randn(4, 16, 1000)
+    x = rearrange(x, "B N (A T) -> B N A T", T=200)
+    tokens = model(x)
+    print(f"token shape is {tokens['token'].shape}")
 #     model = vqnsp_encoder_base_decoder_3x200x12(
 #         pretrained=True,
 #         pretrained_weight="/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth",
