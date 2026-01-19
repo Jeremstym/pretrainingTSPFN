@@ -77,7 +77,7 @@ if __name__ == "__main__":
     )
     ckpt_path = "/home/stympopper/pretrainingTSPFN/ckpts/labram_vqnsp.pth"
     checkpoint = torch.load(ckpt_path, map_location="cpu")
-    msg = transformerMEM.load_state_dict(checkpoint["model"], strict=False)
+    msg = transformerMEM.load_state_dict(checkpoint["model"], strict=True)
     print(f"Load ckpt msg: {msg}")
     student = transformerMEM.student
     model = student.patch_embed
