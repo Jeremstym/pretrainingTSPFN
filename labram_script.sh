@@ -1,5 +1,17 @@
 #!/bin/bash
+#SBATCH --partition=electronic
+#SBATCH --job-name=Labram-finetuning
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=2
+#SBATCH --time=1-23:00:00
+#SBATCH --output=/home/stympopper/bash/out/%x-%j.out
+#SBATCH --error=/home/stympopper/bash/out/%x-%j.err
 
+# 1. Setup environment
+export OMP_NUM_THREADS=1
+
+# 2. Navigate to your project directory (if not already there)
+cd /home/stympopper/pretrainingTSPFN/submodules/labram/
 # Set OpenMP threads to avoid overhead
 export OMP_NUM_THREADS=1
 
