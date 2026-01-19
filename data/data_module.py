@@ -430,7 +430,7 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
     def train_dataloader(self):
         return self._dataloader(
             self.train_dataset,
-            batch_size=self.batch_size,
+            batch_size=None, # Use sampler to define batch size
             sampler=self.train_sampler,
             collate_fn=None,
             drop_last=False,
@@ -439,14 +439,14 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
     def val_dataloader(self):
         val_loader = self._dataloader(
             self.val_dataset,
-            batch_size=self.batch_size,
+            batch_size=None,
             sampler=self.val_sampler,
             collate_fn=None,
             drop_last=False,
         )
         train_loader = self._dataloader(
             self.train_dataset,
-            batch_size=self.batch_size,
+            batch_size=None,
             sampler=self.train_sampler,
             collate_fn=None,
             drop_last=False,
