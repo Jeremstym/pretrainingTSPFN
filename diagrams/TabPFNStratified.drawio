@@ -22,13 +22,13 @@
         <mxCell id="uIEkGW1xIM2J0zLEqVZ1-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffff88;strokeColor=#36393d;strokeWidth=2;" value="" vertex="1">
           <mxGeometry height="40" width="40" x="370" y="200" as="geometry" />
         </mxCell>
-        <mxCell id="uIEkGW1xIM2J0zLEqVZ1-25" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Patient 1" vertex="1">
+        <mxCell id="uIEkGW1xIM2J0zLEqVZ1-25" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Train Patient 1" vertex="1">
           <mxGeometry height="40" width="80" x="250" y="335" as="geometry" />
         </mxCell>
-        <mxCell id="uIEkGW1xIM2J0zLEqVZ1-26" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Patient 2" vertex="1">
+        <mxCell id="uIEkGW1xIM2J0zLEqVZ1-26" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Train Patient 2" vertex="1">
           <mxGeometry height="40" width="80" x="250" y="385" as="geometry" />
         </mxCell>
-        <mxCell id="uIEkGW1xIM2J0zLEqVZ1-27" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Patient 3" vertex="1">
+        <mxCell id="uIEkGW1xIM2J0zLEqVZ1-27" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Train Patient 3" vertex="1">
           <mxGeometry height="40" width="80" x="250" y="435" as="geometry" />
         </mxCell>
         <mxCell id="uIEkGW1xIM2J0zLEqVZ1-28" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;shadow=1;" value="" vertex="1">
