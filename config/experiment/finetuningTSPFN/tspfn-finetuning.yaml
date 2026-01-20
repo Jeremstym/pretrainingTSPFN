@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - override /task/model: null
+  # - override /task/model: null
   - /task/model/prediction_head: pfn-prediction
   - /task/model/encoder: tspfn-encoder
   - /task/model/loc_head: channel-loc
