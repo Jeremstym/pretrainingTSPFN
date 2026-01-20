@@ -230,6 +230,9 @@ class TSPFNFineTuning(TSPFNSystem):
 
         ts_batch_support = self.time_series_convolution(ts_batch_support)  # (Support, C, T')
         ts_batch_query = self.time_series_convolution(ts_batch_query)  # (Query, C, T')
+        # Flatten
+        ts_batch_support = ts_batch_support.view(ts_batch_support.size(0), -1)  # (Support, C*T')
+        ts_batch_query = ts_batch_query.view(ts_batch_query.size(0), -1)  # (Query, C*T')
         # if self.ts_tokenizer is not None:
         #     ts_batch_support = self.ts_tokenizer(
         #         ts_batch_support,
