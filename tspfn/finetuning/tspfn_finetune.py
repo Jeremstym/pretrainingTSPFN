@@ -91,36 +91,6 @@ class TSPFNFineTuning(TSPFNSystem):
         self.ts_length = time_series_length
 
         self.time_series_positional_encoding = time_series_positional_encoding
-        self.time_series_convolution = nn.Sequential(
-            nn.Conv1d(
-                in_channels=self.ts_num_channels,
-                out_channels=self.ts_num_channels,
-                kernel_size=10,
-                stride=10,
-                groups=self.ts_num_channels,
-            ),  # T = 1000 -> 100
-            nn.ReLU(),
-            nn.Conv1d(
-                in_channels=self.ts_num_channels,
-                out_channels=self.ts_num_channels,
-                kernel_size=5,
-                stride=5,
-                groups=self.ts_num_channels,
-            ),  # T = 100 -> 20
-        )
-        # self.time_series_convolution = nn.Sequential(
-        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=8, stride=4, padding=2, groups=self.ts_num_channels),
-        #     nn.ReLU(),
-        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=5, stride=2, padding=2, groups=self.ts_num_channels),
-        #     nn.ReLU(),
-        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=5, stride=2, padding=1, groups=self.ts_num_channels),
-        #     nn.AdaptiveAvgPool1d(60),
-        # )
-        # self.time_series_convolution = nn.Sequential(
-        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=20, stride=2, groups=self.ts_num_channels), # T = 1000 -> 491
-        #     nn.GELU(),
-        #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=20, stride=5, groups=self.ts_num_channels), # T = 491 -> 95
-        # )
 
         # Use ModuleDict so metrics move to GPU automatically
         metrics_template = MetricCollection(
@@ -211,8 +181,6 @@ class TSPFNFineTuning(TSPFNSystem):
         """
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        # # Print value count on labels
-        # print(f"Full batch label distribution: {pd.Series(labels.cpu().numpy()).value_counts().to_dict()}")
         if self.training or summary_mode:
             ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = stratified_batch_split(
                 data=time_series_attrs,
@@ -224,24 +192,15 @@ class TSPFNFineTuning(TSPFNSystem):
             y_batch_support = labels.to(self.device)  # (Support, 1)
             y_batch_query = labels.to(self.device)  # (Query, 1)
 
-        # # Print value count on labels
-        # print(f"Support set label distribution: {pd.Series(y_batch_support.cpu().numpy()).value_counts().to_dict()}")
-        # print(f"Query set label distribution: {pd.Series(y_batch_query.cpu().numpy()).value_counts().to_dict()}")
-
-        ts_batch_support = self.time_series_convolution(ts_batch_support)  # (Support, C, T')
-        ts_batch_query = self.time_series_convolution(ts_batch_query)  # (Query, C, T')
-        # Flatten
-        ts_batch_support = ts_batch_support.view(ts_batch_support.size(0), -1)  # (Support, C*T')
-        ts_batch_query = ts_batch_query.view(ts_batch_query.size(0), -1)  # (Query, C*T')
-        # if self.ts_tokenizer is not None:
-        #     ts_batch_support = self.ts_tokenizer(
-        #         ts_batch_support,
-        #         input_chans=list(range(self.ts_num_channels)),
-        #     )  # (Support, num_tokens)
-        #     ts_batch_query = self.ts_tokenizer(
-        #         ts_batch_query,
-        #         input_chans=list(range(self.ts_num_channels)),
-        #     )  # (Query, num_tokens)
+        if self.ts_tokenizer is not None:
+            ts_batch_support = self.ts_tokenizer(
+                ts_batch_support,
+                input_chans=list(range(self.ts_num_channels)),
+            )  # (Support, num_tokens)
+            ts_batch_query = self.ts_tokenizer(
+                ts_batch_query,
+                input_chans=list(range(self.ts_num_channels)),
+            )  # (Query, num_tokens)
 
         # Unsqueeze to comply with expected input shape for TabPFN encoder
         if ts_batch_support.ndim == 2:
@@ -512,11 +471,8 @@ class TSPFNFineTuning(TSPFNSystem):
             collection.reset()
 
         # Save CSV once at the very end
-        # df = pd.DataFrame(output_data)
-        # df.to_csv("test_metrics.csv", index=False)
         with open("test_metrics.csv", mode="w", newline="") as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
             writer.writeheader()
             writer.writerows(output_data)
-            # for row in output_data:
-            #     writer.writerow(row)
+        logger.info("Test metrics saved to test_metrics.csv")
