@@ -41,7 +41,7 @@ ulimit -n 4096
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/TUEV-Finetune-TabPFNv2-labramencoder/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/FillTUEV-Finetune-TabPFNv2-masklocate/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/FillTUEV-Finetune-TabPFNv2-masklocate/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=1000
 
 #// poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/filteredTUEV-Finetune-TabPFNv2/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
 #// poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/filteredTUEV-Finetune-TabPFNv2.5/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 trainer.max_epochs=100
