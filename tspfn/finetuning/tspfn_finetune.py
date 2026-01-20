@@ -214,7 +214,7 @@ class TSPFNFineTuning(TSPFNSystem):
         # # Print value count on labels
         # print(f"Full batch label distribution: {pd.Series(labels.cpu().numpy()).value_counts().to_dict()}")
         if self.training or summary_mode:
-            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = half_batch_split(
+            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = stratified_batch_split(
                 data=time_series_attrs,
                 labels=labels,
             )
