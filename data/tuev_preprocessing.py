@@ -107,70 +107,56 @@ def convert_signals(signals, Rawdata):
 
 
 def BuildEvents(signals, times, EventData, keep_channels):
-    """
-    signals: (22, timestamps) or (23, timestamps)
-    EventData: [.rec file contents]
-    keep_channels: [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21]
-    """
-    fs = 200.0
-    window_samples = int(fs * 5)
+    fs = 100.0
+    # Your window is 2s total: 0.5s pre + 1s event + 0.5s post
+    window_samples = int(fs * 2)
+    pad_width = int(fs * 1)
 
-    # 1. Filter EventData to only include rows from the montages we care about
+    # 1. Filter channels
     mask = np.isin(EventData[:, 0], keep_channels)
-    filtered_EventData = EventData[mask]
+    df = pd.DataFrame(EventData[mask], columns=["chan", "start", "end", "label_id"])
 
-    # 2. Deduplicate based on Start and End times
-    df = pd.DataFrame(filtered_EventData, columns=["chan", "start", "end", "label_id"])
-    df["priority"] = df["label_id"].map(priority_map).fillna(0)
-    df_sorted = df.sort_values(by=["start", "end", "priority"], ascending=[True, True, False])
-    # df_unique = df.drop_duplicates(subset=["start", "end", "label_id"])
-    df_unique = df_sorted.drop_duplicates(
-        subset=["start", "end"], keep="first"
-    )  # We remove label_id to avoid multiple labels for same event
-    unique_event_data = df_unique.drop(columns=["priority"]).to_numpy()
+    # 2. GROUPING: Instead of dropping, group by the unique time window
+    # This finds all channels associated with the exact same (start, end, label)
+    grouped = df.groupby(["start", "end", "label_id"])["chan"].apply(list).reset_index()
 
-    numEvents = len(unique_event_data)
-
-    # We only take the rows of the signal that are in keep_channels
-    if signals.shape[0] > len(keep_channels):
-        raise ValueError("Signals shape does not match keep_channels length")
-    else:
-        selected_signals = signals
+    numEvents = len(grouped)
     numChan = len(keep_channels)
 
-    features = np.zeros([numEvents, numChan, window_samples])
-    offending_channel = np.zeros([numEvents, 1])
-    labels = np.zeros([numEvents, 1])
+    # Pre-pad the signals
+    signals_padded = np.pad(signals, ((0, 0), (pad_width, pad_width)), mode="edge")
 
-    # EDGE PADDING (Safer context than triple buffer)
-    pad_width = int(fs * 5)
-    signals_padded = np.pad(selected_signals, ((0, 0), (pad_width, pad_width)), mode="edge")
+    # This will hold your final multi-channel "Stacked" samples
+    final_features = []  # List of [16, 200] arrays
+    final_labels = []
+    final_masks = []  # Optional: which channels actually showed the event
 
-    for i in range(numEvents):
-        t_start = unique_event_data[i, 1]
-        t_end = unique_event_data[i, 2]
+    for _, row in grouped.iterrows():
+        t_start, t_end, label = row["start"], row["end"], row["label_id"]
+        chans_present = row["chan"]  # List of original channel IDs for this event
 
-        # Get indices from the times array
         idx_start = np.searchsorted(times, t_start)
         idx_end = np.searchsorted(times, t_end)
 
-        # Center the 5s window on the actual event duration
-        center_idx = (idx_start + idx_end) // 2
+        # 0.5s pre + 1s event + 0.5s post = 2s total
+        start_slice = pad_width + idx_start - int(0.5 * fs)
+        end_slice = start_slice + window_samples
 
-        # Calculate slice boundaries relative to padded signal
-        # start_slice = (center_idx + pad_width) - (window_samples // 2)
-        # end_slice = start_slice + window_samples
-        start_slice = pad_width + idx_start - 2 * int(fs)
-        end_slice = pad_width + idx_end + 2 * int(fs)
-        assert end_slice - start_slice == window_samples, "Slice length mismatch"
+        # Extract the segment for ALL 16 channels
+        segment = signals_padded[:, start_slice:end_slice]
 
-        features[i, :, :] = signals_padded[:, start_slice:end_slice]
+        # Create a spatial mask (1 if channel was labeled "offending", 0 otherwise)
+        # This helps the model know WHICH channels in the 16 were labeled
+        spatial_mask = np.zeros(numChan)
+        chan_map = {orig: i for i, orig in enumerate(keep_channels)}
+        for c in chans_present:
+            spatial_mask[chan_map[c]] = 1
 
-        # Save metadata
-        offending_channel[i, :] = int(unique_event_data[i, 0])
-        labels[i, :] = int(unique_event_data[i, 3])
+        final_features.append(segment)
+        final_labels.append(label)
+        final_masks.append(spatial_mask)
 
-    return [features, offending_channel, labels]
+    return np.array(final_features), np.array(final_labels), np.array(final_masks)
 
 
 def readEDF(fileName):
@@ -188,7 +174,7 @@ def readEDF(fileName):
 
     Rawdata.filter(l_freq=0.1, h_freq=75.0)
     Rawdata.notch_filter(50.0)
-    Rawdata.resample(200, n_jobs=5)
+    Rawdata.resample(100, n_jobs=5)
 
     _, times = Rawdata[:]
     signals = Rawdata.get_data(units="uV")
@@ -199,8 +185,8 @@ def readEDF(fileName):
     return [signals, times, eventData, Rawdata]
 
 
-def load_up_objects(BaseDir, Features, OffendingChannels, Labels, OutDir):
-    for dirName, subdirList, fileList in tqdm(os.walk(BaseDir)):
+def load_up_objects(BaseDir, OutDir):
+    for dirName, _, fileList in tqdm(os.walk(BaseDir)):
         print("Found directory: %s" % dirName)
         for fname in fileList:
             if fname[-4:] == ".edf":
@@ -213,19 +199,19 @@ def load_up_objects(BaseDir, Features, OffendingChannels, Labels, OutDir):
                 except (ValueError, KeyError):
                     print("something funky happened in " + dirName + "/" + fname)
                     continue
-                signals, offending_channels, labels = BuildEvents(signals, times, event, keep_channels)
-                for idx, (signal, offending_channel, label) in enumerate(zip(signals, offending_channels, labels)):
+                signals, labels, masks = BuildEvents(signals, times, event, keep_channels)
+                for idx, (signal, label, mask) in enumerate(zip(signals, labels, masks)):
                     sample = {
                         "signal": signal,
-                        "offending_channel": offending_channel,
                         "label": label,
+                        "mask": mask,
                     }
                     save_pickle(
                         sample,
                         os.path.join(OutDir, fname.split(".")[0] + "-" + str(idx) + ".pkl"),
                     )
 
-    return Features, Labels, OffendingChannels
+    return
 
 
 def save_pickle(object, filename):
@@ -239,77 +225,69 @@ if __name__ == "__main__":
     TUEV dataset is downloaded from https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml
     """
 
-    # root = "/data/stympopper/filteredTUEV/edf"
-    # train_out_dir = os.path.join(root, "processed_train")
-    # eval_out_dir = os.path.join(root, "processed_eval")
-    # if not os.path.exists(train_out_dir):
-    #     os.makedirs(train_out_dir)
-    # if not os.path.exists(eval_out_dir):
-    #     os.makedirs(eval_out_dir)
+    root = "/data/stympopper/FilteredTUEV"
+    train_out_dir = os.path.join(root, "processed_train")
+    eval_out_dir = os.path.join(root, "processed_eval")
+    if not os.path.exists(train_out_dir):
+        os.makedirs(train_out_dir)
+    if not os.path.exists(eval_out_dir):
+        os.makedirs(eval_out_dir)
 
-    # BaseDirTrain = os.path.join(root, "train")
-    # fs = 200
-    # TrainFeatures = np.empty((0, 16, fs))  # 0 for lack of intialization, 22 for channels, fs for num of points
-    # TrainLabels = np.empty([0, 1])
-    # TrainOffendingChannel = np.empty([0, 1])
-    # load_up_objects(BaseDirTrain, TrainFeatures, TrainLabels, TrainOffendingChannel, train_out_dir)
+    BaseDirTrain = os.path.join(root, "train")
+    load_up_objects(BaseDirTrain, train_out_dir)
 
-    # BaseDirEval = os.path.join(root, "eval")
-    # fs = 200
-    # EvalFeatures = np.empty((0, 16, fs))  # 0 for lack of intialization, 22 for channels, fs for num of points
-    # EvalLabels = np.empty([0, 1])
-    # EvalOffendingChannel = np.empty([0, 1])
-    # load_up_objects(BaseDirEval, EvalFeatures, EvalLabels, EvalOffendingChannel, eval_out_dir)
+    BaseDirEval = os.path.join(root, "eval")
+    load_up_objects(BaseDirEval, eval_out_dir)
 
-    # # transfer to train, eval, and test
-    # root = "/data/stympopper/filteredTUEV/edf"
-    # seed = 4523
-    # np.random.seed(seed)
+    # transfer to train, eval, and test
+    root = "/data/stympopper/FilteredTUEV"
+    seed = 4523
+    np.random.seed(seed)
 
-    # train_files = os.listdir(os.path.join(root, "processed_train"))
-    # train_sub = list(set([f.split("_")[0] for f in train_files]))
-    # print("train sub", len(train_sub))
-    # test_files = os.listdir(os.path.join(root, "processed_eval"))
-
-    # val_sub = np.random.choice(train_sub, size=int(len(train_sub) * 0.2), replace=False)
-    # train_sub = list(set(train_sub) - set(val_sub))
-    # val_files = [f for f in train_files if f.split("_")[0] in val_sub]
-    # train_files = [f for f in train_files if f.split("_")[0] in train_sub]
-
-    # for file in train_files:
-    #     os.system(
-    #         f"mv {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_train')}"
-    #     )
-    # for file in val_files:
-    #     os.system(
-    #         f"mv {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_eval')}"
-    #     )
-    # for file in test_files:
-    #     os.system(
-    #         f"mv {os.path.join(root, 'processed_eval', file)} {os.path.join(root, 'processed', 'processed_test')}"
-    #     )
-
-    root = "/data/stympopper/TUEV/edf/processed"
-    target_root = "/data/stympopper/tinyTUEV/processed"
-
-    # Select just 100 samples from trainset
     train_files = os.listdir(os.path.join(root, "processed_train"))
-    selected_train_files = np.random.choice(train_files, size=100, replace=False)
-    for file in selected_train_files:
+    train_sub = list(set([f.split("_")[0] for f in train_files]))
+    print("train sub", len(train_sub))
+    test_files = os.listdir(os.path.join(root, "processed_eval"))
+
+    val_sub = np.random.choice(train_sub, size=int(len(train_sub) * 0.2), replace=False)
+    train_sub = list(set(train_sub) - set(val_sub))
+    val_files = [f for f in train_files if f.split("_")[0] in val_sub]
+    train_files = [f for f in train_files if f.split("_")[0] in train_sub]
+
+    for file in train_files:
         os.system(
-            f"cp {os.path.join(root, 'processed_train', file)} {os.path.join(target_root, 'processed_train', file)}"
+            f"mv {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_train')}"
         )
-    # Select just 50 samples from evalset
-    eval_files = os.listdir(os.path.join(root, "processed_eval"))
-    selected_eval_files = np.random.choice(eval_files, size=50, replace=False)
-    for file in selected_eval_files:
+    for file in val_files:
         os.system(
-            f"cp {os.path.join(root, 'processed_eval', file)} {os.path.join(target_root, 'processed_eval', file)}"
+            f"mv {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_eval')}"
         )
-    # Select just 50 samples from testset
-    test_files = os.listdir(os.path.join(root, "processed_test"))
-    selected_test_files = np.random.choice(test_files, size=50, replace=False)
-    for file in selected_test_files:
+    for file in test_files:
         os.system(
-            f"cp {os.path.join(root, 'processed_test', file)} {os.path.join(target_root, 'processed_test', file)}"
+            f"mv {os.path.join(root, 'processed_eval', file)} {os.path.join(root, 'processed', 'processed_test')}"
         )
+
+    # root = "/data/stympopper/TUEV/edf/processed"
+    # target_root = "/data/stympopper/tinyTUEV/processed"
+
+    # # Select just 100 samples from trainset
+    # train_files = os.listdir(os.path.join(root, "processed_train"))
+    # selected_train_files = np.random.choice(train_files, size=100, replace=False)
+    # for file in selected_train_files:
+    #     os.system(
+    #         f"cp {os.path.join(root, 'processed_train', file)} {os.path.join(target_root, 'processed_train', file)}"
+    #     )
+    # # Select just 50 samples from evalset
+    # eval_files = os.listdir(os.path.join(root, "processed_eval"))
+    # selected_eval_files = np.random.choice(eval_files, size=50, replace=False)
+    # for file in selected_eval_files:
+    #     os.system(
+    #         f"cp {os.path.join(root, 'processed_eval', file)} {os.path.join(target_root, 'processed_eval', file)}"
+    #     )
+    # # Select just 50 samples from testset
+    # test_files = os.listdir(os.path.join(root, "processed_test"))
+    # selected_test_files = np.random.choice(test_files, size=50, replace=False)
+    # for file in selected_test_files:
+    #     os.system(
+    #         f"cp {os.path.join(root, 'processed_test', file)} {os.path.join(target_root, 'processed_test', file)}"
+    #     )
