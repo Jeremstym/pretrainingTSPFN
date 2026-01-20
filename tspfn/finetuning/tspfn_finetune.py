@@ -91,23 +91,23 @@ class TSPFNFineTuning(TSPFNSystem):
         self.ts_length = time_series_length
 
         self.time_series_positional_encoding = time_series_positional_encoding
-        # self.time_series_convolution = nn.Sequential(
-        #     nn.Conv1d(
-        #         in_channels=self.ts_num_channels,
-        #         out_channels=self.ts_num_channels,
-        #         kernel_size=10,
-        #         stride=10,
-        #         groups=self.ts_num_channels,
-        #     ),  # T = 1000 -> 100
-        #     nn.ReLU(),
-        #     nn.Conv1d(
-        #         in_channels=self.ts_num_channels,
-        #         out_channels=self.ts_num_channels,
-        #         kernel_size=5,
-        #         stride=5,
-        #         groups=self.ts_num_channels,
-        #     ),  # T = 100 -> 20
-        # )
+        self.time_series_convolution = nn.Sequential(
+            nn.Conv1d(
+                in_channels=self.ts_num_channels,
+                out_channels=self.ts_num_channels,
+                kernel_size=10,
+                stride=10,
+                groups=self.ts_num_channels,
+            ),  # T = 1000 -> 100
+            nn.ReLU(),
+            nn.Conv1d(
+                in_channels=self.ts_num_channels,
+                out_channels=self.ts_num_channels,
+                kernel_size=5,
+                stride=5,
+                groups=self.ts_num_channels,
+            ),  # T = 100 -> 20
+        )
         # self.time_series_convolution = nn.Sequential(
         #     nn.Conv1d(in_channels=self.ts_num_channels, out_channels=self.ts_num_channels, kernel_size=8, stride=4, padding=2, groups=self.ts_num_channels),
         #     nn.ReLU(),
@@ -228,15 +228,17 @@ class TSPFNFineTuning(TSPFNSystem):
         # print(f"Support set label distribution: {pd.Series(y_batch_support.cpu().numpy()).value_counts().to_dict()}")
         # print(f"Query set label distribution: {pd.Series(y_batch_query.cpu().numpy()).value_counts().to_dict()}")
 
-        if self.ts_tokenizer is not None:
-            ts_batch_support = self.ts_tokenizer(
-                ts_batch_support,
-                input_chans=list(range(self.ts_num_channels)),
-            )  # (Support, num_tokens)
-            ts_batch_query = self.ts_tokenizer(
-                ts_batch_query,
-                input_chans=list(range(self.ts_num_channels)),
-            )  # (Query, num_tokens)
+        ts_batch_support = self.time_series_convolution(ts_batch_support)  # (Support, C, T')
+        ts_batch_query = self.time_series_convolution(ts_batch_query)  # (Query, C, T')
+        # if self.ts_tokenizer is not None:
+        #     ts_batch_support = self.ts_tokenizer(
+        #         ts_batch_support,
+        #         input_chans=list(range(self.ts_num_channels)),
+        #     )  # (Support, num_tokens)
+        #     ts_batch_query = self.ts_tokenizer(
+        #         ts_batch_query,
+        #         input_chans=list(range(self.ts_num_channels)),
+        #     )  # (Query, num_tokens)
 
         # Unsqueeze to comply with expected input shape for TabPFN encoder
         if ts_batch_support.ndim == 2:
