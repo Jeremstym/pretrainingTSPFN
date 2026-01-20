@@ -130,9 +130,10 @@ class TSPFNFineTuning(TSPFNSystem):
         """Redefine example input array based on the cardiac attributes provided to the model."""
         batch_size = 10
         num_classes = 6  # Default number of classes in TUEV dataset
-        time_series_attrs = torch.randn(batch_size, self.ts_num_channels, 1000)  # (B, S, T)
+        time_series_attrs = torch.randn(batch_size, self.ts_num_channels, 200)  # (B, S, T)
         labels = torch.randint(0, num_classes, (batch_size,))
-        return time_series_attrs, labels
+        mask = torch.ones(batch_size, self.ts_num_channels)
+        return time_series_attrs, labels, mask
 
     def configure_model(
         self,
@@ -292,6 +293,7 @@ class TSPFNFineTuning(TSPFNSystem):
         self,
         time_series_attrs: Tensor,
         labels: Tensor,
+        mask: Tensor,
         task: Literal["encode", "predict"] = "encode",
     ) -> Tensor | Dict[str, Tensor]:
         """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the prediction head.
