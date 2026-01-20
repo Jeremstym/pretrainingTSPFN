@@ -86,6 +86,28 @@ class TUEVDataset(torch.utils.data.Dataset):
             X = resample(X, 5 * self.sampling_rate, axis=-1)
         # Normalize by 100
         # X = X / 100.0
-        Y = int(sample["label"][0]-1)  # make label start from 0
+        Y = int(sample["label"][0] - 1)  # make label start from 0
         X = torch.FloatTensor(X)
         return X, Y
+
+
+class FilteredTUEVDataset(torch.utils.data.Dataset):
+    def __init__(self, root, files, sampling_rate=200):
+        self.root = root
+        self.files = files
+        self.default_rate = 200
+        self.sampling_rate = sampling_rate
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        sample = pickle.load(open(os.path.join(self.root, self.files[index]), "rb"))
+        X = sample["signal"]
+        if self.sampling_rate != self.default_rate:
+            X = resample(X, 2 * self.sampling_rate, axis=-1)
+        Y = int(sample["label"][0] - 1)  # make label start from 0
+        X = torch.FloatTensor(X)
+        mask = sample["mask"]
+        mask = torch.FloatTensor(mask)
+        return X, Y, mask
