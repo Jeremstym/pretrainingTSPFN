@@ -193,7 +193,7 @@ class TSPFNFineTuning(TSPFNSystem):
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
         if self.training or summary_mode:
-            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = stratified_batch_split(
+            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = half_batch_split(
                 data=time_series_attrs,
                 labels=labels,
             )
