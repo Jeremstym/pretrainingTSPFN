@@ -4,6 +4,7 @@
 #SBATCH --cpus-per-task=5
 #SBATCH --mem-per-cpu=8G
 #SBATCH --nodes=1
+#SBATCH --nodelist=punk,kavinsky,modjo
 #SBATCH --gpus-per-node=1
 #SBATCH --time=1-23:00:00
 #SBATCH --output=/home/stympopper/bash/out/%x-%j.out
