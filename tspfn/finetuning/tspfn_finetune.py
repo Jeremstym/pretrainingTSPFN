@@ -74,6 +74,14 @@ class TSPFNFineTuning(TSPFNSystem):
         # Configure losses/metrics to compute at each train/val/test step
         self.metrics = nn.ModuleDict()
 
+        if self.hparams["model"].get("loc_head", None) is not None:
+            loc_head_cfg = self.hparams["model"].pop("loc_head")
+            self.loc_head = hydra.utils.instantiate(
+                loc_head_cfg,
+            )
+        else:
+            self.loc_head = None
+
         # Supervised losses and metrics
         self.predict_losses = {}
         if predict_losses:
@@ -83,6 +91,8 @@ class TSPFNFineTuning(TSPFNSystem):
                 )
                 for target_task, target_loss in predict_losses.items()
             }
+        if self.loc_head is None:
+            self.predict_losses.pop("location", None)
 
         # Initialize transformer encoder and self-supervised + prediction heads
         self.encoder, self.prediction_heads = self.configure_model()
@@ -150,7 +160,7 @@ class TSPFNFineTuning(TSPFNSystem):
             for target_task in self.predict_losses:
                 prediction_heads[target_task] = hydra.utils.instantiate(
                     self.hparams["model"]["prediction_head"],
-                )
+                ) if target_task != "location" else self.loc_head
 
         return encoder, prediction_heads
 
@@ -391,12 +401,12 @@ class TSPFNFineTuning(TSPFNSystem):
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
         if self.training:
-            time_series_input, target_labels = batch  # (N, C, T), (N,)
+            time_series_input, target_labels, mask = batch  # (N, C, T), (N,)
             time_series_support = None
         else:
             batch_dict, _, _ = batch
-            time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
-            time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
+            time_series_input, target_labels, mask = batch_dict["val"]  # (N, C, T), (N,)
+            time_series_support, support_labels, _ = batch_dict["train"]  # (N, C, T), (N,)
 
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels
@@ -438,19 +448,34 @@ class TSPFNFineTuning(TSPFNSystem):
         else:
             stage = "test_metrics"
         for target_task, target_loss in self.predict_losses.items():
-            y_hat = predictions[target_task]  # (N=Query, num_classes)
-            if y_hat.ndim == 1:
-                y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_classes=1)
-            target = target_batch.squeeze(dim=0)  # (N=Query,)
-            # Convert target to long if classification with >2 classes, float otherwise
-            target = target.long()  # TODO: adapt for binary classification
-            losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
-                y_hat,
-                target,
-            )
+            if target_task == "classification":
+                y_hat = predictions[target_task]  # (N=Query, num_classes)
+                if y_hat.ndim == 1:
+                    y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_classes=1)
+                target = target_batch.squeeze(dim=0)  # (N=Query,)
+                # Convert target to long if classification with >2 classes, float otherwise
+                target = target.long()  # TODO: adapt for binary classification
+                losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
+                    y_hat,
+                    target,
+                )
 
-            # Metrics are automatically updated inside the Metric objects
-            self.metrics[stage][target_task].update(y_hat, target)
+                # Metrics are automatically updated inside the Metric objects
+                self.metrics[stage][target_task].update(y_hat, target)
+            elif target_task == "location":
+                y_hat = predictions[target_task]  # (N=Query, num_locations)
+                if y_hat.ndim == 1:
+                    y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_locations)
+                target = mask.unsqueeze(dim=0)  # (N=Query, num_locations)
+                losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
+                    y_hat,
+                    target,
+                )
+
+                # Metrics are automatically updated inside the Metric objects
+                self.metrics[stage][target_task].update(y_hat, target)
+            else:
+                raise ValueError(f"Unknown target task '{target_task}' for prediction.")
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
         metrics.update(losses)
