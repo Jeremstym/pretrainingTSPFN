@@ -106,7 +106,7 @@ class FilteredTUEVDataset(torch.utils.data.Dataset):
         X = sample["signal"]
         if self.sampling_rate != self.default_rate:
             X = resample(X, 2 * self.sampling_rate, axis=-1)
-        Y = int(sample["label"][0] - 1)  # make label start from 0
+        Y = int(sample["label"] - 1)  # make label start from 0
         X = torch.FloatTensor(X)
         mask = sample["mask"]
         mask = torch.FloatTensor(mask)
