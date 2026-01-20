@@ -23,7 +23,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
-from data.evaluation_datasets import TUABDataset, TUEVDataset
+from data.evaluation_datasets import TUABDataset, TUEVDataset, FilteredTUEVDataset
 from data.utils.sampler import StratifiedBatchSampler
 
 
@@ -299,6 +299,99 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             sampling_rate=200,
         )
         self.test_dataset = TUEVDataset(
+            root=os.path.join(self.data_roots, "processed_test"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_test")),
+            sampling_rate=200,
+        )
+        return
+
+    def train_dataloader(self):
+        return self._dataloader(
+            self.train_dataset,
+            shuffle=True,
+            batch_size=self.batch_size,
+            collate_fn=None,
+            drop_last=True,
+        )
+
+    def val_dataloader(self):
+        val_loader = self._dataloader(
+            self.val_dataset,
+            shuffle=False,
+            batch_size=self.batch_size,
+            collate_fn=None,
+            drop_last=True,
+        )
+        train_loader = self._dataloader(
+            self.train_dataset,
+            shuffle=False,
+            batch_size=self.batch_size,
+            collate_fn=None,
+            drop_last=True,
+        )
+        return CombinedLoader({"val": val_loader, "train": train_loader}, "min_size")
+
+    def test_dataloader(self):
+        test_loader = self._dataloader(
+            self.test_dataset,
+            shuffle=False,
+            batch_size=self.batch_size,
+            collate_fn=None,
+            drop_last=True,
+        )
+        train_loader = self._dataloader(
+            self.train_dataset,
+            shuffle=False,
+            batch_size=self.batch_size,
+            collate_fn=None,
+            drop_last=True,
+        )
+        return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
+
+class FineTuneFilteredTUEVDataModule(TSPFNDataModule):
+    """LightningDataModule for TSP datasets during finetuning.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            subsets=subsets,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+        print(f"num workers: {self.num_workers}")
+
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Create datasets. Called on every process in distributed settings."""
+        self.train_dataset = FilteredTUEVDataset(
+            root=os.path.join(self.data_roots, "processed_train"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_train")),
+            sampling_rate=200,
+        )
+        self.val_dataset = FilteredTUEVDataset(
+            root=os.path.join(self.data_roots, "processed_eval"),
+            files=os.listdir(os.path.join(self.data_roots, "processed_eval")),
+            sampling_rate=200,
+        )
+        self.test_dataset = FilteredTUEVDataset(
             root=os.path.join(self.data_roots, "processed_test"),
             files=os.listdir(os.path.join(self.data_roots, "processed_test")),
             sampling_rate=200,
