@@ -36,7 +36,6 @@ class PFNPredictionHead(nn.Module):
         model = list_model[0]
         self.n_classes = num_classes
         
-        # TODO: for now, we only support the standard prediction head
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
             state_dict = torch.load(updated_pfn_path, map_location="cuda:0")
