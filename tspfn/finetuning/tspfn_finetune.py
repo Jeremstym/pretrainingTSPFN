@@ -139,8 +139,8 @@ class TSPFNFineTuning(TSPFNSystem):
     def example_input_array(self) -> Tensor:
         """Redefine example input array based on the cardiac attributes provided to the model."""
         batch_size = 10
-        num_classes = 6  # Default number of classes in TUEV dataset
-        time_series_attrs = torch.randn(batch_size, self.ts_num_channels, 200)  # (B, S, T)
+        num_classes = 5  # Default number of classes in ECG5000 dataset
+        time_series_attrs = torch.randn(batch_size, self.ts_num_channels, 140)  # (B, S, T)
         labels = torch.randint(0, num_classes, (batch_size,))
         # mask = torch.ones(batch_size, self.ts_num_channels)
         return time_series_attrs, labels  # , #mask
