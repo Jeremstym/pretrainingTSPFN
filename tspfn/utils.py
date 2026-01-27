@@ -33,6 +33,7 @@ def stratified_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor
 
     return data[support_indices], data[query_indices], labels[support_indices], labels[query_indices]
 
+
 def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
     total_size = data.size(0)
     half_size = total_size // 2
@@ -70,6 +71,40 @@ def get_sizes_per_class(class_choice: str, y_train: np.ndarray, num_classes: int
         raise NotImplementedError
 
     return sizes_per_class
+
+
+def get_knn(
+    self,
+    y_support: Tensor,
+    y_query: Tensor,
+    ts_support: Tensor,
+    ts_query: Tensor,
+) -> Tuple[Tensor, Tensor, Tensor, Sequence[Tensor]]:
+
+    num_classes = len(torch.unique(y_support))
+    ts_support_np = ts_support.detach().cpu().numpy().copy()
+    y_support_np = y_support.detach().cpu().numpy().copy()
+
+    faissKNN = MulticlassFaiss(
+        embX=ts_support_np,
+        X_orig=ts_support_np,  # FIXME: remove duplicate in the class builder
+        y=y_support_np,
+        metric="L2",
+    )
+    sizes_per_class = get_sizes_per_class(
+        "equal",
+        y_support_np,
+        num_classes=num_classes,
+        context_length=ts_support.shape[1],
+    )
+    indices_ts_query_nni, y_nni = faissKNN.get_nearest_neighbors(
+        embX_query=ts_query.cpu().numpy(),
+        sizes_per_class=sizes_per_class,
+    )
+    ts_nni = np.concatenate(
+        [ts_support_np[y_support_np == i][indices] for i, indices in enumerate(indices_ts_query_nni)],
+        axis=0,
+    )
 
 
 class SingleclassFaiss:

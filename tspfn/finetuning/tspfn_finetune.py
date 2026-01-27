@@ -91,8 +91,8 @@ class TSPFNFineTuning(TSPFNSystem):
                 )
                 for target_task, target_loss in predict_losses.items()
             }
-        if self.loc_head is None:
-            self.predict_losses.pop("location", None)
+        # if self.loc_head is None:
+        #     self.predict_losses.pop("location", None)
 
         # Initialize transformer encoder and self-supervised + prediction heads
         self.encoder, self.prediction_heads = self.configure_model()
@@ -142,8 +142,8 @@ class TSPFNFineTuning(TSPFNSystem):
         num_classes = 6  # Default number of classes in TUEV dataset
         time_series_attrs = torch.randn(batch_size, self.ts_num_channels, 200)  # (B, S, T)
         labels = torch.randint(0, num_classes, (batch_size,))
-        mask = torch.ones(batch_size, self.ts_num_channels)
-        return time_series_attrs, labels, mask
+        # mask = torch.ones(batch_size, self.ts_num_channels)
+        return time_series_attrs, labels  # , #mask
 
     def configure_model(
         self,
@@ -158,9 +158,13 @@ class TSPFNFineTuning(TSPFNSystem):
         if self.predict_losses:
             prediction_heads = nn.ModuleDict()
             for target_task in self.predict_losses:
-                prediction_heads[target_task] = hydra.utils.instantiate(
-                    self.hparams["model"]["prediction_head"],
-                ) if target_task != "location" else self.loc_head
+                prediction_heads[target_task] = (
+                    hydra.utils.instantiate(
+                        self.hparams["model"]["prediction_head"],
+                    )
+                    # if target_task != "location"
+                    # else self.loc_head
+                )
 
         return encoder, prediction_heads
 
@@ -230,39 +234,6 @@ class TSPFNFineTuning(TSPFNSystem):
             ts_batch_query,
         )
 
-    def get_knn(
-        self,
-        y_support: Tensor,
-        y_query: Tensor,
-        ts_support: Tensor,
-        ts_query: Tensor,
-    ) -> Tuple[Tensor, Tensor, Tensor, Sequence[Tensor]]:
-
-        num_classes = len(torch.unique(y_support))
-        ts_support_np = ts_support.detach().cpu().numpy().copy()
-        y_support_np = y_support.detach().cpu().numpy().copy()
-
-        faissKNN = MulticlassFaiss(
-            embX=ts_support_np,
-            X_orig=ts_support_np,  # FIXME: remove duplicate in the class builder
-            y=y_support_np,
-            metric="L2",
-        )
-        sizes_per_class = get_sizes_per_class(
-            "equal",
-            y_support_np,
-            num_classes=num_classes,
-            context_length=ts_support.shape[1],
-        )
-        indices_ts_query_nni, y_nni = faissKNN.get_nearest_neighbors(
-            embX_query=ts_query.cpu().numpy(),
-            sizes_per_class=sizes_per_class,
-        )
-        ts_nni = np.concatenate(
-            [ts_support_np[y_support_np == i][indices] for i, indices in enumerate(indices_ts_query_nni)],
-            axis=0,
-        )
-
     @auto_move_data
     def encode(
         self,
@@ -303,7 +274,7 @@ class TSPFNFineTuning(TSPFNSystem):
         self,
         time_series_attrs: Tensor,
         labels: Tensor,
-        mask: Tensor,
+        # mask: Tensor,
         task: Literal["encode", "predict"] = "encode",
     ) -> Tensor | Dict[str, Tensor]:
         """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the prediction head.
@@ -401,12 +372,12 @@ class TSPFNFineTuning(TSPFNSystem):
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
         if self.training:
-            time_series_input, target_labels, mask = batch  # (N, C, T), (N,)
+            time_series_input, target_labels = batch  # (N, C, T), (N,)
             time_series_support = None
         else:
             batch_dict, _, _ = batch
-            time_series_input, target_labels, mask = batch_dict["val"]  # (N, C, T), (N,)
-            time_series_support, support_labels, _ = batch_dict["train"]  # (N, C, T), (N,)
+            time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
+            time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
 
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels
@@ -462,18 +433,18 @@ class TSPFNFineTuning(TSPFNSystem):
 
                 # Metrics are automatically updated inside the Metric objects
                 self.metrics[stage][target_task].update(y_hat, target)
-            elif target_task == "location":
-                y_hat = predictions[target_task]  # (N=Query, num_locations)
-                if y_hat.ndim == 1:
-                    y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_locations)
-                target = mask.unsqueeze(dim=0)  # (N=Query, num_locations)
-                losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
-                    y_hat,
-                    target,
-                )
+            # elif target_task == "location":
+            #     y_hat = predictions[target_task]  # (N=Query, num_locations)
+            #     if y_hat.ndim == 1:
+            #         y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_locations)
+            #     target = mask.unsqueeze(dim=0)  # (N=Query, num_locations)
+            #     losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
+            #         y_hat,
+            #         target,
+            #     )
 
-                # Metrics are automatically updated inside the Metric objects
-                self.metrics[stage][target_task].update(y_hat, target)
+            #     # Metrics are automatically updated inside the Metric objects
+            #     self.metrics[stage][target_task].update(y_hat, target)
             else:
                 raise ValueError(f"Unknown target task '{target_task}' for prediction.")
 
