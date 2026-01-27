@@ -28,6 +28,7 @@ from torch import inf
 
 import pickle
 from scipy.signal import resample
+from torch.utils.data import Dataset
 
 standard_1020 = [
     "FP1-F7",
@@ -49,7 +50,7 @@ standard_1020 = [
 ]
 
 
-class TUABDataset(torch.utils.data.Dataset):
+class TUABDataset(Dataset):
     def __init__(self, root, files, sampling_rate=200):
         self.root = root
         self.files = files
@@ -69,7 +70,7 @@ class TUABDataset(torch.utils.data.Dataset):
         return X, Y
 
 
-class TUEVDataset(torch.utils.data.Dataset):
+class TUEVDataset(Dataset):
     def __init__(self, root, files, sampling_rate=200):
         self.root = root
         self.files = files
@@ -91,7 +92,7 @@ class TUEVDataset(torch.utils.data.Dataset):
         return X, Y
 
 
-class FilteredTUEVDataset(torch.utils.data.Dataset):
+class FilteredTUEVDataset(Dataset):
     def __init__(self, root, files, sampling_rate=200):
         self.root = root
         self.files = files
