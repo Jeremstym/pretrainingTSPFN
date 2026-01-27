@@ -21,6 +21,7 @@ class PFNPredictionHead(nn.Module):
         self,
         in_features: int,
         tabpfn_kwargs: dict,
+        num_classes: int,
         updated_pfn_path: Union[Path, None] = None,
         **kwargs,
     ):
@@ -33,7 +34,7 @@ class PFNPredictionHead(nn.Module):
         super().__init__()
         list_model, _, _, _ = load_model_criterion_config(**tabpfn_kwargs)
         model = list_model[0]
-        self.n_classes = 6 # Default number of classes in TabPFN prediction head
+        self.n_classes = num_classes
         
         # TODO: for now, we only support the standard prediction head
         # if updated_pfn_path is not None:

@@ -51,6 +51,7 @@ class TSPFNFineTuning(TSPFNSystem):
         time_series_num_channels: int = 16,
         time_series_length: int = 1000,
         foundation_model_name: Literal["convolution", "labram"] = None,
+        num_classes:int =10,
         *args,
         **kwargs,
     ):
@@ -99,18 +100,19 @@ class TSPFNFineTuning(TSPFNSystem):
 
         self.ts_num_channels = time_series_num_channels
         self.ts_length = time_series_length
+        self.num_classes = num_classes
 
         self.time_series_positional_encoding = time_series_positional_encoding
 
         # Use ModuleDict so metrics move to GPU automatically
         metrics_template = MetricCollection(
             [
-                MulticlassAccuracy(num_classes=6, average="micro"),
-                MulticlassAUROC(num_classes=6, average="macro"),
-                MulticlassAveragePrecision(num_classes=6, average="macro"),
-                MulticlassF1Score(num_classes=6, average="weighted"),
-                MulticlassCohenKappa(num_classes=6),
-                MulticlassRecall(num_classes=6, average="macro"),
+                MulticlassAccuracy(num_classes=self.num_classes, average="micro"),
+                MulticlassAUROC(num_classes=self.num_classes, average="macro"),
+                MulticlassAveragePrecision(num_classes=self.num_classes, average="macro"),
+                MulticlassF1Score(num_classes=self.num_classes, average="weighted"),
+                MulticlassCohenKappa(num_classes=self.num_classes),
+                MulticlassRecall(num_classes=self.num_classes, average="macro"),
             ]
         )
         # Store them in a dict of ModuleDicts
@@ -139,8 +141,8 @@ class TSPFNFineTuning(TSPFNSystem):
     def example_input_array(self) -> Tensor:
         """Redefine example input array based on the cardiac attributes provided to the model."""
         batch_size = 10
-        num_classes = 5  # Default number of classes in ECG5000 dataset
-        time_series_attrs = torch.randn(batch_size, self.ts_num_channels, 140)  # (B, S, T)
+        num_classes = self.num_classes  # Default number of classes in ECG5000 dataset
+        time_series_attrs = torch.randn(batch_size, self.ts_num_channels, self.ts_length)  # (B, S, T)
         labels = torch.randint(0, num_classes, (batch_size,))
         # mask = torch.ones(batch_size, self.ts_num_channels)
         return time_series_attrs, labels  # , #mask
@@ -354,7 +356,7 @@ class TSPFNFineTuning(TSPFNSystem):
         metrics = {}
         losses = []
         if self.predict_losses is not None:
-            metrics.update(self._prediction_shared_step(batch, num_classes=6))  # Assuming 6 classes for TUEV dataset
+            metrics.update(self._prediction_shared_step(batch, num_classes=self.num_classes))  # Assuming 6 classes for TUEV dataset
             losses.append(metrics["s_loss"])
 
         # Compute the sum of the (weighted) losses
