@@ -23,7 +23,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
-from data.evaluation_datasets import TUABDataset, TUEVDataset, FilteredTUEVDataset
+from data.evaluation_datasets import TUABDataset, TUEVDataset, FilteredTUEVDataset, ECG5000Dataset
 from data.utils.sampler import StratifiedBatchSampler
 
 
@@ -255,6 +255,55 @@ class TSPFNDataModule(pl.LightningDataModule):
         return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
 
 
+class ECG5000DataModule(TSPFNDataModule):
+    """LightningDataModule for ECG5000 dataset.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            subsets=subsets,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+        print(f"num workers: {self.num_workers}")
+
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Create datasets. Called on every process in distributed settings."""
+        self.train_dataset = ECG5000Dataset(
+            root=self.data_roots,
+            split="train",
+        )
+        self.val_dataset = ECG5000Dataset(
+            root=self.data_roots,
+            split="test",
+        )
+        self.test_dataset = ECG5000Dataset(
+            root=self.data_roots,
+            split="test",
+        )
+
+        return
+
+
 class FineTuneTUEVDataModule(TSPFNDataModule):
     """LightningDataModule for TSP datasets during finetuning.
 
@@ -347,6 +396,7 @@ class FineTuneTUEVDataModule(TSPFNDataModule):
             drop_last=True,
         )
         return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
+
 
 class FineTuneFilteredTUEVDataModule(TSPFNDataModule):
     """LightningDataModule for TSP datasets during finetuning.
@@ -518,9 +568,7 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
             persistent_workers=self.num_workers > 0,
         )
 
-    def _eval_dataloader(
-        self, dataset: Dataset, batch_size: int, collate_fn=None, drop_last=False
-    ) -> DataLoader:
+    def _eval_dataloader(self, dataset: Dataset, batch_size: int, collate_fn=None, drop_last=False) -> DataLoader:
         return DataLoader(
             dataset,
             batch_size=batch_size,
@@ -569,6 +617,7 @@ class StratifiedFineTuneTUEVDataModule(TSPFNDataModule):
             drop_last=False,
         )
         return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
+
 
 class WeightedFineTuneTUEVDataModule(TSPFNDataModule):
     """LightningDataModule for TSP datasets during finetuning.
@@ -650,7 +699,7 @@ class WeightedFineTuneTUEVDataModule(TSPFNDataModule):
             collate_fn=collate_fn,
             drop_last=drop_last,
             persistent_workers=self.num_workers > 0,
-            shuffle=False, # Use weighted sampler instead
+            shuffle=False,  # Use weighted sampler instead
         )
 
     def train_dataloader(self):

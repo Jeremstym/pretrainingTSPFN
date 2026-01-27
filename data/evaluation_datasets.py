@@ -17,6 +17,7 @@ import glob
 from collections import defaultdict, deque
 import datetime
 import numpy as np
+import pandas as pd
 
 from pathlib import Path
 import argparse
@@ -27,7 +28,6 @@ from torch import inf
 
 import pickle
 from scipy.signal import resample
-import pandas as pd
 
 standard_1020 = [
     "FP1-F7",
@@ -111,3 +111,27 @@ class FilteredTUEVDataset(torch.utils.data.Dataset):
         mask = sample["mask"]
         mask = torch.FloatTensor(mask)
         return X, Y, mask
+
+
+class ECG5000Dataset(Dataset):
+    def __init__(self, root, split: str):
+        self.root = root
+        self.file_path = os.path.join(self.root, f"{split}.csv")
+        
+        df = pd.read_csv(self.file_path, header=None)
+        self.data = df.values
+        
+        self.X = self.data[:, :-1]
+        self.Y = self.data[:, -1]
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        x_sample = self.X[index]
+        y_sample = self.Y[index]
+
+        x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
+        y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+
+        return x_tensor, y_tensor
