@@ -50,7 +50,7 @@ class TSPFNFineTuning(TSPFNSystem):
         time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         time_series_num_channels: int = 16,
         time_series_length: int = 1000,
-        foundation_model_name: Literal["convolution", "labram"] = "convolution",
+        foundation_model_name: Literal["convolution", "labram"] = None,
         *args,
         **kwargs,
     ):
@@ -74,13 +74,13 @@ class TSPFNFineTuning(TSPFNSystem):
         # Configure losses/metrics to compute at each train/val/test step
         self.metrics = nn.ModuleDict()
 
-        if self.hparams["model"].get("loc_head", None) is not None:
-            loc_head_cfg = self.hparams["model"].pop("loc_head")
-            self.loc_head = hydra.utils.instantiate(
-                loc_head_cfg,
-            )
-        else:
-            self.loc_head = None
+        # if self.hparams["model"].get("loc_head", None) is not None:
+        #     loc_head_cfg = self.hparams["model"].pop("loc_head")
+        #     self.loc_head = hydra.utils.instantiate(
+        #         loc_head_cfg,
+        #     )
+        # else:
+        #     self.loc_head = None
 
         # Supervised losses and metrics
         self.predict_losses = {}
