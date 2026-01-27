@@ -122,7 +122,7 @@ class ECG5000Dataset(Dataset):
         self.data = df.values
         
         self.X = self.data[:, :-1]
-        self.Y = self.data[:, -1]
+        self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
 
     def __len__(self):
         return len(self.data)
