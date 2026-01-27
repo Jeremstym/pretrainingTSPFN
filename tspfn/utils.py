@@ -6,7 +6,7 @@ import faiss
 import random
 import torch
 from torch import Tensor
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union, Dict, Sequence
 import torch.nn as nn
 import shutil
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
