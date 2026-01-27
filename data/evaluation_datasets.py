@@ -116,7 +116,7 @@ class FilteredTUEVDataset(torch.utils.data.Dataset):
 class ECG5000Dataset(Dataset):
     def __init__(self, root, split: str):
         self.root = root
-        self.file_path = os.path.join(self.root, f"{split}.csv")
+        self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
         
         df = pd.read_csv(self.file_path, header=None)
         self.data = df.values
