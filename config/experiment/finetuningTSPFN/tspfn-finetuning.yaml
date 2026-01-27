@@ -40,7 +40,7 @@ task:
   max_batches_stored_for_inference: 256
   model:
     freeze_encoder: False # Whether to freeze the TabPFN encoder during training
-    loc_head: null
+    # loc_head: null
   optim:
     optimizer:
       _target_: torch.optim.AdamW
