@@ -305,12 +305,12 @@ class ECG5000DataModule(TSPFNDataModule):
         return
 
     def train_dataloader(self):
-        return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset), shuffle=True)
+        return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
 
     def val_dataloader(self):
         loaders = {
-            "val": self._dataloader(self.val_dataset, batch_size=len(self.val_dataset), shuffle=False),
-            "train": self._dataloader(self.train_dataset, batch_size=len(self.train_dataset), shuffle=False),
+            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset)),
+            "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
         }
         return CombinedLoader(loaders, mode="min_size")
 
