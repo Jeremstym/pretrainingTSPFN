@@ -110,7 +110,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 MulticlassAccuracy(num_classes=self.num_classes, average="micro"),
                 MulticlassAUROC(num_classes=self.num_classes, average="macro"),
                 MulticlassAveragePrecision(num_classes=self.num_classes, average="macro"),
-                MulticlassF1Score(num_classes=self.num_classes, average="weighted"),
+                MulticlassF1Score(num_classes=self.num_classes, average="macro"),
                 MulticlassCohenKappa(num_classes=self.num_classes),
                 MulticlassRecall(num_classes=self.num_classes, average="macro"),
             ]
