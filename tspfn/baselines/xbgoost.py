@@ -38,24 +38,24 @@ class XGBoostStaticBaseline(pl.LightningModule):
         self.clf = None
 
     def setup(self, stage=None):
-        """Fit the model once on the entire training set before evaluation starts."""
-        if stage == "fit" or stage is None:
-            print("--- Collecting all training data for XGBoost Baseline ---")
-            train_loader = self.trainer.datamodule.train_dataloader()
-            
-            all_x, all_y = [], []
-            for batch in train_loader:
-                x, y = batch # Assuming [B, N, P] and [B, N]
-                all_x.append(x.view(-1, x.size(-1)).cpu())
-                all_y.append(y.view(-1).cpu())
-            
-            X_train = torch.cat(all_x, dim=0).numpy()
-            y_train = torch.cat(all_y, dim=0).numpy()
-            
-            print(f"--- Fitting XGBoost on {X_train.shape[0]} samples ---")
-            self.clf = xgb.XGBClassifier(**self.xgb_params)
-            self.clf.fit(X_train, y_train)
-            print("--- XGBoost Fitting Complete ---")
+        # Fit if we are in 'fit' (training) OR 'test' stage
+        if stage in ["fit", "test"] or stage is None:
+            if self.clf is None:  # Prevent re-fitting if already done
+                print(f"--- Fitting XGBoost for stage: {stage} ---")
+                # We still fit on the TRAINING data even if we are testing
+                train_loader = self.trainer.datamodule.train_dataloader()
+                
+                all_x, all_y = [], []
+                for batch in train_loader:
+                    x, y = batch
+                    all_x.append(x.view(-1, x.size(-1)).cpu())
+                    all_y.append(y.view(-1).cpu())
+                
+                X_train = torch.cat(all_x, dim=0).numpy()
+                y_train = torch.cat(all_y, dim=0).numpy()
+                
+                self.clf = xgb.XGBClassifier(**self.xgb_params)
+                self.clf.fit(X_train, y_train)
 
     def validation_step(self, batch, batch_idx):
         if self.clf is None:
