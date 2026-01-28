@@ -41,8 +41,11 @@ class XGBoostStaticBaseline(pl.LightningModule):
         y_probs = self.clf.predict_proba(x_eval)
         y_probs_ts = torch.tensor(y_probs, device=self.device)
         
-        # USE TEST METRICS HERE
+        # Log every step (Lightning will handle the averaging)
         self.test_metrics.update(y_probs_ts, y_eval.to(self.device))
+        
+        # NEW: Log individual steps to ensure the logger is "awake"
+        self.log_dict(self.test_metrics, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_test_epoch_end(self):
         # compute returns a dict of results
