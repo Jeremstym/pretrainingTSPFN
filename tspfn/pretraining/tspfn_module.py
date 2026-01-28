@@ -16,16 +16,21 @@ from torchmetrics.classification import (
     BinaryAUROC,
     BinaryF1Score,
     BinaryAveragePrecision,
+    BinaryCohenKappa,
+    BinaryRecall,
     MulticlassAccuracy,
     MulticlassAUROC,
-    MulticlassAveragePrecision,
     MulticlassF1Score,
+    MulticlassAveragePrecision,
+    MulticlassCohenKappa,
+    MulticlassRecall,
 )
 from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError
 from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
+from tspfn.utils import half_batch_split
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +65,7 @@ class TSPFNPretraining(TSPFNSystem):
         self.hparams["lr"] = None
 
         # Configure losses/metrics to compute at each train/val/test step
-        self.metrics = nn.ModuleDict()
+        # self.metrics = nn.ModuleDict()
         # if target in TabularAttribute.numerical_attrs():
         #     self.metrics[target] = MetricCollection([MeanAbsoluteError(), MeanSquaredError()])
         # elif target in TabularAttribute.binary_attrs():
@@ -93,6 +98,26 @@ class TSPFNPretraining(TSPFNSystem):
 
         self.time_series_positional_encoding = time_series_positional_encoding
 
+        # Use ModuleDict so metrics move to GPU automatically
+        metrics_template = MetricCollection(
+            [
+                MulticlassAccuracy(num_classes=self.num_classes, average="micro"),
+                MulticlassAUROC(num_classes=self.num_classes, average="macro"),
+                MulticlassAveragePrecision(num_classes=self.num_classes, average="macro"),
+                MulticlassF1Score(num_classes=self.num_classes, average="macro"),
+                MulticlassCohenKappa(num_classes=self.num_classes),
+                MulticlassRecall(num_classes=self.num_classes, average="macro"),
+            ]
+        )
+        # Store them in a dict of ModuleDicts
+        self.metrics = nn.ModuleDict(
+            {
+                "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
+                "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
+                "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
+            }
+        )
+
     @property
     def example_input_array(self) -> Tensor:
         """Redefine example input array based on the cardiac attributes provided to the model."""
@@ -101,10 +126,10 @@ class TSPFNPretraining(TSPFNSystem):
         # labels = torch.cat([torch.randperm(5)]*2)
         labels = torch.arange(10) % num_classes
         labels = labels.repeat(16, 1)
-        time_series_attrs = torch.randn(16, 10, 499)  # (B, S, T)
-        ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(-1)], dim=2)  # (B, S, T+1)
+        time_series_attrs = torch.randn(16, 10, 999)  # (B, S, T)
+        # ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(-1)], dim=2)  # (B, S, T+1)
         # num_classes = len(torch.unique(labels))
-        return ts_example_input
+        return time_series_attrs, labels.unsqueeze(-1)  # (B, S, T+1), (B, S, 1)
 
     def configure_model(
         self,
@@ -137,6 +162,7 @@ class TSPFNPretraining(TSPFNSystem):
     def process_data(
         self,
         time_series_attrs: Tensor,
+        labels: Tensor,
         summary_mode: bool = False,
     ) -> Tuple[Tensor, Tensor, Tensor]:
         """Tokenizes the input time-series attributes, providing a mask of non-missing attributes.
@@ -153,34 +179,45 @@ class TSPFNPretraining(TSPFNSystem):
         # Tokenize the attributes
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        ts = time_series_attrs[:, :, :-1]  # (B, S, T)
+        # ts = time_series_attrs[:, :, :-1]  # (B, S, T)
         # indices = torch.arange(ts.shape[0])
-        indices = torch.arange(1024)  # Fix for pretraining with sequence length S =1024
-        y = time_series_attrs[:, :, -1]  # (B, S, 1)
+        # indices = torch.arange(1024)  # Fix for pretraining with sequence length S =1024
+        # y = time_series_attrs[:, :, -1]  # (B, S, 1)
 
         if self.training or summary_mode:
-            half_size = ts.shape[1] // 2
-            y_batch_support = y[:, :half_size]  # (B, Support, 1)
-            y_batch_query = y[:, half_size:]  # (B, Query, 1)
+            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = half_batch_split(
+                data=time_series_attrs,
+                labels=labels,
+            )
         else:
-            y_batch_support = y.to(self.device)  # (B, S, 1)
-            y_batch_query = y.to(self.device)  # (B, S, 1)
-            ts = ts.to(self.device)  # (B, S, T)
+            ts_batch_support = time_series_attrs.to(self.device)  # (Support+Query, C, T)
+            ts_batch_query = time_series_attrs.to(self.device)  # (Support+Query, C, T)
+            y_batch_support = labels.to(self.device)  # (Support, 1)
+            y_batch_query = labels.to(self.device)  # (Query, 1)
 
-        if ts.ndim == 2:
-            ts = ts.unsqueeze(0)  # (1, S, T)
+        # Unsqueeze to comply with expected input shape for TabPFN encoder
+        if ts_batch_support.ndim == 2:
+            ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C*T)
+        if ts_batch_query.ndim == 2:
+            ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C*T)
+        if y_batch_support.ndim == 1:
+            y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
+        if y_batch_query.ndim == 1:
+            y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
 
         return (
             y_batch_support,
             y_batch_query,
-            ts,
+            ts_batch_support,
+            ts_batch_query,
         )
 
     @auto_move_data
     def encode(
         self,
         y_batch_support: Tensor,
-        ts: Tensor,
+        ts_batch_support: Tensor,
+        ts_batch_query: Tensor,
         y_inference_support: Optional[Tensor] = None,
         ts_inference_support: Optional[Tensor] = None,
     ) -> Tensor:
@@ -192,17 +229,29 @@ class TSPFNPretraining(TSPFNSystem):
         Returns: (B, Query, E), Embeddings of the input sequences.
         """
 
+        # if self.training or y_inference_support is None:
+        #     out_features = self.encoder(
+        #         ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
+        #     )[:, :, -1, :]
+        # elif y_inference_support is not None and ts_inference_support is not None:
+        #     # Use train set as context for predicting the query set on val/test inference
+        #     ts_full = torch.cat([ts_inference_support, ts], dim=1)
+        #     y_train = y_inference_support
+        #     out_features = self.encoder(
+        #         ts_full.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
+        #     )[:, :, -1, :]
         if self.training or y_inference_support is None:
+            ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
             out_features = self.encoder(
                 ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
             )[:, :, -1, :]
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
-            ts_full = torch.cat([ts_inference_support, ts], dim=1)
+            ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
             y_train = y_inference_support
             out_features = self.encoder(
-                ts_full.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
+                ts.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
             )[:, :, -1, :]
 
         else:
@@ -214,6 +263,7 @@ class TSPFNPretraining(TSPFNSystem):
     def forward(
         self,
         time_series_attrs: Tensor,
+        labels: Tensor,
         task: Literal["encode", "predict"] = "encode",
     ) -> Tensor | Dict[str, Tensor]:
         """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the prediction head.
@@ -240,12 +290,13 @@ class TSPFNPretraining(TSPFNSystem):
         else:
             summary_mode = False
 
-        y_batch_support, y_batch_query, ts = self.process_data(
-            time_series_attrs,
+        y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
+            time_series_attrs=time_series_attrs,
+            labels=labels,
             summary_mode=summary_mode,
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
 
-        out_features = self.encode(y_batch_support, ts)  # (B, S, E) -> (B, E)
+        out_features = self.encode(y_batch_support, ts_support, ts_query)  # (B, S, E) -> (B, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
@@ -277,12 +328,14 @@ class TSPFNPretraining(TSPFNSystem):
     ) -> Tensor:
         """Extracts the latent vectors from the encoder for the given batch."""
         time_series_input = batch  # (B, S, T)
-        # num_classes = num_classes.cpu().item()
 
-        y_batch_support, y_batch_query, ts = self.process_data(time_series_attrs=time_series_input)  # (B, S, E), (B, S)
+        y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
+            time_series_attrs=time_series_input
+        )  # (B, S, E), (B, S)
         return self.encode(
             y_batch_support,
-            ts,
+            ts_support,
+            ts_query,
         )  # (B, S, E) -> (B, E)
 
     def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
@@ -308,44 +361,40 @@ class TSPFNPretraining(TSPFNSystem):
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
         if self.training:
-            time_series_input = batch  # (B, S, T)
-            time_series_for_inference = None
+            time_series_input, target_labels = batch  # (N, C, T), (N,)
+            time_series_support = None
         else:
             batch_dict, _, _ = batch
-            time_series_input = batch_dict["val"]  # (B, S, T)
-            time_series_for_inference = batch_dict["train"]  # (B, S, T)
+            time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
+            time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
 
-        y_batch_support, y_batch_query, ts = self.process_data(
-            time_series_attrs=time_series_input,
+        y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
+            time_series_attrs=time_series_input, labels=target_labels
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+        # B not equal to N (dataset batch size = 1 here)
 
-        if time_series_for_inference is not None:
+        if time_series_support is not None:
+            assert support_labels is not None, "Support labels must be provided for inference."
             # Store inference data for val/test steps
-            y_train_support, _, ts_train = self.process_data(
-                time_series_attrs=time_series_for_inference,
+            y_train_support, _, ts_train_support, _ = self.process_data(
+                time_series_attrs=time_series_support, labels=support_labels
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
         else:
-            ts_train = None
             y_inference_support = None
+            ts_train_support = None
 
         prediction = self.encode(
-            y_batch_support, ts, y_inference_support=y_inference_support, ts_inference_support=ts_train
+            y_batch_support,
+            ts_support,
+            ts_query,
+            y_inference_support=y_inference_support,
+            ts_inference_support=ts_train_support,
         )
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
             pred = prediction_head(prediction)
-            predictions[target_task] = pred
-
-        for target_task in self.predict_losses:
-            self.metrics[target_task] = MetricCollection(
-                [
-                    MulticlassAccuracy(num_classes=num_classes, average="micro"),
-                    MulticlassAUROC(num_classes=num_classes, average="macro"),
-                    MulticlassAveragePrecision(num_classes=num_classes, average="macro"),
-                    MulticlassF1Score(num_classes=num_classes, average="macro"),
-                ]
-            ).to(self.device)
+            predictions[target_task] = pred.squeeze(dim=2)  # (B, Query, num_classes)
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
@@ -353,84 +402,74 @@ class TSPFNPretraining(TSPFNSystem):
         target_batch = y_batch_query
 
         for target_task, target_loss in self.predict_losses.items():
-            for i, (target, y_hat) in enumerate(
-                zip(target_batch.unbind(dim=0), predictions[target_task].unbind(dim=0))
-            ):
-                target = target.long()
+            y_hat = predictions[target_task]  # Shape: (B, Q, num_classes)
+            target = target_batch.long()  # Shape: (B, Q)
 
-                losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}/dataset{i}"] = (
-                    target_loss(
-                        y_hat,
-                        target,
-                    )
-                )
+            # Flatten the batch and query dimensions
+            # y_hat -> (B * Q, num_classes)
+            # target -> (B * Q)
+            y_hat_flat = y_hat.view(-1, y_hat.size(-1))
+            target_flat = target.view(-1)
 
-                for metric_tag, metric in self.metrics[target_task].items():
-                    metric.update(y_hat, target)
+            # Compute loss for the entire batch at once
+            loss_val = target_loss(y_hat_flat, target_flat)
+
+            loss_name = f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"
+            losses[loss_name] = loss_val
+
+            # Metrics are automatically updated inside the Metric objects
+            self.metrics[stage][target_task].update(y_hat_flat, target_flat)
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
         metrics.update(losses)
 
         return metrics
 
-    # def _on_epoch_start(self, dataloader: DataLoader):
-    #     if dataloader is None:
-    #         return "No training dataloader found while setting up inference storage tensors"
-    #     else:
-    #         if callable(dataloader):
-    #             dataloader = dataloader()
-
-    #         ts_batch_list = [ts_batch for ts_batch in dataloader]
-    #         ts_tokens_support = torch.vstack(ts_batch_list)
-
-    #         # if ts_tokens_support.shape[0] > self.hparams["max_batches_stored_for_inference"]:
-    #         #     # Randomly subsample to limit RAM usage
-    #         #     perm = torch.randperm(ts_tokens_support.shape[0])
-    #         #     ts_tokens_support = ts_tokens_support[perm[: self.hparams["max_batches_stored_for_inference"]]]
-
-    #         assert ts_tokens_support.ndim == 3, "Input time-series tokens must have 3 dimensions (B, S, T+1)."
-
-    #         # Store and remove label
-    #         self.y_train_for_inference = ts_tokens_support[:, :, -1].to(self.device)
-    #         ts_tokens_support = ts_tokens_support[:, :, :-1].to(self.device)
-
-    #         if ts_tokens_support.ndim == 2:
-    #             ts_tokens_support = ts_tokens_support.unsqueeze(1)
-
-    #         self.ts_train_for_inference = ts_tokens_support
-
-    # def on_validation_epoch_start(self):
-    #     self._on_epoch_start(self.trainer.val_dataloaders)
-
-    # def on_test_epoch_start(self):
-    #     out_message = self._on_epoch_start(self.trainer.test_dataloaders)
-    #     if out_message is not None:
-    #         logger.info(f"Test epoch start: {out_message}")
-    #         raise ValueError(out_message)
-
     def on_test_epoch_end(self):
-        all_metrics = {}
-        for target_task in self.predict_losses:
-            for metric_tag, metric in self.metrics[target_task].items():
-                metrics_value = metric.compute()
-                self.log(f"test_{metric_tag}/{target_task}", metrics_value)
-                all_metrics[f"{metric_tag}/{target_task}"] = (
-                    metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
-                )
-                metric.reset()
-        output_dir = os.getcwd()
-        csv_file = "test_metrics.csv"
-        with open(csv_file, mode="a", newline="") as f:
-            writer = csv.writer(f)
-            # Write headers
-            writer.writerow(["metric", "value"])
-            # Write metric data
-            for key, value in all_metrics.items():
-                writer.writerow([key, value])
+        output_data = []
 
-        # Print metrics to terminal
-        logger.info(f"Test metrics: {all_metrics}")
+        for target_task, collection in self.metrics["test_metrics"].items():
+            # compute() returns a dict of results for this task
+            results = collection.compute()
 
-        # Reset inference storage tensors for next dataset
-        # self.y_train_for_inference = torch.Tensor().to(self.device)
-        # self.ts_train_for_inference = torch.Tensor().to(self.device)
+            for metric_name, value in results.items():
+                tag = f"{metric_name}/{target_task}"
+                self.log(f"test_{tag}", value)  # Log to logger
+                output_data.append({"metric": tag, "value": value.item()})
+
+            # Reset is handled by Lightning if logged, but manual reset is safe here
+            collection.reset()
+
+        # Save CSV once at the very end
+        with open("test_metrics.csv", mode="w", newline="") as csv_file:
+            writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
+            writer.writeheader()
+            writer.writerows(output_data)
+        logger.info("Test metrics saved to test_metrics.csv")
+
+    # def on_test_epoch_end(self):
+    #     all_metrics = {}
+    #     for target_task in self.predict_losses:
+    #         for metric_tag, metric in self.metrics[target_task].items():
+    #             metrics_value = metric.compute()
+    #             self.log(f"test_{metric_tag}/{target_task}", metrics_value)
+    #             all_metrics[f"{metric_tag}/{target_task}"] = (
+    #                 metrics_value.item() if hasattr(metrics_value, "item") else metrics_value
+    #             )
+    #             metric.reset()
+    #     output_dir = os.getcwd()
+    #     csv_file = "test_metrics.csv"
+    #     with open(csv_file, mode="a", newline="") as f:
+    #         writer = csv.writer(f)
+    #         # Write headers
+    #         writer.writerow(["metric", "value"])
+    #         # Write metric data
+    #         for key, value in all_metrics.items():
+    #             writer.writerow([key, value])
+
+    #     # Print metrics to terminal
+    #     logger.info(f"Test metrics: {all_metrics}")
+
+    # Reset inference storage tensors for next dataset
+    # self.y_train_for_inference = torch.Tensor().to(self.device)
+    # self.ts_train_for_inference = torch.Tensor().to(self.device)
