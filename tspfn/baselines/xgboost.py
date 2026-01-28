@@ -69,7 +69,7 @@ class XGBoostStaticBaseline(pl.LightningModule):
         # FIX: Unpack from CombinedLoader dictionary
         # We only care about the "val" part for our baseline score
         # Here, val is used for testing purposes
-        print(batch.keys())
+        print(batch)
         if "val" not in batch:
             raise ValueError("Expected 'val' key in batch for validation data.")
             
