@@ -191,6 +191,10 @@ class TSPFNPretraining(TSPFNSystem):
                 data=time_series_attrs,
                 labels=labels,
             )
+            print(f"ts_batch_support shape: {ts_batch_support.shape}")
+            print(f"ts_batch_query shape: {ts_batch_query.shape}")
+            print(f"y_batch_support shape: {y_batch_support.shape}")
+            print(f"y_batch_query shape: {y_batch_query.shape}")
         else:
             ts_batch_support = time_series_attrs.to(self.device)  # (Support+Query, C, T)
             ts_batch_query = time_series_attrs.to(self.device)  # (Support+Query, C, T)
@@ -207,6 +211,10 @@ class TSPFNPretraining(TSPFNSystem):
         if y_batch_query.ndim == 1:
             y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
 
+        print(f"ts_batch_support final shape: {ts_batch_support.shape}")
+        print(f"ts_batch_query final shape: {ts_batch_query.shape}")
+        print(f"y_batch_support final shape: {y_batch_support.shape}")
+        print(f"y_batch_query final shape: {y_batch_query.shape}")
         return (
             y_batch_support,
             y_batch_query,
