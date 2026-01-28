@@ -188,7 +188,7 @@ class TSPFNRunner(ABC):
             if cfg.train:
                 trainer.fit(model, datamodule=datamodule)
             if cfg.test:
-                trainer.validate(model, datamodule=datamodule)
+                trainer.test(model, datamodule=datamodule)
 
     @staticmethod
     def _check_cfg(cfg: DictConfig) -> DictConfig:
