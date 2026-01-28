@@ -80,12 +80,12 @@ class XGBoostStaticBaseline(pl.LightningModule):
         output = self.val_metrics.compute()
         self.log_dict(output, prog_bar=True)
         self.val_metrics.reset()
-        # Save CSV once at the very end
-        with open("test_metrics.csv", mode="w", newline="") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
-            writer.writeheader()
-            writer.writerows(output_data)
-        logger.info("Test metrics saved to test_metrics.csv")
+        # # Save CSV once at the very end
+        # with open("test_metrics.csv", mode="w", newline="") as csv_file:
+        #     writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
+        #     writer.writeheader()
+        #     writer.writerows(output_data)
+        # logger.info("Test metrics saved to test_metrics.csv")
 
     def configure_optimizers(self):
         # Dummy optimizer since XGBoost isn't trained via SGD
