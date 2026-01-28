@@ -41,6 +41,7 @@ class TSPFNPretraining(TSPFNSystem):
     def __init__(
         self,
         embed_dim: int,
+        num_classes: int = 10,  # Default to 10 classes as in original TabPFN
         split_finetuning: float = 0.5,
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
         time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
@@ -63,7 +64,8 @@ class TSPFNPretraining(TSPFNSystem):
 
         # Add shortcut to lr to work with Lightning's learning rate finder
         self.hparams["lr"] = None
-
+        self.num_classes = num_classes
+        
         # Configure losses/metrics to compute at each train/val/test step
         # self.metrics = nn.ModuleDict()
         # if target in TabularAttribute.numerical_attrs():

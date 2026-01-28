@@ -21,7 +21,7 @@ class PFNPredictionHead(nn.Module):
         self,
         in_features: int,
         tabpfn_kwargs: dict,
-        num_classes: int,
+        num_classes: int = 10, # Default to 10 classes as in original TabPFN
         updated_pfn_path: Union[Path, None] = None,
         **kwargs,
     ):
