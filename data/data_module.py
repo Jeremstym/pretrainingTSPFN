@@ -297,6 +297,7 @@ class ESRDataModule(TSPFNDataModule):
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
+        **kwargs,
     ) -> None:
         super().__init__(
             data_roots=data_roots,
