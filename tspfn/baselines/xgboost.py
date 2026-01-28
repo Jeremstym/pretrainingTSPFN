@@ -11,7 +11,7 @@ from torchmetrics.classification import (
 )
 
 class XGBoostStaticBaseline(pl.LightningModule):
-    def __init__(self, num_classes: int = 10, xgb_params: dict = None):
+    def __init__(self, num_classes: int = 10, xgb_params: dict = None, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.num_classes = num_classes
