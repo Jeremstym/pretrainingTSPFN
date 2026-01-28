@@ -43,6 +43,8 @@ def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tens
 
         support_indices = all_indices[:half_size]
         query_indices = all_indices[half_size:]
+        support_data = data[support_indices], query_data = data[query_indices]
+        support_labels = labels[support_indices], query_labels = labels[query_indices]
     elif data.ndim == 3:
         total_size = data.size(1)
         half_size = total_size // 2
@@ -51,10 +53,12 @@ def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tens
 
         support_indices = all_indices[:half_size]
         query_indices = all_indices[half_size:]
+        support_data = data[:, support_indices, :], query_data = data[:, query_indices, :]
+        support_labels = labels[support_indices], query_labels = labels[query_indices]
     else:
         raise ValueError("Data tensor must be 2D or 3D")
 
-    return data[support_indices], data[query_indices], labels[support_indices], labels[query_indices]
+    return support_data, query_data, support_labels, query_labels
 
 
 def get_sizes_per_class(class_choice: str, y_train: np.ndarray, num_classes: int, context_length: int):
