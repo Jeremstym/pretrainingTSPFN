@@ -35,6 +35,7 @@ def stratified_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor
 
 
 def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    
     if data.ndim == 2:
         total_size = data.size(0)
         half_size = total_size // 2
@@ -43,8 +44,11 @@ def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tens
 
         support_indices = all_indices[:half_size]
         query_indices = all_indices[half_size:]
-        support_data = data[support_indices], query_data = data[query_indices]
-        support_labels = labels[support_indices], query_labels = labels[query_indices]
+        support_data = data[support_indices]
+        query_data = data[query_indices]
+        support_labels = labels[support_indices]
+        query_labels = labels[query_indices]
+
     elif data.ndim == 3:
         total_size = data.size(1)
         half_size = total_size // 2
@@ -53,8 +57,11 @@ def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tens
 
         support_indices = all_indices[:half_size]
         query_indices = all_indices[half_size:]
-        support_data = data[:, support_indices, :], query_data = data[:, query_indices, :]
-        support_labels = labels[support_indices], query_labels = labels[query_indices]
+        support_data = data[:, support_indices, :]
+        query_data = data[:, query_indices, :]
+        support_labels = labels[support_indices]
+        query_labels = labels[query_indices]
+        
     else:
         raise ValueError("Data tensor must be 2D or 3D")
 
