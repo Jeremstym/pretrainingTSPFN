@@ -1,5 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=hard
+#SBATCH --nodelist=zz
 #SBATCH --job-name=TUEV-processing
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
