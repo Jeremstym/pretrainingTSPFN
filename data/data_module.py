@@ -25,6 +25,7 @@ from sklearn.preprocessing import LabelEncoder
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
 from data.evaluation_datasets import TUABDataset, TUEVDataset, FilteredTUEVDataset, ECG5000Dataset
 from data.utils.sampler import StratifiedBatchSampler
+from data.utils.processing_csv import load_csv
 
 
 def stratified_batch_collate(batch):
@@ -50,116 +51,58 @@ def stratified_batch_collate(batch):
     return xs[new_order], ys[new_order]
 
 
+# class TSPFNDataset(Dataset):
+#     """Minimal dataset for TSP-style tensors.
+
+#     Loading rules (defaults):
+#     - If `data_roots/` exists, load all `.pt`/`.pth` files inside.
+#     - Else if `data_roots.pt` exists, load that file. If it contains a tensor/list, treat each element as a sample.
+#     - Otherwise the dataset is empty.
+#     """
+
+#     def __init__(
+#         self, data_roots: str, subsets: List[Path], split: str, split_ratio: float, transform: Optional[Callable] = None
+#     ) -> None:
+#         super().__init__()
+#         self.data_roots = data_roots
+#         self.transform = transform
+#         self.subset_paths = subsets
+#         self.split = split
+#         self.split_ratio = split_ratio
+#         self.label_encoder = LabelEncoder()
+
+#         data_list = []
+#         for subset_path in self.subset_paths:
+#             data_ts = self._load_subset(subset_path)
+#             data_list.extend(data_ts)
+#         self.data_ts = data_list
+
+#     def __len__(self) -> int:
+#         return len(self.data_ts)
+
+#     def __getitem__(self, idx: int):
+#         sample = self.data_ts[idx]
+#         if self.transform:
+#             sample = self.transform(sample)
+#         # Separate features and labels
+#         features = sample[:, :-1]
+#         labels = sample[:, -1]
+#         return features, labels
+
 class TSPFNDataset(Dataset):
-    """Minimal dataset for TSP-style tensors.
-
-    Loading rules (defaults):
-    - If `data_roots/` exists, load all `.pt`/`.pth` files inside.
-    - Else if `data_roots.pt` exists, load that file. If it contains a tensor/list, treat each element as a sample.
-    - Otherwise the dataset is empty.
-    """
-
-    def __init__(
-        self, data_roots: str, subsets: List[Path], split: str, split_ratio: float, transform: Optional[Callable] = None
-    ) -> None:
+    def __init__(self, data_ts: List[torch.Tensor], transform: Optional[Callable] = None):
         super().__init__()
-        self.data_roots = data_roots
+        self.data_ts = data_ts
         self.transform = transform
-        self.subset_paths = subsets
-        self.split = split
-        self.split_ratio = split_ratio
-        self.label_encoder = LabelEncoder()
 
-        data_list = []
-        for subset_path in self.subset_paths:
-            data_ts = self._load_subset(subset_path)
-            data_list.extend(data_ts)
-        self.data_ts = data_list
-        # self.num_classes = num_classes_list
-
-    def _load_subset(self, subset_path: Path) -> None:
-        path = os.path.join(subset_path)
-        name_csv = os.path.basename(path)
-        assert os.path.isfile(path), f"Dataset file not found: {path}"
-        # Get number of lines in the file
-        with open(path, "r") as f:
-            total_lines = sum(1 for _ in f)
-
-        list_df = []
-        with tqdm(total=total_lines, desc=f"Loading {name_csv}") as pbar:
-            for chunk in pd.read_csv(path, chunksize=1000, index_col=0):
-                list_df.append(chunk)
-                pbar.update(chunk.shape[0])
-
-        df = pd.concat(list_df, ignore_index=False)
-        # Encode labels to integers
-        df_label = self.label_encoder.fit_transform(df.iloc[:, -1])
-        df_features = df.iloc[:, :-1]
-
-        df_values = df_features.values
-        if df_values.shape[1] < 999:
-            # Pad with zeros to have consistent feature size
-            padding = np.zeros((df_values.shape[0], 999 - df_values.shape[1]))
-            df_values = np.hstack((df_values, padding))
-        elif df_values.shape[1] > 999:
-            # Truncate to 999 features
-            df_values = df_values[:, :999]
-        df_values = np.hstack((df_values, df_label.reshape(-1, 1)))
-
-        # Split dataset
-        indices = np.arange(len(df_values))
-        labels = df_values[:, -1]
-        try:
-            train_indices, val_indices = train_test_split(
-                indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=labels
-            )
-        except ValueError:
-            print(f"Warning: Stratified split failed for {name_csv}, using non-stratified split instead.")
-            train_indices, val_indices = train_test_split(
-                indices, train_size=self.split_ratio, random_state=42, shuffle=True, stratify=None
-            )
-        df_train = df_values[train_indices]
-
-        data_train_ts = []
-        data_val_ts = []
-        if df_train.shape[0] // 1024 > 1:
-            # Split into chunks of 1024 samples
-            chunk_size = 1024
-            chunk_val_size = 64
-            usable_size = (df_train.shape[0] // chunk_size) * chunk_size
-            data_chunked = df_train[:usable_size]
-            data_chunked = data_chunked.reshape(-1, chunk_size, df_train.shape[1])
-            for chunk in data_chunked:
-                data_support, data_query = train_test_split(
-                    chunk, test_size=0.5, random_state=42, shuffle=True, stratify=chunk[:, -1]
-                )
-                data_chunk = np.concatenate([data_support, data_query], axis=0)
-                data_train_ts.append(torch.tensor(data_chunk, dtype=torch.float32))
-                data_val_chunk_indices = np.random.choice(val_indices, size=chunk_val_size, replace=False)
-                data_val_chunk = df_values[data_val_chunk_indices]
-                data_val_ts.append(torch.tensor(data_val_chunk, dtype=torch.float32))
-        else:
-            data_train_ts = []
-            data_val_ts = []
-
-        if self.split == "train":
-            return data_train_ts
-        elif self.split == "val":
-            return data_val_ts
-        else:
-            raise ValueError(f"Unknown split: {self.split}")
-
-    def __len__(self) -> int:
+    def __len__(self):
         return len(self.data_ts)
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx):
         sample = self.data_ts[idx]
         if self.transform:
             sample = self.transform(sample)
-        # Separate features and labels
-        features = sample[:, :-1]
-        labels = sample[:, -1]
-        return features, labels
+        return sample[:, :-1], sample[:, -1]
 
 
 class TSPFNDataModule(pl.LightningDataModule):
@@ -195,33 +138,50 @@ class TSPFNDataModule(pl.LightningDataModule):
             self.subset_list = [Path(data_roots)]
         self.current_dataset_idx = 0
 
+    # def setup(self, stage: Optional[str] = None) -> None:
+    #     """Create datasets. Called on every process in distributed settings."""
+    #     # TODO: fow now, train/val/test use the same subset. Later, we can modify to have different subsets for each.
+
+    #     self.train_dataset = TSPFNDataset(
+    #         data_roots=self.data_roots,
+    #         subsets=self.subset_list,
+    #         split="train",
+    #         split_ratio=0.8,
+    #         transform=self.transform,
+    #     )
+    #     self.val_dataset = TSPFNDataset(
+    #         data_roots=self.data_roots,
+    #         subsets=self.subset_list,
+    #         split="val",
+    #         split_ratio=0.8,
+    #         transform=self.transform,
+    #     )
+    #     self.test_dataset = TSPFNDataset(
+    #         data_roots=self.data_roots,
+    #         subsets=self.subset_list,
+    #         split="val",
+    #         split_ratio=0.8,
+    #         transform=self.transform,
+    #     )
+
+    #     return
+
     def setup(self, stage: Optional[str] = None) -> None:
-        """Create datasets. Called on every process in distributed settings."""
-        # TODO: fow now, train/val/test use the same subset. Later, we can modify to have different subsets for each.
+        if not hasattr(self, "all_train_chunks") or not hasattr(self, "all_val_chunks"):
+            self.all_train_chunks = []
+            self.all_val_chunks = []
 
-        self.train_dataset = TSPFNDataset(
-            data_roots=self.data_roots,
-            subsets=self.subset_list,
-            split="train",
-            split_ratio=0.8,
-            transform=self.transform,
-        )
-        self.val_dataset = TSPFNDataset(
-            data_roots=self.data_roots,
-            subsets=self.subset_list,
-            split="val",
-            split_ratio=0.8,
-            transform=self.transform,
-        )
-        self.test_dataset = TSPFNDataset(
-            data_roots=self.data_roots,
-            subsets=self.subset_list,
-            split="val",
-            split_ratio=0.8,
-            transform=self.transform,
-        )
+            for subset_path in self.subset_list:
+                train_chunks, val_chunks = self.load_csv(subset_path, split_ratio=0.8)
+                self.all_train_chunks.extend(train_chunks)
+                self.all_val_chunks.extend(val_chunks)
 
-        return
+        if stage == "train" or stage is None:
+            self.train_dataset = TSPFNDataset(data_ts=self.all_train_chunks)
+            self.val_dataset = TSPFNDataset(data_ts=self.all_val_chunks)
+        
+        if stage == "test":
+            self.test_dataset = TSPFNDataset(data_ts=self.all_val_chunks)
 
     # def switch_to_next_dataset(self):
     #     self.current_dataset_idx += 1
