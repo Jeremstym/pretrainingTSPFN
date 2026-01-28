@@ -46,11 +46,21 @@ task:
   optim:
     optimizer:
       _target_: torch.optim.AdamW
-      lr: 1e-4
-      weight_decay: 1e-5
+      lr: 5e-5              # Slightly higher than single-set tuning, but still cautious
+      weight_decay: 0.1     # Stronger decay is essential for multi-dataset meta-learning
+      eps: 1e-8
     scheduler:
-      _target_: transformers.get_linear_schedule_with_warmup
-      num_warmup_steps: 0.1
+      _target_: transformers.get_cosine_schedule_with_warmup
+      num_warmup_steps: 1000 # Warmup should be step-based, not epoch-based
+  # optim:
+  #   optimizer:
+  #     _target_: torch.optim.AdamW
+  #     lr: 2e-5              # Lowered: 1e-4 is often too aggressive for ICL models
+  #     weight_decay: 0.05    # Increased: Helps prevent overfitting on small tabular sets
+  #     betas: [0.9, 0.98]    # Transformer standard
+  #   scheduler:
+  #     _target_: transformers.get_cosine_schedule_with_warmup
+  #     num_warmup_steps: 0.05 # Reduced warmup: You want to spend more time in the "stable" zone
 
 # Change checkpoint loading defaults to:
 ckpt: ??? # Make it mandatory to provide a checkpoint
