@@ -26,13 +26,16 @@ task:
   _target_: tspfn.baselines.xgboost.XGBoostStaticBaseline
   num_classes: ${data.num_classes}
   xgb_params:
-    n_estimators: 200
-    max_depth: 6
-    learning_rate: 0.1
-    tree_method: "hist"  # Use "gpu_hist" if using a GPU-enabled XGBoost
+    n_estimators: 1000          # Higher count allows the model to learn subtle patterns
+    max_depth: 3               # Shallow trees generalize better on raw ECG signals
+    learning_rate: 0.05        # Lower learning rate for more stable convergence
+    subsample: 0.8             # Use 80% of data rows per tree
+    colsample_bytree: 0.3      # Only look at 30% of time steps per tree (crucial for 1000+ features)
+    tree_method: "hist"
     device: "cuda"
     verbosity: 0
     objective: "multi:softprob"
+    eval_metric: "mlogloss"    # Explicitly set for multiclass tracking
   # optim:
   #   optimizer:
   #     _target_: torch.optim.AdamW
