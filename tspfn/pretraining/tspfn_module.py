@@ -65,7 +65,7 @@ class TSPFNPretraining(TSPFNSystem):
         # Add shortcut to lr to work with Lightning's learning rate finder
         self.hparams["lr"] = None
         self.num_classes = num_classes
-        
+
         # Configure losses/metrics to compute at each train/val/test step
         # self.metrics = nn.ModuleDict()
         # if target in TabularAttribute.numerical_attrs():
@@ -286,7 +286,7 @@ class TSPFNPretraining(TSPFNSystem):
             )
 
         if hasattr(self, "example_input_array") and torch.equal(
-            time_series_attrs, self.example_input_array.to(self.device)
+            time_series_attrs, self.example_input_array[0].to(time_series_attrs.device)
         ):
             summary_mode = True
         else:
