@@ -39,11 +39,15 @@ class XGBoostStaticBaseline(pl.LightningModule):
         self.clf = None
 
     def setup(self, stage=None):
-        # Fit if we are in 'fit' (training) OR 'test' stage
-        if stage in ["fit", "test"] or stage is None:
-            if self.clf is None:  # Prevent re-fitting if already done
-                print(f"--- Fitting XGBoost for stage: {stage} ---")
-                # We still fit on the TRAINING data even if we are testing
+        # The key is to include "validate" here!
+        if stage in ["fit", "validate", "test"] or stage is None:
+            if self.clf is None:
+                print("--- Collecting all training data for XGBoost Baseline ---")
+                
+                # Check if trainer and datamodule are available
+                if not hasattr(self.trainer, "datamodule") or self.trainer.datamodule is None:
+                    raise RuntimeError("XGBoostBaseline requires a DataModule attached to the Trainer.")
+
                 train_loader = self.trainer.datamodule.train_dataloader()
                 
                 all_x, all_y = [], []
@@ -52,28 +56,27 @@ class XGBoostStaticBaseline(pl.LightningModule):
                     all_x.append(x.view(-1, x.size(-1)).cpu())
                     all_y.append(y.view(-1).cpu())
                 
+                if not all_x:
+                    raise ValueError("Train dataloader is empty. Cannot fit XGBoost.")
+
                 X_train = torch.cat(all_x, dim=0).numpy()
                 y_train = torch.cat(all_y, dim=0).numpy()
                 
+                print(f"--- Fitting XGBoost on {X_train.shape[0]} samples ---")
                 self.clf = xgb.XGBClassifier(**self.xgb_params)
                 self.clf.fit(X_train, y_train)
+                print("--- XGBoost Fitting Complete ---")
 
-    def validation_step(self, batch, batch_idx):
-        if self.clf is None:
+    def on_validation_epoch_end(self):
+        # Safety check: only compute if we actually processed batches
+        # Metric objects keep track of how many updates they've seen
+        if self.val_metrics['acc'].update_count == 0:
+            print("Warning: No samples were processed during validation. Skipping compute.")
             return
-            
-        x, y = batch # x: [B, N, P], y: [B, N]
-        
-        # Flatten batch and sequence for evaluation
-        x_eval = x.view(-1, x.size(-1)).cpu().numpy()
-        y_eval = y.view(-1).cpu() # Keep as tensor for metrics
-        
-        # Predict Probabilities: Shape (Batch*N, Num_Classes)
-        y_probs = self.clf.predict_proba(x_eval)
-        y_probs_ts = torch.tensor(y_probs, device=self.device)
-        
-        # Update metric collection
-        self.val_metrics.update(y_probs_ts, y_eval.to(self.device))
+
+        output = self.val_metrics.compute()
+        self.log_dict(output, prog_bar=True)
+        self.val_metrics.reset()
 
     def on_validation_epoch_end(self):
         # Compute and log all metrics at once
