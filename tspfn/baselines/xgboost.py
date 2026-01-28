@@ -66,9 +66,6 @@ class XGBoostStaticBaseline(pl.LightningModule):
         if self.clf is None:
             raise ValueError("XGBoost classifier has not been fitted yet.")
             
-        # FIX: Unpack from CombinedLoader dictionary
-        # We only care about the "val" part for our baseline score
-        # Here, val is used for testing purposes
         batch_dict, _, _ = batch if isinstance(batch, (tuple, list)) else (batch, None, None)
         if "val" not in batch_dict:
             raise ValueError("Expected 'val' key in batch for validation data.")
