@@ -50,18 +50,20 @@ def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tens
         query_labels = labels[query_indices]
 
     elif data.ndim == 3:
-        total_size = data.size(1)
-        half_size = total_size // 2
-
-        all_indices = list(range(total_size))
-
-        support_indices = all_indices[:half_size]
-        query_indices = all_indices[half_size:]
-        support_data = data[:, support_indices, :]
-        query_data = data[:, query_indices, :]
-        support_labels = labels[support_indices]
-        query_labels = labels[query_indices]
+        # data: [Batch, Samples, Features]
+        # labels: [Batch, Samples]
         
+        total_samples = data.size(1)
+        half_size = total_samples // 2
+        
+        # Split Data on dimension 1
+        support_data = data[:, :half_size, :]
+        query_data = data[:, half_size:, :]
+        
+        # Split Labels on dimension 1
+        support_labels = labels[:, :half_size]
+        query_labels = labels[:, half_size:]
+
     else:
         raise ValueError("Data tensor must be 2D or 3D")
 
