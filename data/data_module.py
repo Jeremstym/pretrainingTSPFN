@@ -176,7 +176,7 @@ class TSPFNDataModule(pl.LightningDataModule):
                 self.all_train_chunks.extend(train_chunks)
                 self.all_val_chunks.extend(val_chunks)
 
-        if stage == "train" or stage is None:
+        if stage == "fit" or stage is None:
             self.train_dataset = TSPFNDataset(data_ts=self.all_train_chunks)
             self.val_dataset = TSPFNDataset(data_ts=self.all_val_chunks)
         
