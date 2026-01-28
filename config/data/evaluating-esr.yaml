@@ -1,0 +1,8 @@
+defaults:
+  - default
+
+_target_: data.data_module.ESRDataModule
+data_roots: ${oc.env:ESR_DATA_PATH}
+time_series_length: 178
+num_channels: 1
+num_classes: 5

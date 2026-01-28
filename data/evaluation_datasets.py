@@ -136,3 +136,27 @@ class ECG5000Dataset(Dataset):
         y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
 
         return x_tensor, y_tensor
+
+
+class ESRDataset(Dataset):
+    def __init__(self, root, split: str):
+        self.root = root
+        self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
+        
+        df = pd.read_csv(self.file_path, index_col=0)
+        self.data = df.values
+        
+        self.X = self.data[:, :-1]
+        self.Y = self.data[:, -1].astype(int)  - 1 # Convert to zero-based indexing
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        x_sample = self.X[index]
+        y_sample = self.Y[index]
+
+        x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
+        y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+
+        return x_tensor, y_tensor
