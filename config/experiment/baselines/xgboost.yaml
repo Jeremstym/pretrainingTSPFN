@@ -23,7 +23,7 @@ data:
   num_workers: 4 # try 4, 8, 16 depending on the system capabilities
 
 task:
-  _target_: tspfn.xgboost.XGBoostStaticBaseline
+  _target_: tspfn.baselines.xgboost.XGBoostStaticBaseline
   num_classes: ${data.num_classes}
   xgb_params:
     n_estimators: 200
