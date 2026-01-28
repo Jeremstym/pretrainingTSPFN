@@ -16,71 +16,64 @@ class XGBoostStaticBaseline(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.num_classes = num_classes
+        self.clf = None  # This starts as None
+        
+        # ... (metric init same as before) ...
 
-        # ... (xgb_params init remains the same) ...
+    def _ensure_fitted(self):
+        """Forces XGBoost to fit if it hasn't already."""
+        if self.clf is not None:
+            return
 
-        # Define metrics once, we will clone them for Val and Test
-        metrics = MetricCollection(
-            {
-                "acc": MulticlassAccuracy(num_classes=num_classes),
-                "auroc": MulticlassAUROC(num_classes=num_classes),
-                "f1": MulticlassF1Score(num_classes=num_classes, average="macro"),
-                "auprc": MulticlassAveragePrecision(num_classes=num_classes),
-            }
-        )
+        print("--- [FORCE] Fitting XGBoost Baseline ---")
+        
+        # Access the datamodule via the trainer
+        dm = getattr(self.trainer, "datamodule", None)
+        if dm is None:
+            raise RuntimeError("No DataModule found on trainer. Pass it: trainer.test(model, datamodule=dm)")
 
-        self.val_metrics = metrics.clone(prefix="val_xgb_")
-        self.test_metrics = metrics.clone(prefix="test_xgb_")  # Added for test stage
-        self.clf = None
-
-    # ... (setup, validation_step remain the same) ...
-
-    def on_test_start(self):
-        """Ensures XGBoost is fitted specifically before testing starts."""
-        if self.clf is None:
-            print("--- Fitting XGBoost on-the-fly for Testing ---")
-            self._fit_xgboost()
-
-    def _fit_xgboost(self):
-        # Move the fitting logic to a private method to keep it clean
-        train_loader = self.trainer.datamodule.train_dataloader()
-
+        # Manually trigger setup on the datamodule just in case
+        dm.setup(stage="fit")
+        loader = dm.train_dataloader()
+        
         all_x, all_y = [], []
-        for batch in train_loader:
-            x, y = batch
+        print(f"--- Collecting training batches... ---")
+        for batch in loader:
+            x, y = batch # x: [B, N, P], y: [B, N]
             all_x.append(x.view(-1, x.size(-1)).cpu())
             all_y.append(y.view(-1).cpu())
+        
+        if not all_x:
+            raise RuntimeError("Training loader returned no data! Check your dataset paths.")
 
         X_train = torch.cat(all_x, dim=0).numpy()
         y_train = torch.cat(all_y, dim=0).numpy()
-
-        self.clf = xgb.XGBClassifier(**self.xgb_params)
+        
+        print(f"--- Fitting XGBoost on {X_train.shape[0]} samples ---")
+        self.clf = xgb.XGBClassifier(**self.hparams.xgb_params)
         self.clf.fit(X_train, y_train)
+        print("--- Fitting Complete! ---")
+
+    def on_test_start(self):
+        # This hook runs AFTER setup but BEFORE test_step
+        self._ensure_fitted()
+
+    def on_validation_start(self):
+        # This hook runs BEFORE validation_step
+        self._ensure_fitted()
 
     def test_step(self, batch, batch_idx):
-        if self.clf is None:
-            return
+        # Since _ensure_fitted was called in on_test_start, self.clf is now ready
         x, y = batch
         x_eval = x.view(-1, x.size(-1)).cpu().numpy()
-        y_eval = y.view(-1).cpu()
-
+        
         y_probs = self.clf.predict_proba(x_eval)
         y_probs_ts = torch.tensor(y_probs, device=self.device)
-
-        # Log every step (Lightning will handle the averaging)
-        self.test_metrics.update(y_probs_ts, y_eval.to(self.device))
-
-        # NEW: Log individual steps to ensure the logger is "awake"
-        self.log_dict(self.test_metrics, on_step=False, on_epoch=True, prog_bar=True)
-
+        
+        self.test_metrics.update(y_probs_ts, y.view(-1).to(self.device))
+        
     def on_test_epoch_end(self):
-        # compute returns a dict of results
-        output = self.test_metrics.compute()
-        # Log and set sync_dist=True if using multiple GPUs
-        self.log_dict(output, prog_bar=True, logger=True)
+        results = self.test_metrics.compute()
+        print("\n" + "="*30 + "\nTEST RESULTS:\n", results, "\n" + "="*30)
+        self.log_dict(results)
         self.test_metrics.reset()
-
-        # OPTIONAL: Print results to console immediately so you don't have to wait for logs
-        print("\n--- XGBoost Test Results ---")
-        for k, v in output.items():
-            print(f"{k}: {v:.4f}")
