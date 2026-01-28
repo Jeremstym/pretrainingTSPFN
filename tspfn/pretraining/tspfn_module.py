@@ -243,6 +243,8 @@ class TSPFNPretraining(TSPFNSystem):
         #         ts_full.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
         #     )[:, :, -1, :]
         if self.training or y_inference_support is None:
+            print(f"ts_batch_support shape: {ts_batch_support.shape}")
+            print(f"ts_batch_query shape: {ts_batch_query.shape}")
             ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
             out_features = self.encoder(
                 ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
