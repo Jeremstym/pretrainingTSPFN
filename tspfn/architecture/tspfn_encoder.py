@@ -17,6 +17,7 @@ class TSPFNEncoder(nn.Module, ABC):
         self,
         seed: int,
         tabpfn_kwargs: dict,
+        features_per_group: int,
         updated_pfn_path: Union[Path, None] = None,
         random_init: bool = False,
         recompute_layer: bool = True,
@@ -41,7 +42,7 @@ class TSPFNEncoder(nn.Module, ABC):
         self.encoder = self.model.encoder
         self.y_encoder = self.model.y_encoder
         self.transformer_encoder = self.model.transformer_encoder
-        self.features_per_group = 3  # 1 for TabPFN v2, 3 for TabPFN v2.5
+        self.features_per_group = features_per_group  # 1 for TabPFN v2, 3 for TabPFN v2.5
         self.recompute_layer = recompute_layer
 
         if random_init:  # random_init:
