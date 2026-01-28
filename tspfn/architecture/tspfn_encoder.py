@@ -41,7 +41,7 @@ class TSPFNEncoder(nn.Module, ABC):
         self.encoder = self.model.encoder
         self.y_encoder = self.model.y_encoder
         self.transformer_encoder = self.model.transformer_encoder
-        self.features_per_group = 1  # Each feature is its own group
+        self.features_per_group = 3  # 1 for TabPFN v2, 3 for TabPFN v2.5
         self.recompute_layer = recompute_layer
 
         if random_init:  # random_init:
