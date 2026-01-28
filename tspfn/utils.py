@@ -35,13 +35,24 @@ def stratified_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor
 
 
 def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
-    total_size = data.size(0)
-    half_size = total_size // 2
+    if data.ndim == 2:
+        total_size = data.size(0)
+        half_size = total_size // 2
 
-    all_indices = list(range(total_size))
+        all_indices = list(range(total_size))
 
-    support_indices = all_indices[:half_size]
-    query_indices = all_indices[half_size:]
+        support_indices = all_indices[:half_size]
+        query_indices = all_indices[half_size:]
+    elif data.ndim == 3:
+        total_size = data.size(1)
+        half_size = total_size // 2
+
+        all_indices = list(range(total_size))
+
+        support_indices = all_indices[:half_size]
+        query_indices = all_indices[half_size:]
+    else:
+        raise ValueError("Data tensor must be 2D or 3D")
 
     return data[support_indices], data[query_indices], labels[support_indices], labels[query_indices]
 
