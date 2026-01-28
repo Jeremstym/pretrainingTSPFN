@@ -403,6 +403,13 @@ class TSPFNPretraining(TSPFNSystem):
 
         target_batch = y_batch_query
 
+        if self.trainer.training:
+            stage = "train_metrics"
+        elif self.trainer.validating:
+            stage = "val_metrics"
+        else:
+            stage = "test_metrics"
+
         for target_task, target_loss in self.predict_losses.items():
             y_hat = predictions[target_task]  # Shape: (B, Q, num_classes)
             target = target_batch.long()  # Shape: (B, Q)
