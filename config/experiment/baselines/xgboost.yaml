@@ -4,7 +4,7 @@ defaults:
   # - /task/model/prediction_head: pfn-prediction
   # - /task/model/encoder: tspfn-encoder
   # # - /task/model/loc_head: channel-loc
-  # - override /task/model: null
+  - override /task/model: null
   - override /task/optim: adamw
   - override /data: evaluating-ecg5000
 
