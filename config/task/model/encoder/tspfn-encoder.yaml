@@ -13,4 +13,4 @@ tabpfn_kwargs:
 updated_pfn_path: ${updated_pfn_path} # Path to updated TabPFN model weights after pretraining
 random_init: False # Whether to randomly initialize the TabPFN weights instead of loading pretrained weights
 recompute_layer: False # Whether to use recompute layer to save memory during training
-features_per_group: 3 # Number of features per group for time series data (WARNING: 1 is for TabPFN v2)
+features_per_group: 3 #CHECK Number of features per group for time series data (WARNING: 1 is for TabPFN v2)
