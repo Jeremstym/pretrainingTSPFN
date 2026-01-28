@@ -33,10 +33,10 @@ task:
     device: "cuda"
     verbosity: 0
     objective: "multi:softprob"
-  optim:
-    optimizer:
-      _target_: torch.optim.AdamW
-      lr: 1e-4
+  # optim:
+  #   optimizer:
+  #     _target_: torch.optim.AdamW
+  #     lr: 1e-4
 
 # Change checkpoint loading defaults to:
 ckpt: ??? # Make it mandatory to provide a checkpoint
