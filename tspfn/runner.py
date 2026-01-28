@@ -187,8 +187,6 @@ class TSPFNRunner(ABC):
         else:
             if cfg.train:
                 trainer.fit(model, datamodule=datamodule)
-                model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
-                print(f"Best model checkpoint saved at {trainer.checkpoint_callback.best_model_path}")
             if cfg.test:
                 trainer.test(model, datamodule=datamodule)
 
