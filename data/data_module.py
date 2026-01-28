@@ -172,7 +172,7 @@ class TSPFNDataModule(pl.LightningDataModule):
             self.all_val_chunks = []
 
             for subset_path in self.subset_list:
-                train_chunks, val_chunks = self.load_csv(subset_path, split_ratio=0.8)
+                train_chunks, val_chunks = load_csv(subset_path, split_ratio=0.8)
                 self.all_train_chunks.extend(train_chunks)
                 self.all_val_chunks.extend(val_chunks)
 
