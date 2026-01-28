@@ -39,61 +39,60 @@ class XGBoostStaticBaseline(pl.LightningModule):
         self.clf = None
 
     def setup(self, stage=None):
-        # The key is to include "validate" here!
+        # Trigger fitting for both fit and validate stages
         if stage in ["fit", "validate", "test"] or stage is None:
             if self.clf is None:
-                print("--- Collecting all training data for XGBoost Baseline ---")
-                
-                # Check if trainer and datamodule are available
-                if not hasattr(self.trainer, "datamodule") or self.trainer.datamodule is None:
-                    raise RuntimeError("XGBoostBaseline requires a DataModule attached to the Trainer.")
-
+                print("--- Fitting XGBoost on Training Data ---")
+                # Access the underlying train_dataloader from the datamodule
                 train_loader = self.trainer.datamodule.train_dataloader()
                 
                 all_x, all_y = [], []
                 for batch in train_loader:
-                    x, y = batch
+                    # Handle if train_loader is also a CombinedLoader or simple tuple
+                    x, y = batch if isinstance(batch, (tuple, list)) else batch["train"]
                     all_x.append(x.view(-1, x.size(-1)).cpu())
                     all_y.append(y.view(-1).cpu())
                 
-                if not all_x:
-                    raise ValueError("Train dataloader is empty. Cannot fit XGBoost.")
-
                 X_train = torch.cat(all_x, dim=0).numpy()
                 y_train = torch.cat(all_y, dim=0).numpy()
                 
-                print(f"--- Fitting XGBoost on {X_train.shape[0]} samples ---")
                 self.clf = xgb.XGBClassifier(**self.xgb_params)
                 self.clf.fit(X_train, y_train)
-                print("--- XGBoost Fitting Complete ---")
-
-    def on_validation_epoch_end(self):
-        # Safety check: only compute if we actually processed batches
-        # Metric objects keep track of how many updates they've seen
-        if self.val_metrics['acc'].update_count == 0:
-            print("Warning: No samples were processed during validation. Skipping compute.")
-            return
-
-        output = self.val_metrics.compute()
-        self.log_dict(output, prog_bar=True)
-        self.val_metrics.reset()
+                print(f"--- XGBoost Fit Complete ({len(X_train)} samples) ---")
 
     def validation_step(self, batch, batch_idx):
         if self.clf is None:
             return
             
-        x, y = batch # x: [B, N, P], y: [B, N]
+        # FIX: Unpack from CombinedLoader dictionary
+        # We only care about the "val" part for our baseline score
+        if "val" not in batch:
+            return
+            
+        x, y = batch["val"] 
         
-        # Flatten batch and sequence for evaluation
         x_eval = x.view(-1, x.size(-1)).cpu().numpy()
-        y_eval = y.view(-1).cpu() # Keep as tensor for metrics
+        y_eval = y.view(-1).cpu()
         
-        # Predict Probabilities: Shape (Batch*N, Num_Classes)
         y_probs = self.clf.predict_proba(x_eval)
         y_probs_ts = torch.tensor(y_probs, device=self.device)
         
-        # Update metric collection
         self.val_metrics.update(y_probs_ts, y_eval.to(self.device))
+
+    def on_validation_epoch_end(self):
+        # Only compute if updates occurred
+        if self.val_metrics['acc']._update_count > 0:
+            output = self.val_metrics.compute()
+            self.log_dict(output, prog_bar=True)
+            print("\n--- XGBoost Baseline Results ---")
+            print(output)
+            self.val_metrics.reset()
+        else:
+            print("Warning: No validation samples reached the metrics.")
+
+    def configure_optimizers(self):
+        # Dummy optimizer since XGBoost isn't trained via AdamW
+        return torch.optim.Adam(self.parameters(), lr=1e-3)
 
     # def on_validation_epoch_end(self):
     #     # Compute and log all metrics at once
@@ -106,7 +105,3 @@ class XGBoostStaticBaseline(pl.LightningModule):
     #     #     writer.writeheader()
     #     #     writer.writerows(output_data)
     #     # logger.info("Test metrics saved to test_metrics.csv")
-
-    def configure_optimizers(self):
-        # Dummy optimizer since XGBoost isn't trained via SGD
-        return torch.optim.Adam(self.parameters(), lr=1e-3)
