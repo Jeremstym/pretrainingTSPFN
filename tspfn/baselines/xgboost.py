@@ -78,6 +78,23 @@ class XGBoostStaticBaseline(pl.LightningModule):
         self.log_dict(output, prog_bar=True)
         self.val_metrics.reset()
 
+    def validation_step(self, batch, batch_idx):
+        if self.clf is None:
+            return
+            
+        x, y = batch # x: [B, N, P], y: [B, N]
+        
+        # Flatten batch and sequence for evaluation
+        x_eval = x.view(-1, x.size(-1)).cpu().numpy()
+        y_eval = y.view(-1).cpu() # Keep as tensor for metrics
+        
+        # Predict Probabilities: Shape (Batch*N, Num_Classes)
+        y_probs = self.clf.predict_proba(x_eval)
+        y_probs_ts = torch.tensor(y_probs, device=self.device)
+        
+        # Update metric collection
+        self.val_metrics.update(y_probs_ts, y_eval.to(self.device))
+
     def on_validation_epoch_end(self):
         # Compute and log all metrics at once
         output = self.val_metrics.compute()
