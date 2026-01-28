@@ -35,7 +35,7 @@ class XGBoostStaticBaseline(pl.LightningModule):
             "auprc": MulticlassAveragePrecision(num_classes=num_classes)
         })
         
-        self.val_metrics = metrics.clone(prefix="val_xgb_")
+        self.test_metrics = metrics.clone(prefix="test")
         self.clf = None
 
     def setup(self, stage=None):
@@ -55,19 +55,22 @@ class XGBoostStaticBaseline(pl.LightningModule):
                 
                 X_train = torch.cat(all_x, dim=0).numpy()
                 y_train = torch.cat(all_y, dim=0).numpy()
+                print(f"--- Training Data Loaded: {X_train.shape[0]} samples ---")
+                print(f"XGBoost Parameters: {self.xgb_params}")
                 
                 self.clf = xgb.XGBClassifier(**self.xgb_params)
                 self.clf.fit(X_train, y_train)
                 print(f"--- XGBoost Fit Complete ({len(X_train)} samples) ---")
 
-    def validation_step(self, batch, batch_idx):
+    def test_step(self, batch, batch_idx):
         if self.clf is None:
-            return
+            raise ValueError("XGBoost classifier has not been fitted yet.")
             
         # FIX: Unpack from CombinedLoader dictionary
         # We only care about the "val" part for our baseline score
+        # Here, val is used for testing purposes
         if "val" not in batch:
-            return
+            raise ValueError("Expected 'val' key in batch for validation data.")
             
         x, y = batch["val"] 
         
@@ -76,32 +79,27 @@ class XGBoostStaticBaseline(pl.LightningModule):
         
         y_probs = self.clf.predict_proba(x_eval)
         y_probs_ts = torch.tensor(y_probs, device=self.device)
-        
-        self.val_metrics.update(y_probs_ts, y_eval.to(self.device))
 
-    def on_validation_epoch_end(self):
-        # Only compute if updates occurred
-        if self.val_metrics['acc']._update_count > 0:
-            output = self.val_metrics.compute()
-            self.log_dict(output, prog_bar=True)
-            print("\n--- XGBoost Baseline Results ---")
-            print(output)
-            self.val_metrics.reset()
-        else:
-            print("Warning: No validation samples reached the metrics.")
+        print(f"--- Test Step {batch_idx}: Evaluated {x_eval.shape[0]} samples ---")
+        print(f"Predicted probabilities shape: {y_probs_ts.shape}")
+        
+        self.test_metrics.update(y_probs_ts, y_eval.to(self.device))
+
+    def on_test_epoch_end(self):
+        output_data = []
+        test_metrics = self.test_metrics.compute()
+        for name, value in test_metrics.items():
+            self.log(name, value, prog_bar=True, on_epoch=True, on_step=False)
+            output_data.append({"metric": name, "value": value.item()})
+        self.test_metrics.reset()
+
+        with open(f"{self.trainer.logger.log_dir}/xgboost_test_metrics.csv", mode="w", newline="") as csvfile:
+            fieldnames = ["metric", "value"]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in output_data:
+                writer.writerow(row)
 
     def configure_optimizers(self):
         # Dummy optimizer since XGBoost isn't trained via AdamW
         return torch.optim.Adam(self.parameters(), lr=1e-3)
-
-    # def on_validation_epoch_end(self):
-    #     # Compute and log all metrics at once
-    #     output = self.val_metrics.compute()
-    #     self.log_dict(output, prog_bar=True)
-    #     self.val_metrics.reset()
-    #     # # Save CSV once at the very end
-    #     # with open("test_metrics.csv", mode="w", newline="") as csv_file:
-    #     #     writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
-    #     #     writer.writeheader()
-    #     #     writer.writerows(output_data)
-    #     # logger.info("Test metrics saved to test_metrics.csv")
