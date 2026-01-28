@@ -97,13 +97,13 @@ class TSPFNDataset(Dataset):
         df_features = df.iloc[:, :-1]
 
         df_values = df_features.values
-        if df_values.shape[1] < 499:
+        if df_values.shape[1] < 999:
             # Pad with zeros to have consistent feature size
-            padding = np.zeros((df_values.shape[0], 499 - df_values.shape[1]))
+            padding = np.zeros((df_values.shape[0], 999 - df_values.shape[1]))
             df_values = np.hstack((df_values, padding))
-        elif df_values.shape[1] > 499:
-            # Truncate to 499 features
-            df_values = df_values[:, :499]
+        elif df_values.shape[1] > 999:
+            # Truncate to 999 features
+            df_values = df_values[:, :999]
         df_values = np.hstack((df_values, df_label.reshape(-1, 1)))
 
         # Split dataset
@@ -156,7 +156,10 @@ class TSPFNDataset(Dataset):
         sample = self.data_ts[idx]
         if self.transform:
             sample = self.transform(sample)
-        return sample
+        # Separate features and labels
+        features = sample[:, :-1]
+        labels = sample[:, -1]
+        return features, labels
 
 
 class TSPFNDataModule(pl.LightningDataModule):
