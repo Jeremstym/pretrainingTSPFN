@@ -80,6 +80,16 @@ class XGBoostStaticBaseline(pl.LightningModule):
         self.log_dict(output, prog_bar=True)
         self.val_metrics.reset()
 
+    def test_step(self, batch, batch_idx):
+        # Just redirect the test loop to use the validation logic
+        return self.validation_step(batch, batch_idx)
+
+    def on_test_epoch_end(self):
+        # Ensure test metrics are also computed and logged
+        output = self.val_metrics.compute()
+        self.log_dict(output, prog_bar=True)
+        self.val_metrics.reset()
+
     def configure_optimizers(self):
         # Dummy optimizer since XGBoost isn't trained via SGD
         return torch.optim.Adam(self.parameters(), lr=1e-3)
