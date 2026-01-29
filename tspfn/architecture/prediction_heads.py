@@ -39,13 +39,14 @@ class PFNPredictionHead(nn.Module):
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
             state_dict = torch.load(updated_pfn_path, map_location="cuda:0")
-            new_state_dict = {}
-            if k.startswith("model."):
-                new_key = k[len("model.") :]  # strip the prefix
-                new_state_dict[new_key] = v
-            else:
-                new_state_dict[k] = v
-            model.load_state_dict(new_state_dict, strict=True)
+            # new_state_dict = {}
+            # for k, v in state_dict.items():
+            #     if k.startswith("model."):
+            #         new_key = k[len("model.") :]  # strip the prefix
+            #         new_state_dict[new_key] = v
+            #     else:
+            #         new_state_dict[k] = v
+            model.load_state_dict(state_dict, strict=True)
 
         self.head = model.decoder_dict["standard"]
     
