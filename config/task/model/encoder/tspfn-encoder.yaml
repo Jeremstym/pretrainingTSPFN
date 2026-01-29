@@ -8,7 +8,6 @@ tabpfn_kwargs:
   which: classifier
   # version: v2
   version: v2.5
-  nhead: 3 # CHECK remove when data is large enough for v2.5
   download_if_not_exists: False # needed for v2.5 but unknown for v2
   # download: False # Deprecated for v2.5 but needed for v2
 updated_pfn_path: ${updated_pfn_path} # Path to updated TabPFN model weights after pretraining
