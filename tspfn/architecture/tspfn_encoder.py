@@ -148,6 +148,7 @@ class TSPFNEncoder(nn.Module, ABC):
             # Broadcast to (B, Seq, T, E)
             pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
             emb_x += pos_broadcasted
+        
         elif ts_pe == "none":
             # Use PE from TabPFN model
             emb_x, emb_y = self.model.add_embeddings(
@@ -157,6 +158,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 num_features=num_features,
                 seq_len=seq_len,
             )
+        
         elif ts_pe == "mixed":
             # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
             pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
@@ -170,6 +172,23 @@ class TSPFNEncoder(nn.Module, ABC):
                 seq_len=seq_len,
             )
             emb_x += pos_broadcasted
+       
+        elif ts_pe == "learned":
+            emb_x, emb_y = self.model.add_embeddings(
+                emb_x,
+                emb_y,
+                data_dags=None,
+                num_features=num_features,
+                seq_len=seq_len,
+            )
+            # Learned positional encodings
+            if not hasattr(self, "learned_pos_enc"):
+                self.learned_pos_enc = nn.Parameter(
+                    torch.zeros(1, 1, emb_x.shape[2], emb_x.shape[3])
+                )  # (1, 1, T, E)
+                nn.init.xavier_uniform_(self.learned_pos_enc)
+            emb_x += self.learned_pos_enc  # Broadcast addition
+        
         else:
             raise ValueError(f"Unknown ts_pe option: {ts_pe}")
 
