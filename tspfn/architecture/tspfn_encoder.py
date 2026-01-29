@@ -30,7 +30,11 @@ class TSPFNEncoder(nn.Module, ABC):
             # Load updated model weights after pretraining
             logging.info(f"Loading updated TabPFN model weights from {updated_pfn_path}")
             state_dict = torch.load(updated_pfn_path, map_location="cuda:0")  # updated_pfn_path is already a state dict
-            new_state_dict = {}
+            if "learned_pos_enc" in state_dict:
+                self.learned_pos_enc_dict = {"learned_pos_enc": state_dict["learned_pos_enc"]}
+            else:
+                self.learned_pos_enc_dict = None
+            # new_state_disct = {}
             # print(f"state_dict.keys()", state_dict.keys())
             # for k, v in state_dict.items():
             #     if k.startswith("model."):
@@ -148,7 +152,7 @@ class TSPFNEncoder(nn.Module, ABC):
             # Broadcast to (B, Seq, T, E)
             pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
             emb_x += pos_broadcasted
-        
+
         elif ts_pe == "none":
             # Use PE from TabPFN model
             emb_x, emb_y = self.model.add_embeddings(
@@ -158,7 +162,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 num_features=num_features,
                 seq_len=seq_len,
             )
-        
+
         elif ts_pe == "mixed":
             # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
             pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
@@ -172,7 +176,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 seq_len=seq_len,
             )
             emb_x += pos_broadcasted
-       
+
         elif ts_pe == "learned":
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
@@ -183,12 +187,12 @@ class TSPFNEncoder(nn.Module, ABC):
             )
             # Learned positional encodings
             if not hasattr(self, "learned_pos_enc"):
-                self.learned_pos_enc = nn.Parameter(
-                    torch.zeros(1, 1, emb_x.shape[2], emb_x.shape[3])
-                )  # (1, 1, T, E)
+                self.learned_pos_enc = nn.Parameter(torch.zeros(1, 1, emb_x.shape[2], emb_x.shape[3]))  # (1, 1, T, E)
                 nn.init.xavier_uniform_(self.learned_pos_enc)
+                if self.learned_pos_enc_dict is not None:
+                    self.learned_pos_enc.load_state_dict(self.learned_pos_enc_dict)
             emb_x += self.learned_pos_enc  # Broadcast addition
-        
+
         else:
             raise ValueError(f"Unknown ts_pe option: {ts_pe}")
 
@@ -205,6 +209,6 @@ class TSPFNEncoder(nn.Module, ABC):
             recompute_layer=self.recompute_layer,
             save_peak_mem_factor=None,
         )
-        out_query = output[:, single_eval_pos:, :] # (B, Query, num_features + 1, d_model)
+        out_query = output[:, single_eval_pos:, :]  # (B, Query, num_features + 1, d_model)
 
         return out_query
