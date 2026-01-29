@@ -19,5 +19,5 @@ ulimit -n 4096
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-tspfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True updated_pfn_path=/home/stympopper/didacticJerem/ckpts/tspfn_encoder_weights_v2.pt
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-tabpfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-tspfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True updated_pfn_path=/home/stympopper/didacticJerem/ckpts/tspfn_encoder_weights_v2.pt
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-tspfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True updated_pfn_path=/home/stympopper/didacticJerem/ckpts/tspfn_encoder_weights_v2.pt
 poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-tspfnv2.5/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True ckpt="/data/stympopper/TSPFN_v2.5/checkpoints/epoch\=148-step\=11175.ckpt"
