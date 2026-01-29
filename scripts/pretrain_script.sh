@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=hard
 #SBATCH --nodelist=zz
-#SBATCH --job-name=TUEV-processing
+#SBATCH --job-name=TSPFN-pretraining
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --time=1-23:00:00
