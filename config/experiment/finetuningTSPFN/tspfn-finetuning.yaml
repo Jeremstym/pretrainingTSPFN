@@ -6,7 +6,7 @@ defaults:
   # - /task/model/loc_head: channel-loc
   - override /task/model: null
   - override /task/optim: adamw
-  - override /data: evaluating-esr
+  - override /data: evaluating-ecg5000
 
 
 
