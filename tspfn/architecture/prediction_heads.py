@@ -46,6 +46,8 @@ class PFNPredictionHead(nn.Module):
             #         new_state_dict[new_key] = v
             #     else:
             #         new_state_dict[k] = v
+            if "learned_pos_enc" in state_dict:
+                state_dict.pop("learned_pos_enc")  # Remove learned_pos_enc if present
             model.load_state_dict(state_dict, strict=True)
 
         self.head = model.decoder_dict["standard"]
