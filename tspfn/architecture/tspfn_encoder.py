@@ -197,22 +197,16 @@ class TSPFNEncoder(nn.Module, ABC):
             emb_x += pos_broadcasted
 
         elif self.positional_encoding == "learned":
-            # # assert self.learned_pos_enc_dict is not None, "No learned_pos_enc found in the loaded model state dict."
-            # emb_x, emb_y = self.model.add_embeddings(
-            #     emb_x,
-            #     emb_y,
-            #     data_dags=None,
-            #     num_features=num_features,
-            #     seq_len=seq_len,
-            # )
-            # # Learned positional encodings
-            # if not hasattr(self, "learned_pos_enc"):
-            #     self.learned_pos_enc = nn.Parameter(torch.zeros(1, 1, emb_x.shape[2], emb_x.shape[3]))  # (1, 1, T, E)
-            #     nn.init.xavier_uniform_(self.learned_pos_enc)
-            #     if self.learned_pos_enc_dict is not None:
-            #         self.learned_pos_enc.load_state_dict(self.learned_pos_enc_dict, strict=True)
-            # emb_x += self.learned_pos_enc  # Broadcast addition
-            raise NotImplementedError("Learned positional encoding not yet implemented in TSPFNEncoder.")
+            emb_x, emb_y = self.model.add_embeddings(
+                emb_x,
+                emb_y,
+                data_dags=None,
+                num_features=num_features,
+                seq_len=seq_len,
+            )
+            # Interpolate learned positional encodings if sequence length differs
+            pe_interpolated = interpolate_pos_encoding(self.pe, emb_x, new_len=seq_len)  # (1, 1, Seq, E)
+            emb_x = emb_x + pe_interpolated
 
         else:
             raise ValueError(f"Unknown ts positional encoding option: {self.positional_encoding}")
