@@ -205,7 +205,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 seq_len=seq_len,
             )
             # Interpolate learned positional encodings if sequence length differs
-            pe_interpolated = interpolate_pos_encoding(self.pe, emb_x, new_len=seq_len)  # (1, 1, Seq, E)
+            pe_interpolated = interpolate_pos_encoding(self.pe, new_len=seq_len)  # (1, 1, Seq, E)
             emb_x = emb_x + pe_interpolated
 
         else:
