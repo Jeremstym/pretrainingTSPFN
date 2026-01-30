@@ -70,16 +70,11 @@ def interpolate_pos_encoding(pos_embed, new_len):
     # pos_embed: [1, old_len, dim]
     if pos_embed.shape[1] == new_len:
         return pos_embed
-        
+
     # Switch to [Batch, Channel, Length] for interpolate
-    pos_embed = pos_embed.permute(0, 2, 1) 
-    
+    pos_embed = pos_embed.permute(0, 2, 1)
+
     # Mode can be 'linear', 'bilinear' (for 2D), or 'bicubic'
-    pos_embed = F.interpolate(
-        pos_embed, 
-        size=new_len, 
-        mode='linear', 
-        align_corners=False
-    )
-    
-    return pos_embed.permute(0, 2, 1) # Back to [1, new_len, dim]
+    pos_embed = F.interpolate(pos_embed, size=new_len, mode="linear", align_corners=False)
+
+    return pos_embed.permute(0, 2, 1)  # Back to [1, new_len, dim]
