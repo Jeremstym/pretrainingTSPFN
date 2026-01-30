@@ -75,6 +75,9 @@ class XGBoostStaticBaseline(pl.LightningModule):
             raise ValueError("Expected 'val' key in batch for validation data.")
             
         x, y = batch_dict["val"] 
+
+        if self.num_channels > 1:
+            x = x.mean(dim=1)  # Average across channels for static features
         
         x_eval = x.view(-1, x.size(-1)).cpu().numpy()
         y_eval = y.view(-1).cpu()
