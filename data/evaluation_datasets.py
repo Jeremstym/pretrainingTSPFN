@@ -169,6 +169,7 @@ class ABIDEDataset(Dataset):
         self.label_file = os.path.join(self.root, "labels.csv")
 
         self.all_files = glob(os.path.join(self.file_path_directory, "*.npy"))
+        print(f"Found {len(self.all_files)} files in {self.file_path_directory}")
         self.df_labels = pd.read_csv(self.label_file, index_col=0)
 
     def __len__(self):
