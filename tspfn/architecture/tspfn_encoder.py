@@ -54,6 +54,8 @@ class TSPFNEncoder(nn.Module, ABC):
         self.recompute_layer = recompute_layer
         self.positional_encoding = positional_encoding
 
+        print(f"---------Using positional encoding: {self.positional_encoding}---------")
+
         if self.positional_encoding == "rope":
             # Modify attention mechanism to include RoPE
             for layer in self.transformer_encoder.layers:
