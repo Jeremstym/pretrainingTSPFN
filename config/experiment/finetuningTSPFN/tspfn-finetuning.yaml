@@ -1,11 +1,10 @@
 # @package _global_
 
 defaults:
-  - __self__ # Change loss depending on the dataset
   - /task/model/prediction_head: pfn-prediction
   - /task/model/encoder: tspfn-encoder
   # - /task/model/loc_head: channel-loc
-  # - override /task/model: null
+  - override /task/model: null
   - override /task/optim: adamw
   - override /data: evaluating-abide
 
@@ -32,9 +31,9 @@ task:
   time_series_length: ${data.time_series_length}
   num_classes: ${data.num_classes}
   split_finetuning: 0.5
-  predict_losses:
-    classification:
-      _target_: torch.nn.CrossEntropyLoss
+  predict_losses: ${data.predict_losses}
+    # classification:
+    #   _target_: torch.nn.CrossEntropyLoss
     # location:
     #   _target_: torch.nn.BCEWithLogitsLoss
   time_series_positional_encoding: none
