@@ -4,9 +4,9 @@ defaults:
   - /task/model/prediction_head: pfn-prediction
   - /task/model/encoder: tspfn-encoder
   # - /task/model/loc_head: channel-loc
-  - override /task/model: null
-  - override /task/optim: adamw
+  # - override /task/model: null
   - __self__ # Change loss depending on the dataset
+  - override /task/optim: adamw
   - override /data: evaluating-abide
 
 
