@@ -183,5 +183,7 @@ class ABIDEDataset(Dataset):
 
         x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
         y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+        
+        print(f"Loaded sample {file_name} with label {y_sample}")
 
         return x_tensor, y_tensor
