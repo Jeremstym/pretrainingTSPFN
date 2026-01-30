@@ -88,6 +88,5 @@ def interpolate_pos_encoding(pos_embed, new_len):
 
     # then unsqueeze to get back to [1, 1, new_len, embed_dim]
     x = x.permute(0, 2, 1).unsqueeze(0)
-    print(f"x shape after interp: {x.shape}")
     
     return x
