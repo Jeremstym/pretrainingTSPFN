@@ -8,7 +8,11 @@ from torchmetrics.classification import (
     MulticlassAccuracy, 
     MulticlassAUROC, 
     MulticlassF1Score, 
-    MulticlassAveragePrecision
+    MulticlassAveragePrecision,
+    BinaryAveragePrecision,
+    BinaryF1Score,
+    BinaryAUROC,
+    BinaryAccuracy
 )
 
 class XGBoostStaticBaseline(pl.LightningModule):
@@ -29,12 +33,22 @@ class XGBoostStaticBaseline(pl.LightningModule):
         }
         
         # Metric Collection for clean evaluation
-        metrics = MetricCollection({
-            "acc": MulticlassAccuracy(num_classes=num_classes),
-            "auroc": MulticlassAUROC(num_classes=num_classes),
-            "f1": MulticlassF1Score(num_classes=num_classes, average="macro"),
-            "auprc": MulticlassAveragePrecision(num_classes=num_classes)
-        })
+        if num_classes == 2:
+            # Binary classification metrics
+            metrics = MetricCollection({
+                "acc": BinaryAccuracy(),
+                "auroc": BinaryAUROC(),
+                "f1": BinaryF1Score(),
+                "auprc": BinaryAveragePrecision()
+            })
+        else:
+            # Multiclass classification metrics
+            metrics = MetricCollection({
+                "acc": MulticlassAccuracy(num_classes=num_classes),
+                "auroc": MulticlassAUROC(num_classes=num_classes),
+                "f1": MulticlassF1Score(num_classes=num_classes, average="macro"),
+                "auprc": MulticlassAveragePrecision(num_classes=num_classes)
+            })
         
         self.test_metrics = metrics.clone(prefix="test")
         self.clf = None
