@@ -27,16 +27,26 @@ class TSPFNEncoder(nn.Module, ABC):
         **kwargs,
     ):
         super().__init__()
+        
+        if positional_encoding == "learned":
+            self.pe = nn.Parameter(torch.zeros(1, 1, 499, embed_dim))
+            nn.init.xavier_uniform_(self.pe)
+        
         list_model, _, self.model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
         self.model = list_model[0]
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
             logging.info(f"Loading updated TabPFN model weights from {updated_pfn_path}")
             state_dict = torch.load(updated_pfn_path, map_location="cuda:0")  # updated_pfn_path is already a state dict
-            if "learned_pos_enc" in state_dict:
-                self.learned_pos_enc_dict = {"learned_pos_enc": state_dict.pop("learned_pos_enc")}
-            else:
-                self.learned_pos_enc_dict = None
+            if positional_encoding == "learned" and "pe" in state_dict:
+                pe_state = state_dict.pop("pe")
+                with torch.no_grad():
+                    self.pe.copy_(pe_state)
+            # new_state_dict = {}
+            # if "learned_pos_enc" in state_dict:
+            #     self.learned_pos_enc_dict = {"learned_pos_enc": state_dict.pop("learned_pos_enc")}
+            # else:
+            #     self.learned_pos_enc_dict = None
             # new_state_disct = {}
             # print(f"state_dict.keys()", state_dict.keys())
             # for k, v in state_dict.items():
@@ -60,12 +70,6 @@ class TSPFNEncoder(nn.Module, ABC):
             # Modify attention mechanism to include RoPE
             for layer in self.transformer_encoder.layers:
                 layer.self_attn_between_features.compute_attention_heads = rope_compute_heads_wrapper
-
-        if self.positional_encoding == "learned":
-            self.pe = nn.Parameter(torch.zeros(1, 1, 499, embed_dim))
-            nn.init.xavier_uniform_(self.pe)
-        else:
-            self.pe = None
 
         self.embed_dim = embed_dim
 
