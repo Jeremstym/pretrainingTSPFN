@@ -460,7 +460,7 @@ class TSPFNFineTuning(TSPFNSystem):
                     target = target.long()
                 else:
                     target = target.float()
-                    y_hat = y_hat[:, 0]  # (N=Query,) Take positive class logits for binary classification
+                    y_hat = y_hat[:, 1]  # (N=Query,) Take positive class logits for binary classification
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                     y_hat,
                     target,
