@@ -493,8 +493,11 @@ class TSPFNFineTuning(TSPFNSystem):
 
     def on_test_epoch_end(self):
         output_data = []
-
-        for target_task, collection in self.metrics["test_metrics"].items():
+        if self.num_classes == 2:
+            metrics_collection = self.metrics_binary
+        else:
+            metrics_collection = self.metrics
+        for target_task, collection in metrics_collection["test_metrics"].items():
             # compute() returns a dict of results for this task
             results = collection.compute()
 
