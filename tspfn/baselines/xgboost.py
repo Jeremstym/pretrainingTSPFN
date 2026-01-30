@@ -52,7 +52,8 @@ class XGBoostStaticBaseline(pl.LightningModule):
                     # Handle if train_loader is also a CombinedLoader or simple tuple
                     x, y = batch if isinstance(batch, (tuple, list)) else batch["train"]
                     if self.num_channels > 1:
-                        x = x.mean(dim=1)  # Average across channels for static features
+                        # Flatten
+                        x = x.flatten(start_dim=1)
                     all_x.append(x.view(-1, x.size(-1)).cpu())
                     print(f"y shape: {y.shape}, y unique: {torch.unique(y)}")
                     all_y.append(y.view(-1).cpu())
@@ -77,7 +78,7 @@ class XGBoostStaticBaseline(pl.LightningModule):
         x, y = batch_dict["val"] 
 
         if self.num_channels > 1:
-            x = x.mean(dim=1)  # Average across channels for static features
+            x = x.flatten(start_dim=1)
         
         x_eval = x.view(-1, x.size(-1)).cpu().numpy()
         y_eval = y.view(-1).cpu()
