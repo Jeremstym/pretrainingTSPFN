@@ -165,7 +165,7 @@ class TSPFNEncoder(nn.Module, ABC):
         seq_len, batch_size, num_features = X_full.shape
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
 
-        if self.positional_encoding == "none":
+        if self.positional_encoding == "none" or self.positional_encoding == "rope":
             # Use PE from TabPFN model
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
