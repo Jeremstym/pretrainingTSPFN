@@ -115,12 +115,35 @@ class TSPFNFineTuning(TSPFNSystem):
                 MulticlassRecall(num_classes=self.num_classes, average="macro"),
             ]
         )
+        binary_metrics_template = MetricCollection(
+            [
+                BinaryAccuracy(),
+                BinaryAUROC(),
+                BinaryAveragePrecision(),
+                BinaryF1Score(),
+                BinaryCohenKappa(),
+                BinaryRecall(),
+            ]
+        )
         # Store them in a dict of ModuleDicts
         self.metrics = nn.ModuleDict(
             {
                 "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
                 "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
                 "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
+            }
+        )
+        self.metrics_binary = nn.ModuleDict(
+            {
+                "train_metrics": nn.ModuleDict(
+                    {t: binary_metrics_template.clone(prefix="train/") for t in predict_losses}
+                ),
+                "val_metrics": nn.ModuleDict(
+                    {t: binary_metrics_template.clone(prefix="val/") for t in predict_losses}
+                ),
+                "test_metrics": nn.ModuleDict(
+                    {t: binary_metrics_template.clone(prefix="test/") for t in predict_losses}
+                ),
             }
         )
         if channel_handler == "convolution":
@@ -444,7 +467,10 @@ class TSPFNFineTuning(TSPFNSystem):
                 )
 
                 # Metrics are automatically updated inside the Metric objects
-                self.metrics[stage][target_task].update(y_hat, target)
+                if num_classes > 2:
+                    self.metrics[stage][target_task].update(y_hat, target)
+                else:
+                    self.metrics_binary[stage][target_task].update(y_hat, target)
             # elif target_task == "location":
             #     y_hat = predictions[target_task]  # (N=Query, num_locations)
             #     if y_hat.ndim == 1:
