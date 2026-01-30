@@ -67,14 +67,26 @@ def rope_compute_heads_wrapper(q, k, v, kv, qkv, dropout_p=None, softmax_scale=N
 
 
 def interpolate_pos_encoding(pos_embed, new_len):
-    # pos_embed: [1, old_len, dim]
-    if pos_embed.shape[1] == new_len:
+    # Current shape: [1, 1, old_len, embed_dim]
+    old_len = pos_embed.shape[2]
+    embed_dim = pos_embed.shape[3]
+    
+    if old_len == new_len:
         return pos_embed
 
-    # Switch to [Batch, Channel, Length] for interpolate
-    pos_embed = pos_embed.permute(0, 2, 1)
+    # Then permute to [Batch, Channels, Length] -> [1, embed_dim, old_len]
+    x = pos_embed.squeeze(0).permute(0, 2, 1)
 
-    # Mode can be 'linear', 'bilinear' (for 2D), or 'bicubic'
-    pos_embed = F.interpolate(pos_embed, size=new_len, mode="linear", align_corners=False)
+    # 'linear' is the standard for 1D. 
+    # 'bicubic' is only for 2D inputs (Height x Width).
+    x = F.interpolate(
+        x, 
+        size=new_len, 
+        mode="linear", 
+        align_corners=False
+    )
 
-    return pos_embed.permute(0, 2, 1)  # Back to [1, new_len, dim]
+    # then unsqueeze to get back to [1, 1, new_len, embed_dim]
+    x = x.permute(0, 2, 1).unsqueeze(0)
+    
+    return x
