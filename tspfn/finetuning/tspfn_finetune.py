@@ -102,7 +102,7 @@ class TSPFNFineTuning(TSPFNSystem):
         self.ts_length = time_series_length
         self.num_classes = num_classes
 
-        self.time_series_positional_encoding = time_series_positional_encoding
+        # self.time_series_positional_encoding = time_series_positional_encoding
 
         # Use ModuleDict so metrics move to GPU automatically
         metrics_template = MetricCollection(
@@ -257,7 +257,7 @@ class TSPFNFineTuning(TSPFNSystem):
             out_features = self.encoder(
                 ts.transpose(0, 1),
                 y_batch_support.transpose(0, 1),
-            )[:, :, -1, :]
+            )[:, :, -1, :] # Take last token as output feature
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
@@ -266,7 +266,7 @@ class TSPFNFineTuning(TSPFNSystem):
             out_features = self.encoder(
                 ts.transpose(0, 1),
                 y_train.transpose(0, 1),
-            )[:, :, -1, :]
+            )[:, :, -1, :] # Take last token as output feature
 
         else:
             raise ValueError("During inference, both support ts and labels must be provided.")
@@ -431,7 +431,10 @@ class TSPFNFineTuning(TSPFNSystem):
                     y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_classes=1)
                 target = target_batch.squeeze(dim=0)  # (N=Query,)
                 # Convert target to long if classification with >2 classes, float otherwise
-                target = target.long()  # TODO: adapt for binary classification
+                if num_classes > 2:
+                    target = target.long()
+                else:
+                    target = target.float()
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                     y_hat,
                     target,
