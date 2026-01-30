@@ -458,11 +458,15 @@ class TSPFNFineTuning(TSPFNSystem):
                 # Convert target to long if classification with >2 classes, float otherwise
                 if num_classes > 2:
                     target = target.long()
+                    losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
+                        y_hat,
+                        target,
+                    )
                 else:
                     target = target.float()
-                    y_hat = y_hat[:, 1]  # (N=Query,) Take positive class logits for binary classification
-                losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
-                    y_hat,
+                    binary_y_hat = y_hat[:, 1]  # (N=Query,) Take positive class logits for binary classification
+                    losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
+                    binary_y_hat,
                     target,
                 )
 
@@ -471,7 +475,7 @@ class TSPFNFineTuning(TSPFNSystem):
                     self.metrics[stage][target_task].update(y_hat, target)
                 else:
                     target = target.long()
-                    self.metrics_binary[stage][target_task].update(y_hat, target)
+                    self.metrics[stage][target_task].update(y_hat, target)
             # elif target_task == "location":
             #     y_hat = predictions[target_task]  # (N=Query, num_locations)
             #     if y_hat.ndim == 1:
@@ -495,7 +499,8 @@ class TSPFNFineTuning(TSPFNSystem):
     def on_test_epoch_end(self):
         output_data = []
         if self.num_classes == 2:
-            metrics_collection = self.metrics_binary
+            # metrics_collection = self.metrics_binary
+            metrics_collection = self.metrics
         else:
             metrics_collection = self.metrics
         for target_task, collection in metrics_collection["test_metrics"].items():
