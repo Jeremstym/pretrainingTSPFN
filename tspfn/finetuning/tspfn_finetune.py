@@ -50,7 +50,7 @@ class TSPFNFineTuning(TSPFNSystem):
         time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         time_series_num_channels: int = 16,
         time_series_length: int = 1000,
-        channel_handler: Literal["average", "convolution", "labram"] = None,
+        channel_handler: Literal["average", "flatten", "convolution", "labram"] = None,
         num_classes: int = 10,
         *args,
         **kwargs,
@@ -157,6 +157,8 @@ class TSPFNFineTuning(TSPFNSystem):
             )
         elif channel_handler == "average":
             self.ts_tokenizer = lambda x, input_chans: x.mean(dim=1)  # Average over channels
+        elif channel_handler == "flatten":
+            self.ts_tokenizer = lambda x, input_chans: x.view(x.size(0), -1)  # Flatten all channels
         elif channel_handler is None:
             self.ts_tokenizer = None
         else:
