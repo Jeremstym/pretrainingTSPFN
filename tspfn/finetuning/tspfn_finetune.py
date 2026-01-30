@@ -50,7 +50,7 @@ class TSPFNFineTuning(TSPFNSystem):
         time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         time_series_num_channels: int = 16,
         time_series_length: int = 1000,
-        foundation_model_name: Literal["convolution", "labram"] = None,
+        channel_handler: Literal["average", "convolution", "labram"] = None,
         num_classes: int = 10,
         *args,
         **kwargs,
@@ -123,19 +123,21 @@ class TSPFNFineTuning(TSPFNSystem):
                 "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
             }
         )
-        if foundation_model_name == "convolution":
+        if channel_handler == "convolution":
             self.ts_tokenizer = TimeSeriesConvolutionTokenizer(
                 ts_size=time_series_length,
                 ts_num_channels=time_series_num_channels,
             )
-        elif foundation_model_name == "labram":
+        elif channel_handler == "labram":
             self.ts_tokenizer = TimeSeriesLabramEncoder(
                 pretrained_weights="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
             )
-        elif foundation_model_name is None:
+        elif channel_handler == "average":
+            self.ts_tokenizer = lambda x, input_chans: x.mean(dim=1)  # Average over channels
+        elif channel_handler is None:
             self.ts_tokenizer = None
         else:
-            raise ValueError(f"Unknown foundation model name '{foundation_model_name}' provided.")
+            raise ValueError(f"Unknown foundation model name '{channel_handler}' provided.")
 
     @property
     def example_input_array(self) -> Tensor:
