@@ -23,7 +23,14 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
-from data.evaluation_datasets import TUABDataset, TUEVDataset, FilteredTUEVDataset, ECG5000Dataset, ESRDataset
+from data.evaluation_datasets import (
+    TUABDataset,
+    TUEVDataset,
+    FilteredTUEVDataset,
+    ECG5000Dataset,
+    ESRDataset,
+    ABIDEDataset,
+)
 from data.utils.sampler import StratifiedBatchSampler
 from data.utils.processing_csv import load_csv
 
@@ -338,6 +345,65 @@ class ESRDataModule(TSPFNDataModule):
         # This is identical to val_dataloader for the final evaluation
         return self.val_dataloader()
 
+
+class ABIDEDataModule(TSPFNDataModule):
+    """LightningDataModule for ABIDE dataset.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            subsets=subsets,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+        print(f"num workers: {self.num_workers}")
+
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Create datasets. Called on every process in distributed settings."""
+        self.train_dataset = ABIDEDataset(
+            root=self.data_roots,
+            split="train",
+        )
+        self.val_dataset = ABIDEDataset(
+            root=self.data_roots,
+            split="test",
+        )
+
+        return
+
+    def train_dataloader(self):
+        return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
+
+    def val_dataloader(self):
+        loaders = {
+            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset)),
+            "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
+        }
+        return CombinedLoader(loaders, mode="min_size")
+
+    def test_dataloader(self):
+        # This is identical to val_dataloader for the final evaluation
+        return self.val_dataloader()
 
 class FineTuneTUEVDataModule(TSPFNDataModule):
     """LightningDataModule for TSP datasets during finetuning.

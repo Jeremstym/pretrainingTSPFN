@@ -13,7 +13,7 @@ import os
 import math
 import time
 import json
-import glob
+from glob import glob
 from collections import defaultdict, deque
 import datetime
 import numpy as np
@@ -118,10 +118,10 @@ class ECG5000Dataset(Dataset):
     def __init__(self, root, split: str):
         self.root = root
         self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
-        
+
         df = pd.read_csv(self.file_path, index_col=0)
         self.data = df.values
-        
+
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
 
@@ -142,12 +142,12 @@ class ESRDataset(Dataset):
     def __init__(self, root, split: str):
         self.root = root
         self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
-        
+
         df = pd.read_csv(self.file_path, index_col=0)
         self.data = df.values
-        
+
         self.X = self.data[:, :-1]
-        self.Y = self.data[:, -1].astype(int)  - 1 # Convert to zero-based indexing
+        self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
 
     def __len__(self):
         return len(self.data)
@@ -155,6 +155,30 @@ class ESRDataset(Dataset):
     def __getitem__(self, index):
         x_sample = self.X[index]
         y_sample = self.Y[index]
+
+        x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
+        y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+
+        return x_tensor, y_tensor
+
+
+class ABIDEDataset(Dataset):
+    def __init__(self, root, split: str):
+        self.root = root
+        self.file_path_directory = os.path.join(self.root, f"{split}")
+        self.label_file = os.path.join(self.root, "labels.csv")
+
+        self.all_files = glob(os.path.join(self.file_path_directory, "*.npy"))
+        self.df_labels = pd.read_csv(self.label_file, index_col=0)
+
+    def __len__(self):
+        return len(self.all_files)
+
+    def __getitem__(self, index):
+        file_path = self.all_files[index]
+        x_sample = np.load(file_path)
+        file_name = Path(file_path).stem
+        y_sample = self.df_labels.loc[int(file_name), "target"]  # Labels are already zero-based indexed
 
         x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
         y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
