@@ -1,6 +1,7 @@
 import torch
 import einops
 from torch import nn
+import torch.nn.functional as F
 from typing import Tuple
 from tabpfn.architectures.base.attention.full_attention import MultiHeadAttention
 
@@ -63,3 +64,22 @@ def rope_compute_heads_wrapper(q, k, v, kv, qkv, dropout_p=None, softmax_scale=N
     return MultiHeadAttention.compute_attention_heads(
         q=q, k=k, v=v, kv=None, qkv=None, dropout_p=dropout_p, softmax_scale=softmax_scale
     )
+
+
+def interpolate_pos_encoding(pos_embed, new_len):
+    # pos_embed: [1, old_len, dim]
+    if pos_embed.shape[1] == new_len:
+        return pos_embed
+        
+    # Switch to [Batch, Channel, Length] for interpolate
+    pos_embed = pos_embed.permute(0, 2, 1) 
+    
+    # Mode can be 'linear', 'bilinear' (for 2D), or 'bicubic'
+    pos_embed = F.interpolate(
+        pos_embed, 
+        size=new_len, 
+        mode='linear', 
+        align_corners=False
+    )
+    
+    return pos_embed.permute(0, 2, 1) # Back to [1, new_len, dim]

@@ -51,7 +51,7 @@ class TSPFNFineTuning(TSPFNSystem):
         time_series_num_channels: int = 16,
         time_series_length: int = 1000,
         foundation_model_name: Literal["convolution", "labram"] = None,
-        num_classes:int =10,
+        num_classes: int = 10,
         *args,
         **kwargs,
     ):
@@ -255,7 +255,8 @@ class TSPFNFineTuning(TSPFNSystem):
         if self.training or y_inference_support is None:
             ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
             out_features = self.encoder(
-                ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
+                ts.transpose(0, 1),
+                y_batch_support.transpose(0, 1),
             )[:, :, -1, :]
 
         elif y_inference_support is not None and ts_inference_support is not None:
@@ -263,7 +264,8 @@ class TSPFNFineTuning(TSPFNSystem):
             ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
             y_train = y_inference_support
             out_features = self.encoder(
-                ts.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
+                ts.transpose(0, 1),
+                y_train.transpose(0, 1),
             )[:, :, -1, :]
 
         else:
@@ -356,7 +358,9 @@ class TSPFNFineTuning(TSPFNSystem):
         metrics = {}
         losses = []
         if self.predict_losses is not None:
-            metrics.update(self._prediction_shared_step(batch, num_classes=self.num_classes))  # Assuming 6 classes for TUEV dataset
+            metrics.update(
+                self._prediction_shared_step(batch, num_classes=self.num_classes)
+            )  # Assuming 6 classes for TUEV dataset
             losses.append(metrics["s_loss"])
 
         # Compute the sum of the (weighted) losses

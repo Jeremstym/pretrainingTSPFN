@@ -8,7 +8,7 @@ import einops
 import torch
 import torch.nn as nn
 from tabpfn.model_loading import load_model_criterion_config
-from tspfn.architecture.pe_utils import rope_compute_heads_wrapper
+from tspfn.architecture.pe_utils import rope_compute_heads_wrapper, interpolate_pos_encoding
 
 import logging
 
@@ -64,6 +64,8 @@ class TSPFNEncoder(nn.Module, ABC):
         if self.positional_encoding == "learned":
             self.pe = nn.Parameter(torch.zeros(1, 1, 499, embed_dim))
             nn.init.xavier_uniform_(self.pe)
+        else:
+            self.pe = None
 
         self.embed_dim = embed_dim
 
@@ -157,20 +159,20 @@ class TSPFNEncoder(nn.Module, ABC):
         return embedded_x, embedded_y, single_eval_pos_
 
     def forward(
-        self, X_full: torch.Tensor, y_train: torch.Tensor, ts_pe: str = "none", *args, **kwargs
+        self, X_full: torch.Tensor, y_train: torch.Tensor, *args, **kwargs
     ) -> Tuple[torch.torch.Tensor, torch.torch.Tensor]:
 
         seq_len, batch_size, num_features = X_full.shape
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
 
-        if ts_pe == "sinusoidal":
+        if self.positional_encoding == "sinusoidal":
             # Add sinusoidal positional encodings to time series attributes
             pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
             # Broadcast to (B, Seq, T, E)
             pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
             emb_x += pos_broadcasted
 
-        elif ts_pe == "none":
+        elif self.positional_encoding == "none":
             # Use PE from TabPFN model
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
@@ -180,7 +182,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 seq_len=seq_len,
             )
 
-        elif ts_pe == "mixed":
+        elif self.positional_encoding == "mixed":
             # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
             pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
             # Broadcast to (B, Seq, T, E)
@@ -194,7 +196,7 @@ class TSPFNEncoder(nn.Module, ABC):
             )
             emb_x += pos_broadcasted
 
-        elif ts_pe == "learned":
+        elif self.positional_encoding == "learned":
             # # assert self.learned_pos_enc_dict is not None, "No learned_pos_enc found in the loaded model state dict."
             # emb_x, emb_y = self.model.add_embeddings(
             #     emb_x,
@@ -213,7 +215,7 @@ class TSPFNEncoder(nn.Module, ABC):
             raise NotImplementedError("Learned positional encoding not yet implemented in TSPFNEncoder.")
 
         else:
-            raise ValueError(f"Unknown ts_pe option: {ts_pe}")
+            raise ValueError(f"Unknown ts positional encoding option: {self.positional_encoding}")
 
         # (B, Seq, num_features, d_model) + (B, Seq, 1, d_model) -> (B, Seq, num_features + 1, d_model)
         embedded_input = torch.cat((emb_x, emb_y.unsqueeze(2)), dim=2)
