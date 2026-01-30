@@ -35,7 +35,8 @@ task:
     tree_method: "hist"
     device: "cuda"
     verbosity: 0
-    objective: "multi:softprob"
+    # objective: "multi:softprob"
+    objective: "binary:logistic"
     eval_metric: "mlogloss"    # Explicitly set for multiclass tracking
 
 # Change checkpoint loading defaults to:
