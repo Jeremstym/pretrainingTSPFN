@@ -12,10 +12,11 @@ from torchmetrics.classification import (
 )
 
 class XGBoostStaticBaseline(pl.LightningModule):
-    def __init__(self, num_classes: int = 10, xgb_params: dict = None, **kwargs):
+    def __init__(self, num_classes: int = 10, num_channels:int = 1, xgb_params: dict = None, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.num_classes = num_classes
+        self.num_channels = num_channels
         
         # Optimized XGBoost params for large tabular data
         self.xgb_params = xgb_params or {
@@ -50,6 +51,8 @@ class XGBoostStaticBaseline(pl.LightningModule):
                 for batch in train_loader:
                     # Handle if train_loader is also a CombinedLoader or simple tuple
                     x, y = batch if isinstance(batch, (tuple, list)) else batch["train"]
+                    if self.num_channels > 1:
+                        x = x.mean(dim=1)  # Average across channels for static features
                     all_x.append(x.view(-1, x.size(-1)).cpu())
                     all_y.append(y.view(-1).cpu())
                 

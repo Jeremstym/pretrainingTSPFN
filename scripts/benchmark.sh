@@ -28,4 +28,5 @@ ulimit -n 4096
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-tspfnv2-RoPE/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-esr seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN_v2-RoPE.pt" task.time_series_positional_encoding=rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-tspfnv2-LearnedPE/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-esr seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN_v2-LearnedPE.pt" task.time_series_positional_encoding=learned
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/abide-tabpfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/abide-tabpfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/abide-tspfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN_v2.pt"

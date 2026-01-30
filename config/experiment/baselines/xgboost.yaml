@@ -6,7 +6,7 @@ defaults:
   # # - /task/model/loc_head: channel-loc
   - override /task/model: null
   - override /task/optim: adamw
-  - override /data: evaluating-esr
+  - override /data: evaluating-abide
 
 
 
@@ -25,6 +25,7 @@ data:
 task:
   _target_: tspfn.baselines.xgboost.XGBoostStaticBaseline
   num_classes: ${data.num_classes}
+  num_channels: ${data.num_channels}
   xgb_params:
     n_estimators: 1000          # Higher count allows the model to learn subtle patterns
     max_depth: 3               # Shallow trees generalize better on raw ECG signals
