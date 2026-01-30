@@ -165,7 +165,7 @@ class ESRDataset(Dataset):
 class ABIDEDataset(Dataset):
     def __init__(self, root, split: str):
         self.root = root
-        self.file_path_directory = os.path.join(self.root, f"{split}")
+        self.file_path_directory = os.path.join(self.root, f"{split}_pca")
         self.label_file = os.path.join(self.root, "labels.csv")
 
         self.all_files = glob(os.path.join(self.file_path_directory, "*.npy"))
