@@ -54,6 +54,7 @@ class XGBoostStaticBaseline(pl.LightningModule):
                     if self.num_channels > 1:
                         x = x.mean(dim=1)  # Average across channels for static features
                     all_x.append(x.view(-1, x.size(-1)).cpu())
+                    print(f"y shape: {y.shape}, y unique: {torch.unique(y)}")
                     all_y.append(y.view(-1).cpu())
                 
                 X_train = torch.cat(all_x, dim=0).numpy()

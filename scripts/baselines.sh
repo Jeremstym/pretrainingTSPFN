@@ -13,4 +13,5 @@ nvidia-smi
 ulimit -n 4096
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-xgboost' +experiment=baselines/xgboost seed=42 train=False test=True
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-xgboost' +experiment=baselines/xgboost seed=42 train=False test=True
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-xgboost' +experiment=baselines/xgboost seed=42 train=False test=True
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/abide-xgboost' +experiment=baselines/xgboost seed=42 train=False test=True
