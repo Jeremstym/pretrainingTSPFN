@@ -37,7 +37,7 @@ task:
   predict_losses:
     classification:
       _target_: torch.nn.CrossEntropyLoss
-  time_series_positional_encoding: learned
+  time_series_positional_encoding: none
   seed : ${seed}
   model:
     freeze_encoder: False # Whether to freeze the TabPFN encoder during training
