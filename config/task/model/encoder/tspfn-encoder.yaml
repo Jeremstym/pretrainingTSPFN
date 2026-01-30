@@ -14,3 +14,5 @@ updated_pfn_path: ${updated_pfn_path} # Path to updated TabPFN model weights aft
 random_init: False # Whether to randomly initialize the TabPFN weights instead of loading pretrained weights
 recompute_layer: False #CHECK True for TabPFN v2.5, False for v2
 features_per_group: 1 #CHECK Number of features per group for time series data (WARNING: 1 is for TabPFN v2)
+embed_dim: ${task.embed_dim} # Embedding dimension for the TSPFN encoder
+positional_encoding: ${task.time_series_positional_encoding} # Type of positional encoding to use for time series data: "none", "sinusoidal", "rope", "learned"

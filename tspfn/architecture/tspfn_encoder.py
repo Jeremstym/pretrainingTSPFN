@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, Union
+from typing import Tuple, Union, Literal
 from shutil import copy2
 from pathlib import Path
 
@@ -8,6 +8,7 @@ import einops
 import torch
 import torch.nn as nn
 from tabpfn.model_loading import load_model_criterion_config
+from tspfn.architecture.pe_utils import rope_compute_heads_wrapper
 
 import logging
 
@@ -18,9 +19,11 @@ class TSPFNEncoder(nn.Module, ABC):
         seed: int,
         tabpfn_kwargs: dict,
         features_per_group: int,
+        embed_dim: int,
         updated_pfn_path: Union[Path, None] = None,
         random_init: bool = False,
         recompute_layer: bool = True,
+        positional_encoding: Literal["none", "sinusoidal", "rope", "learned"] = "none",
         **kwargs,
     ):
         super().__init__()
@@ -49,6 +52,18 @@ class TSPFNEncoder(nn.Module, ABC):
         self.transformer_encoder = self.model.transformer_encoder
         self.features_per_group = features_per_group  # 1 for TabPFN v2, 3 for TabPFN v2.5
         self.recompute_layer = recompute_layer
+        self.positional_encoding = positional_encoding
+
+        if self.positional_encoding == "rope":
+            # Modify attention mechanism to include RoPE
+            for layer in self.transformer_encoder.layers:
+                layer.self_attn_between_features.compute_attention_heads = rope_compute_heads_wrapper
+
+        if self.positional_encoding == "learned":
+            self.pe = nn.Parameter(torch.zeros(1, 1, 499, embed_dim))
+            nn.init.xavier_uniform_(self.pe)
+
+        self.embed_dim = embed_dim
 
         if random_init:  # random_init:
             self.model.apply(self._init_weights)
@@ -178,21 +193,22 @@ class TSPFNEncoder(nn.Module, ABC):
             emb_x += pos_broadcasted
 
         elif ts_pe == "learned":
-            # assert self.learned_pos_enc_dict is not None, "No learned_pos_enc found in the loaded model state dict."
-            emb_x, emb_y = self.model.add_embeddings(
-                emb_x,
-                emb_y,
-                data_dags=None,
-                num_features=num_features,
-                seq_len=seq_len,
-            )
-            # Learned positional encodings
-            if not hasattr(self, "learned_pos_enc"):
-                self.learned_pos_enc = nn.Parameter(torch.zeros(1, 1, emb_x.shape[2], emb_x.shape[3]))  # (1, 1, T, E)
-                nn.init.xavier_uniform_(self.learned_pos_enc)
-                if self.learned_pos_enc_dict is not None:
-                    self.learned_pos_enc.load_state_dict(self.learned_pos_enc_dict, strict=True)
-            emb_x += self.learned_pos_enc  # Broadcast addition
+            # # assert self.learned_pos_enc_dict is not None, "No learned_pos_enc found in the loaded model state dict."
+            # emb_x, emb_y = self.model.add_embeddings(
+            #     emb_x,
+            #     emb_y,
+            #     data_dags=None,
+            #     num_features=num_features,
+            #     seq_len=seq_len,
+            # )
+            # # Learned positional encodings
+            # if not hasattr(self, "learned_pos_enc"):
+            #     self.learned_pos_enc = nn.Parameter(torch.zeros(1, 1, emb_x.shape[2], emb_x.shape[3]))  # (1, 1, T, E)
+            #     nn.init.xavier_uniform_(self.learned_pos_enc)
+            #     if self.learned_pos_enc_dict is not None:
+            #         self.learned_pos_enc.load_state_dict(self.learned_pos_enc_dict, strict=True)
+            # emb_x += self.learned_pos_enc  # Broadcast addition
+            raise NotImplementedError("Learned positional encoding not yet implemented in TSPFNEncoder.")
 
         else:
             raise ValueError(f"Unknown ts_pe option: {ts_pe}")

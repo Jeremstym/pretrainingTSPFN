@@ -44,7 +44,7 @@ class TSPFNPretraining(TSPFNSystem):
         num_classes: int = 10,  # Default to 10 classes as in original TabPFN
         split_finetuning: float = 0.5,
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
-        time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
+        # time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         *args,
         **kwargs,
     ):
@@ -98,7 +98,7 @@ class TSPFNPretraining(TSPFNSystem):
         # self.ts_train_for_inference = torch.Tensor().to(self.device)
         # self.y_train_for_inference = torch.Tensor().to(self.device)
 
-        self.time_series_positional_encoding = time_series_positional_encoding
+        # self.time_series_positional_encoding = time_series_positional_encoding
 
         # Use ModuleDict so metrics move to GPU automatically
         metrics_template = MetricCollection(
@@ -245,16 +245,18 @@ class TSPFNPretraining(TSPFNSystem):
         if self.training or y_inference_support is None:
             ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
             out_features = self.encoder(
-                ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
-            )[:, :, -1, :]
+                ts.transpose(0, 1),
+                y_batch_support.transpose(0, 1),
+            )[:, :, -1, :] # Select last token's features
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
             ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
             y_train = y_inference_support
             out_features = self.encoder(
-                ts.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
-            )[:, :, -1, :]
+                ts.transpose(0, 1),
+                y_train.transpose(0, 1),
+            )[:, :, -1, :] # Select last token's features
 
         else:
             raise ValueError("During inference, both support ts and labels must be provided.")
