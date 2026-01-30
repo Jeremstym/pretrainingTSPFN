@@ -103,6 +103,9 @@ class XGBoostStaticBaseline(pl.LightningModule):
         print(f"--- Test Step {batch_idx}: Evaluated {x_eval.shape[0]} samples ---")
         print(f"Predicted probabilities shape: {y_probs_ts.shape}")
         
+        if self.num_classes == 2:
+            # For binary classification, use probabilities of the positive class
+            y_probs_ts = y_probs_ts[:, 1]
         self.test_metrics.update(y_probs_ts, y_eval.to(self.device))
 
     def on_test_epoch_end(self):
