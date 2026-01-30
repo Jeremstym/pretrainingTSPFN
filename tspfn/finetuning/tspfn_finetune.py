@@ -470,6 +470,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 if num_classes > 2:
                     self.metrics[stage][target_task].update(y_hat, target)
                 else:
+                    target = target.long()
                     self.metrics_binary[stage][target_task].update(y_hat, target)
             # elif target_task == "location":
             #     y_hat = predictions[target_task]  # (N=Query, num_locations)
