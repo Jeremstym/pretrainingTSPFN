@@ -165,14 +165,7 @@ class TSPFNEncoder(nn.Module, ABC):
         seq_len, batch_size, num_features = X_full.shape
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
 
-        if self.positional_encoding == "sinusoidal":
-            # Add sinusoidal positional encodings to time series attributes
-            pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
-            # Broadcast to (B, Seq, T, E)
-            pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
-            emb_x += pos_broadcasted
-
-        elif self.positional_encoding == "none":
+        if self.positional_encoding == "none":
             # Use PE from TabPFN model
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
@@ -182,19 +175,26 @@ class TSPFNEncoder(nn.Module, ABC):
                 seq_len=seq_len,
             )
 
-        elif self.positional_encoding == "mixed":
-            # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
+        elif self.positional_encoding == "sinusoidal":
+            # Add sinusoidal positional encodings to time series attributes
             pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
             # Broadcast to (B, Seq, T, E)
             pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
-            emb_x, emb_y = self.model.add_embeddings(
-                emb_x,
-                emb_y,
-                data_dags=None,
-                num_features=num_features,
-                seq_len=seq_len,
-            )
             emb_x += pos_broadcasted
+
+        # elif self.positional_encoding == "mixed":
+        #     # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
+        #     pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
+        #     # Broadcast to (B, Seq, T, E)
+        #     pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
+        #     emb_x, emb_y = self.model.add_embeddings(
+        #         emb_x,
+        #         emb_y,
+        #         data_dags=None,
+        #         num_features=num_features,
+        #         seq_len=seq_len,
+        #     )
+        #     emb_x += pos_broadcasted
 
         elif self.positional_encoding == "learned":
             emb_x, emb_y = self.model.add_embeddings(
