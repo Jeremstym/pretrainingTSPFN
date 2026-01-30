@@ -6,7 +6,8 @@ defaults:
   # - /task/model/loc_head: channel-loc
   - override /task/model: null
   - override /task/optim: adamw
-  - override /data: evaluating-ecg5000
+  - __self__ # Change loss depending on the dataset
+  - override /data: evaluating-abide
 
 
 
