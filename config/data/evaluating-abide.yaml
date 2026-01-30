@@ -9,4 +9,4 @@ num_classes: 2
 
 predict_losses:
   classification:
-    _target_: torch.nn.BCELoss
+    _target_: torch.nn.BCEWithLogitsLoss
