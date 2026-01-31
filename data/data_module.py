@@ -281,7 +281,7 @@ class ECG5000DataModule(TSPFNDataModule):
             "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
             "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
         }
-        return CombinedLoader(loaders, mode="min_size")
+        return CombinedLoader(loaders, mode="max_size_cycle")
 
     def test_dataloader(self):
         # This is identical to val_dataloader for the final evaluation
@@ -341,7 +341,7 @@ class ESRDataModule(TSPFNDataModule):
             "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
             "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
         }
-        return CombinedLoader(loaders, mode="min_size")
+        return CombinedLoader(loaders, mode="max_size_cycle")
 
     def test_dataloader(self):
         # This is identical to val_dataloader for the final evaluation
@@ -401,7 +401,7 @@ class ABIDEDataModule(TSPFNDataModule):
             "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
             "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
         }
-        return CombinedLoader(loaders, mode="min_size")
+        return CombinedLoader(loaders, mode="max_size_cycle")
 
     def test_dataloader(self):
         # This is identical to val_dataloader for the final evaluation
