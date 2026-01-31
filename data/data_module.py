@@ -278,7 +278,7 @@ class ECG5000DataModule(TSPFNDataModule):
 
     def val_dataloader(self):
         loaders = {
-            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset)),
+            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
             "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
         }
         return CombinedLoader(loaders, mode="min_size")
@@ -338,7 +338,7 @@ class ESRDataModule(TSPFNDataModule):
 
     def val_dataloader(self):
         loaders = {
-            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset)),
+            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
             "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
         }
         return CombinedLoader(loaders, mode="min_size")
@@ -398,7 +398,7 @@ class ABIDEDataModule(TSPFNDataModule):
 
     def val_dataloader(self):
         loaders = {
-            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset)),
+            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
             "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
         }
         return CombinedLoader(loaders, mode="min_size")
