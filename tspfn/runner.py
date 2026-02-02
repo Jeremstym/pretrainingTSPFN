@@ -167,7 +167,11 @@ class TSPFNRunner(ABC):
 
         if isinstance(model, TSPFNPretraining):
             if cfg.train:
-                trainer.fit(model, datamodule=datamodule)
+                if cfg.resume:
+                    assert cfg.ckpt is not None, "To resume training, a checkpoint path must be provided in cfg.ckpt"
+                    trainer.fit(model, datamodule=datamodule, ckpt_path=ckpt_path)
+                else:
+                    trainer.fit(model, datamodule=datamodule)
                 # Copy best model checkpoint to a predictable path + online tracker (if used)
                 # Ensure we use the best weights (and not the latest ones) by loading back the best model
                 model = model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
@@ -178,7 +182,13 @@ class TSPFNRunner(ABC):
                 trainer.test(model, datamodule=datamodule)
         elif isinstance(model, TSPFNFineTuning):
             if cfg.train:
-                trainer.fit(model, datamodule=datamodule)
+                if cfg.resume:
+                    assert cfg.ckpt is not None, "To resume training, a checkpoint path must be provided in cfg.ckpt"
+                    trainer.fit(model, datamodule=datamodule, ckpt_path=ckpt_path)
+                else:
+                    trainer.fit(model, datamodule=datamodule)
+                # Copy best model checkpoint to a predictable path + online tracker (if used)
+                # Ensure we use the best weights (and not the latest ones) by loading back the best model
                 best_model_path = trainer.checkpoint_callback.best_model_path
                 print(f"Best model checkpoint saved at {best_model_path}")
                 model = model.load_from_checkpoint(best_model_path)

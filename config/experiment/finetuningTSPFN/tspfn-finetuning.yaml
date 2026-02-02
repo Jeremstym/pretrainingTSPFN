@@ -9,7 +9,7 @@ defaults:
   - override /data: evaluating-abide
 
 
-
+resume: False
 test: True
 trainer:
   devices: ${sys.num_gpus:}
