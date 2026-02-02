@@ -201,8 +201,10 @@ class TSPFNDataModule(pl.LightningDataModule):
     #     return False
 
     def _dataloader(
-        self, dataset: Dataset, shuffle: bool, batch_size: int, collate_fn=None, drop_last=False
+        self, dataset: Dataset, shuffle: bool, batch_size: Optional[int] = None, collate_fn=None, drop_last=False
     ) -> DataLoader:
+        if batch_size is None:
+            batch_size = len(dataset)
         return DataLoader(
             dataset,
             batch_size=batch_size,
