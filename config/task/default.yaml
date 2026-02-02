@@ -1,5 +1,5 @@
 defaults:
-  - model: ???
+  - model: null
   - optim: adam
   - results_processors@_global_.results_processors: null
 
