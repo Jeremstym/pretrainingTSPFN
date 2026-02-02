@@ -1,1 +1,1 @@
-_target_: tspfn.baselines.tcn.Small_TCN
+_target_: tspfn.architecture.tcn.Small_TCN
