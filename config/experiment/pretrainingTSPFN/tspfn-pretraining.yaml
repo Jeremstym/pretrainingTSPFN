@@ -15,7 +15,7 @@ defaults:
   - override /data: pretraining-csv
 
 
-
+resume: False
 test: True
 trainer:
   devices: ${sys.num_gpus:}
