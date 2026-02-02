@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 import torch
 import pytorch_lightning as pl
-from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler, Subset
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -56,45 +56,6 @@ def stratified_batch_collate(batch):
     new_order = torch.cat(first_half_idxs + second_half_idxs)
 
     return xs[new_order], ys[new_order]
-
-
-# class TSPFNDataset(Dataset):
-#     """Minimal dataset for TSP-style tensors.
-
-#     Loading rules (defaults):
-#     - If `data_roots/` exists, load all `.pt`/`.pth` files inside.
-#     - Else if `data_roots.pt` exists, load that file. If it contains a tensor/list, treat each element as a sample.
-#     - Otherwise the dataset is empty.
-#     """
-
-#     def __init__(
-#         self, data_roots: str, subsets: List[Path], split: str, split_ratio: float, transform: Optional[Callable] = None
-#     ) -> None:
-#         super().__init__()
-#         self.data_roots = data_roots
-#         self.transform = transform
-#         self.subset_paths = subsets
-#         self.split = split
-#         self.split_ratio = split_ratio
-#         self.label_encoder = LabelEncoder()
-
-#         data_list = []
-#         for subset_path in self.subset_paths:
-#             data_ts = self._load_subset(subset_path)
-#             data_list.extend(data_ts)
-#         self.data_ts = data_list
-
-#     def __len__(self) -> int:
-#         return len(self.data_ts)
-
-#     def __getitem__(self, idx: int):
-#         sample = self.data_ts[idx]
-#         if self.transform:
-#             sample = self.transform(sample)
-#         # Separate features and labels
-#         features = sample[:, :-1]
-#         labels = sample[:, -1]
-#         return features, labels
 
 
 class TSPFNDataset(Dataset):
@@ -148,34 +109,6 @@ class TSPFNDataModule(pl.LightningDataModule):
             self.subset_list = [Path(data_roots)]
         self.current_dataset_idx = 0
 
-    # def setup(self, stage: Optional[str] = None) -> None:
-    #     """Create datasets. Called on every process in distributed settings."""
-    #     # TODO: fow now, train/val/test use the same subset. Later, we can modify to have different subsets for each.
-
-    #     self.train_dataset = TSPFNDataset(
-    #         data_roots=self.data_roots,
-    #         subsets=self.subset_list,
-    #         split="train",
-    #         split_ratio=0.8,
-    #         transform=self.transform,
-    #     )
-    #     self.val_dataset = TSPFNDataset(
-    #         data_roots=self.data_roots,
-    #         subsets=self.subset_list,
-    #         split="val",
-    #         split_ratio=0.8,
-    #         transform=self.transform,
-    #     )
-    #     self.test_dataset = TSPFNDataset(
-    #         data_roots=self.data_roots,
-    #         subsets=self.subset_list,
-    #         split="val",
-    #         split_ratio=0.8,
-    #         transform=self.transform,
-    #     )
-
-    #     return
-
     def setup(self, stage: Optional[str] = None) -> None:
         if not hasattr(self, "all_train_chunks") or not hasattr(self, "all_val_chunks"):
             self.all_train_chunks = []
@@ -192,13 +125,6 @@ class TSPFNDataModule(pl.LightningDataModule):
 
         if stage == "test":
             self.test_dataset = TSPFNDataset(data_ts=self.all_val_chunks)
-
-    # def switch_to_next_dataset(self):
-    #     self.current_dataset_idx += 1
-    #     if self.current_dataset_idx < len(self.subset_list):
-    #         self.setup()
-    #         return True
-    #     return False
 
     def _dataloader(
         self, dataset: Dataset, shuffle: bool, batch_size: int, collate_fn=None, drop_last=False
@@ -288,6 +214,65 @@ class ECG5000DataModule(TSPFNDataModule):
     def test_dataloader(self):
         # This is identical to val_dataloader for the final evaluation
         return self.val_dataloader()
+
+
+class ECG5000FineTuneDataModule(TSPFNDataModule):
+    """LightningDataModule for ECG datasets during finetuning.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            subsets=subsets,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+        print(f"num workers: {self.num_workers}")
+
+    def setup(self, stage: Optional[str] = None) -> None:
+
+        full_train_dataset = ECG5000Dataset(
+            root=self.data_roots,
+            split="train",
+        )
+        labels = full_train_dataset.labels
+        train_indices, val_indices = train_test_split(
+            range(len(full_train_dataset)), test_size=0.2, stratify=labels, random_state=self.seed
+        )
+
+        self.train_dataset = Subset(full_train_dataset, train_indices)
+        self.val_dataset = Subset(full_train_dataset, val_indices)
+        self.test_dataset = ECG5000Dataset(
+            root=self.data_roots,
+            split="test",
+        )
+
+    def train_dataloader(self):
+        return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
+
+    def val_dataloader(self):
+        return self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size)
+
+    def test_dataloader(self):
+        return self._dataloader(self.test_dataset, shuffle=False, batch_size=self.test_batch_size)
 
 
 class ESRDataModule(TSPFNDataModule):
@@ -412,6 +397,7 @@ class ABIDEDataModule(TSPFNDataModule):
     def test_dataloader(self):
         # This is identical to val_dataloader for the final evaluation
         return self.val_dataloader()
+
 
 class FineTuneTUEVDataModule(TSPFNDataModule):
     """LightningDataModule for TSP datasets during finetuning.
