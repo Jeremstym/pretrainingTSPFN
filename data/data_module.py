@@ -128,7 +128,7 @@ class TSPFNDataModule(pl.LightningDataModule):
         subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
         num_workers: int = 0,
         batch_size: int = 32,
-        test_batch_size: int = 1,
+        test_batch_size: Optional[int] = None,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
@@ -201,10 +201,8 @@ class TSPFNDataModule(pl.LightningDataModule):
     #     return False
 
     def _dataloader(
-        self, dataset: Dataset, shuffle: bool, batch_size: Optional[int] = None, collate_fn=None, drop_last=False
+        self, dataset: Dataset, shuffle: bool, batch_size: int, collate_fn=None, drop_last=False
     ) -> DataLoader:
-        if batch_size is None:
-            batch_size = len(dataset)
         return DataLoader(
             dataset,
             batch_size=batch_size,
@@ -279,6 +277,8 @@ class ECG5000DataModule(TSPFNDataModule):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
 
     def val_dataloader(self):
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.val_dataset)
         loaders = {
             "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
             "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
@@ -339,6 +339,8 @@ class ESRDataModule(TSPFNDataModule):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
 
     def val_dataloader(self):
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.val_dataset)
         loaders = {
             "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
             "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
@@ -399,6 +401,8 @@ class ABIDEDataModule(TSPFNDataModule):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
 
     def val_dataloader(self):
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.val_dataset)
         loaders = {
             "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
             "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
