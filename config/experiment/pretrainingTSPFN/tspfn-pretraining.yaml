@@ -1,13 +1,6 @@
 # @package _global_
 
 defaults:
-  # - /task/time_series_tokenizer/model: transformer
-  # - /task/data/preprocessors: tabpfn-ensemble-config
-  # - /task/model/contrastive_head: mlp
-  # - /task/model/fusion_module: dafted-fusion
-  # - /task/model/fusion_module: null
-  # - /task/model/ts_encoder: time-series-pfn-encoder
-  # - /task/model/prediction_head@task.model.ordinal_head: unimodal-logits
   - /task/model/prediction_head: pfn-prediction-pretraining
   - /task/model/encoder: tspfn-encoder
   - override /task/model: null
@@ -51,15 +44,6 @@ task:
     scheduler:
       _target_: transformers.get_cosine_schedule_with_warmup
       num_warmup_steps: 1000 # Warmup should be step-based, not epoch-based
-  # optim:
-  #   optimizer:
-  #     _target_: torch.optim.AdamW
-  #     lr: 2e-5              # Lowered: 1e-4 is often too aggressive for ICL models
-  #     weight_decay: 0.05    # Increased: Helps prevent overfitting on small tabular sets
-  #     betas: [0.9, 0.98]    # Transformer standard
-  #   scheduler:
-  #     _target_: transformers.get_cosine_schedule_with_warmup
-  #     num_warmup_steps: 0.05 # Reduced warmup: You want to spend more time in the "stable" zone
 
 # Change checkpoint loading defaults to:
 ckpt: ??? # Make it mandatory to provide a checkpoint

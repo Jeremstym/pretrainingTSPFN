@@ -148,6 +148,7 @@ results_processing.ipynb
 
 # Draft
 draft*.py
+draft*.yaml
 notebook_script.ipynb
 
 # Setting for vscode
