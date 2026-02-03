@@ -254,11 +254,6 @@ class BaselineModule(TSPFNSystem):
         num_classes: int,
     ) -> Dict[str, Tensor]:
 
-        if self.prediction_heads is not None:
-            prediction_head = self.prediction_heads.get("classification", None)
-        else:
-            prediction_head = nn.Identity()
-
         time_series_input, target_labels = batch  # (N, C, T), (N,)
 
         out_features = self.encode(time_series=time_series_input)
