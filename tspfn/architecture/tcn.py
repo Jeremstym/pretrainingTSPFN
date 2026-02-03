@@ -72,9 +72,10 @@ class Small_TCN(nn.Module):
         self.init_pact_bounds(6.0)
 
     def init_pact_bounds(self, alpha_val=6.0):
-        """Initializes NEMO PACT alpha parameters to avoid zero-clipping."""
+        """Initializes NEMO PACT alpha parameters using the correct attribute names."""
         for m in self.modules():
-            if isinstance(m, nemo.quant.pact.PACT_ReLU) or isinstance(m, (nemo.quant.pact.PACT_IntegerAdd, nemo.quant.pact.PACT_Act)):
+            # In newer NEMO, PACT_ReLU is often just PACT_Act
+            if isinstance(m, (nemo.quant.pact.PACT_Act, nemo.quant.pact.PACT_IntegerAdd)):
                 if hasattr(m, 'alpha'):
                     m.alpha.data.fill_(alpha_val)
 
