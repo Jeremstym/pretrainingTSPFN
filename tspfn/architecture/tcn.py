@@ -80,7 +80,7 @@ class Small_TCN(nn.Module):
     #                 m.alpha.data.fill_(alpha_val)
 
     def __init__(self):
-        super(Small_TCN_178, self).__init__()
+        super(Small_TCN, self).__init__()
         n_inputs = 1
         Kt = 11
         pt = 0.3
