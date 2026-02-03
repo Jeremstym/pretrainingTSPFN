@@ -19,6 +19,7 @@ import datetime
 import numpy as np
 import pandas as pd
 from scipy.io import arff
+from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler
 from pathlib import Path
 import argparse
