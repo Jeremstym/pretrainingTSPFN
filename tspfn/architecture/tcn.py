@@ -143,7 +143,7 @@ class Small_TCN(nn.Module):
 
         # Last layer adjusted for sequence length 178
         # self.linear = nn.Linear(in_features = Ft * seq_length, out_features = classes, bias=False)
-        self.linear = nn.Linear(in_features = 1947, out_features = classes, bias=False)        
+        self.linear = nn.Linear(in_features = Ft, out_features = classes, bias=False)      
         self.init_pact_bounds(6.0)
 
     def init_pact_bounds(self, alpha_val=6.0):
@@ -163,7 +163,6 @@ class Small_TCN(nn.Module):
         # if x.size(-1) != 140:
         #     x = F.interpolate(x, size=140, mode='linear', align_corners=False)
 
-        print(f"Input shape: {x.shape}")  # Debug print
         # Propagation
         x = self.pad0(x)
         x = self.conv0(x)
@@ -218,6 +217,7 @@ class Small_TCN(nn.Module):
         x = self.add3(x, res)
         x = self.reluadd3(x)
         
-        x = x.flatten(1)
+        # x = x.flatten(1)
+        x = torch.mean(x, dim=2)  # Global average pooling
         o = self.linear(x)
         return o
