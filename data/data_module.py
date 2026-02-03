@@ -192,9 +192,11 @@ class ECG5000DataModule(TSPFNDataModule):
             root=self.data_roots,
             split="train",
         )
+        scaler = self.train_dataset.scaler
         self.val_dataset = ECG5000Dataset(
             root=self.data_roots,
             split="test",
+            scaler=scaler
         )
 
         return
