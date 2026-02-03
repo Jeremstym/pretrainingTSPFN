@@ -254,7 +254,7 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
             root=self.data_roots,
             split="train",
         )
-        labels = full_train_dataset.labels
+        labels = full_train_dataset.Y
         train_indices, val_indices = train_test_split(
             range(len(full_train_dataset)), test_size=0.2, stratify=labels, random_state=self.seed
         )
