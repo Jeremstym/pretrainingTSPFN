@@ -280,14 +280,14 @@ class BaselineModule(TSPFNSystem):
                 y_hat = predictions[target_task]  # (N, num_classes)
                 if y_hat.ndim == 1:
                     y_hat = y_hat.unsqueeze(dim=0)  # (N, num_classes=1)
-                target = target_labels.squeeze(dim=0)  # (N,)
+                target = target_labels  # (N,)
                 # Convert target to long if classification with >2 classes, float otherwise
                 if num_classes > 2:
                     target = target.long()
                 else:
                     target = target.float()
                     y_hat = y_hat[:, 1]  # (N,) Take positive class logits for binary classification
-                print(f"y_hat shape: {y_hat.shape}, target shape: {target}")
+                print(f"y_hat shape: {y_hat.shape}, target shape: {target.shape}")
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                     y_hat,
                     target,
