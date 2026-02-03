@@ -163,6 +163,7 @@ class Small_TCN(nn.Module):
         # if x.size(-1) != 140:
         #     x = F.interpolate(x, size=140, mode='linear', align_corners=False)
 
+        print(f"Input shape: {x.shape}")  # Debug print
         # Propagation
         x = self.pad0(x)
         x = self.conv0(x)
