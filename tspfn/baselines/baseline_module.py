@@ -255,6 +255,8 @@ class BaselineModule(TSPFNSystem):
     ) -> Dict[str, Tensor]:
 
         time_series_input, target_labels = batch  # (N, C, T), (N,)
+        if time_series_input.dim() == 1:
+            time_series_input = time_series_input.unsqueeze(dim=0)  # (1, T)
 
         out_features = self.encode(time_series=time_series_input)
         # predictions = prediction_head(out_features)  # (N, num_classes)
