@@ -4,45 +4,121 @@ import torch.nn.functional as F
 import nemo
 
 class Small_TCN(nn.Module):
+    # def __init__(self):
+    #     super(Small_TCN, self).__init__()
+    #     n_inputs = 1
+    #     Kt = 11
+    #     pt = 0.3
+    #     Ft = 11
+    #     classes = 5
+
+    #     self.pad0 = nn.ConstantPad1d(padding = (Kt-1, 0), value = 0)
+    #     self.conv0 = nn.Conv1d(in_channels = n_inputs, out_channels = n_inputs + 1, kernel_size = 11, bias=False)
+    #     self.act0 = nn.ReLU()
+    #     self.batchnorm0 = nn.BatchNorm1d(num_features = n_inputs + 1)
+
+    #     # First block
+    #     dilation = 1
+    #     self.upsample = nn.Conv1d(in_channels = n_inputs + 1, out_channels = Ft, kernel_size = 1, bias=False)
+    #     self.upsamplerelu = nn.ReLU()
+    #     self.upsamplebn = nn.BatchNorm1d(num_features = Ft)
+    #     self.pad1 = nn.ConstantPad1d(padding = ((Kt-1) * dilation, 0), value = 0)
+    #     self.conv1 = nn.Conv1d(in_channels = n_inputs + 1, out_channels = Ft, kernel_size = Kt, dilation = 1, bias=False)
+    #     self.batchnorm1 = nn.BatchNorm1d(num_features = Ft)
+    #     self.act1 = nn.ReLU()
+    #     self.dropout1 = nn.Dropout(p = pt)
+    #     self.pad2 = nn.ConstantPad1d(padding = ((Kt-1)*dilation,0), value = 0)
+    #     self.conv2 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = 1, bias=False)
+    #     self.batchnorm2 = nn.BatchNorm1d(num_features = Ft)
+    #     self.act2 = nn.ReLU()
+    #     self.dropout2 = nn.Dropout(p = pt)
+    #     self.add1 = nemo.quant.pact.PACT_IntegerAdd()
+    #     self.reluadd1 = nn.ReLU()
+        
+    #     # Second block
+    #     dilation = 2
+    #     self.pad3 = nn.ConstantPad1d(padding = ((Kt-1) * dilation, 0), value = 0)
+    #     self.conv3 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
+    #     self.batchnorm3 = nn.BatchNorm1d(num_features = Ft)
+    #     self.act3 = nn.ReLU()
+    #     self.dropout3 = nn.Dropout(p = pt)
+    #     self.pad4 = nn.ConstantPad1d(padding = ((Kt-1)*dilation,0), value = 0)
+    #     self.conv4 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
+    #     self.batchnorm4 = nn.BatchNorm1d(num_features = Ft)
+    #     self.act4 = nn.ReLU()
+    #     self.dropout4 = nn.Dropout(p = pt)
+    #     self.add2 = nemo.quant.pact.PACT_IntegerAdd()
+    #     self.reluadd2 = nn.ReLU()
+        
+    #     # Third block
+    #     dilation = 4
+    #     self.pad5 = nn.ConstantPad1d(padding = ((Kt-1) * dilation, 0), value = 0)
+    #     self.conv5 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
+    #     self.batchnorm5 = nn.BatchNorm1d(num_features = Ft)
+    #     self.act5 = nn.ReLU()
+    #     self.dropout5 = nn.Dropout(p = pt)
+    #     self.pad6 = nn.ConstantPad1d(padding = ((Kt-1)*dilation,0), value = 0)
+    #     self.conv6 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
+    #     self.batchnorm6 = nn.BatchNorm1d(num_features = Ft)
+    #     self.act6 = nn.ReLU()
+    #     self.dropout6 = nn.Dropout(p = pt)
+    #     self.add3 = nemo.quant.pact.PACT_IntegerAdd()
+    #     self.reluadd3 = nn.ReLU()
+
+    #     # Last layer
+    #     self.linear = nn.Linear(in_features = Ft*140, out_features = classes, bias=False)
+        
+    #     # --- NEW: INITIALIZE PACT BOUNDS ---
+    #     self.init_pact_bounds(6.0)
+
+    # def init_pact_bounds(self, alpha_val=6.0):
+    #     """Initializes NEMO PACT alpha parameters using the correct attribute names."""
+    #     for m in self.modules():
+    #         # In newer NEMO, PACT_ReLU is often just PACT_Act
+    #         if isinstance(m, (nemo.quant.pact.PACT_Act, nemo.quant.pact.PACT_IntegerAdd)):
+    #             if hasattr(m, 'alpha'):
+    #                 m.alpha.data.fill_(alpha_val)
+
     def __init__(self):
-        super(Small_TCN, self).__init__()
+        super(Small_TCN_178, self).__init__()
         n_inputs = 1
         Kt = 11
         pt = 0.3
         Ft = 11
         classes = 5
+        seq_length = 178  # Updated sequence length
 
         self.pad0 = nn.ConstantPad1d(padding = (Kt-1, 0), value = 0)
-        self.conv0 = nn.Conv1d(in_channels = n_inputs, out_channels = n_inputs + 1, kernel_size = 11, bias=False)
+        self.conv0 = nn.Conv1d(in_channels = n_inputs, out_channels = n_inputs + 1, kernel_size = Kt, bias=False)
         self.act0 = nn.ReLU()
         self.batchnorm0 = nn.BatchNorm1d(num_features = n_inputs + 1)
 
-        # First block
+        # Block 1: Dilation 1
         dilation = 1
         self.upsample = nn.Conv1d(in_channels = n_inputs + 1, out_channels = Ft, kernel_size = 1, bias=False)
         self.upsamplerelu = nn.ReLU()
         self.upsamplebn = nn.BatchNorm1d(num_features = Ft)
         self.pad1 = nn.ConstantPad1d(padding = ((Kt-1) * dilation, 0), value = 0)
-        self.conv1 = nn.Conv1d(in_channels = n_inputs + 1, out_channels = Ft, kernel_size = Kt, dilation = 1, bias=False)
+        self.conv1 = nn.Conv1d(in_channels = n_inputs + 1, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
         self.batchnorm1 = nn.BatchNorm1d(num_features = Ft)
         self.act1 = nn.ReLU()
         self.dropout1 = nn.Dropout(p = pt)
-        self.pad2 = nn.ConstantPad1d(padding = ((Kt-1)*dilation,0), value = 0)
-        self.conv2 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = 1, bias=False)
+        self.pad2 = nn.ConstantPad1d(padding = ((Kt-1)*dilation, 0), value = 0)
+        self.conv2 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
         self.batchnorm2 = nn.BatchNorm1d(num_features = Ft)
         self.act2 = nn.ReLU()
         self.dropout2 = nn.Dropout(p = pt)
         self.add1 = nemo.quant.pact.PACT_IntegerAdd()
         self.reluadd1 = nn.ReLU()
         
-        # Second block
+        # Block 2: Dilation 2
         dilation = 2
         self.pad3 = nn.ConstantPad1d(padding = ((Kt-1) * dilation, 0), value = 0)
         self.conv3 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
         self.batchnorm3 = nn.BatchNorm1d(num_features = Ft)
         self.act3 = nn.ReLU()
         self.dropout3 = nn.Dropout(p = pt)
-        self.pad4 = nn.ConstantPad1d(padding = ((Kt-1)*dilation,0), value = 0)
+        self.pad4 = nn.ConstantPad1d(padding = ((Kt-1)*dilation, 0), value = 0)
         self.conv4 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
         self.batchnorm4 = nn.BatchNorm1d(num_features = Ft)
         self.act4 = nn.ReLU()
@@ -50,14 +126,14 @@ class Small_TCN(nn.Module):
         self.add2 = nemo.quant.pact.PACT_IntegerAdd()
         self.reluadd2 = nn.ReLU()
         
-        # Third block
-        dilation = 4
+        # Block 3: Dilation increased to 8 to cover 178 points
+        dilation = 8 
         self.pad5 = nn.ConstantPad1d(padding = ((Kt-1) * dilation, 0), value = 0)
         self.conv5 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
         self.batchnorm5 = nn.BatchNorm1d(num_features = Ft)
         self.act5 = nn.ReLU()
         self.dropout5 = nn.Dropout(p = pt)
-        self.pad6 = nn.ConstantPad1d(padding = ((Kt-1)*dilation,0), value = 0)
+        self.pad6 = nn.ConstantPad1d(padding = ((Kt-1)*dilation, 0), value = 0)
         self.conv6 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
         self.batchnorm6 = nn.BatchNorm1d(num_features = Ft)
         self.act6 = nn.ReLU()
@@ -65,10 +141,9 @@ class Small_TCN(nn.Module):
         self.add3 = nemo.quant.pact.PACT_IntegerAdd()
         self.reluadd3 = nn.ReLU()
 
-        # Last layer
-        self.linear = nn.Linear(in_features = Ft*140, out_features = classes, bias=False)
+        # Last layer adjusted for sequence length 178
+        self.linear = nn.Linear(in_features = Ft * seq_length, out_features = classes, bias=False)
         
-        # --- NEW: INITIALIZE PACT BOUNDS ---
         self.init_pact_bounds(6.0)
 
     def init_pact_bounds(self, alpha_val=6.0):
@@ -81,12 +156,12 @@ class Small_TCN(nn.Module):
 
     def forward(self, x):
         # Ensure input is [Batch, 1, 140]
-        if x.dim() == 2:
-            x = x.unsqueeze(1)
+        # if x.dim() == 2:
+        #     x = x.unsqueeze(1)
 
-        # Better than slicing: Interpolate to preserve heartbeat shape
-        if x.size(-1) != 140:
-            x = F.interpolate(x, size=140, mode='linear', align_corners=False)
+        # # Better than slicing: Interpolate to preserve heartbeat shape
+        # if x.size(-1) != 140:
+        #     x = F.interpolate(x, size=140, mode='linear', align_corners=False)
 
         # Propagation
         x = self.pad0(x)
