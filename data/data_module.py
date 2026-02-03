@@ -325,9 +325,11 @@ class ESRDataModule(TSPFNDataModule):
             root=self.data_roots,
             split="train",
         )
+        scaler = self.train_dataset.scaler
         self.val_dataset = ESRDataset(
             root=self.data_roots,
             split="test",
+            scaler=scaler
         )
 
         return
