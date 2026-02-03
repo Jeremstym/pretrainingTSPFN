@@ -187,26 +187,70 @@ class ESRDataset(Dataset):
         return x_tensor, y_tensor
 
 
+# class ABIDEDataset(Dataset):
+#     def __init__(self, root, split: str):
+#         self.root = root
+#         self.file_path_directory = os.path.join(self.root, f"{split}_pca")
+#         self.label_file = os.path.join(self.root, "labels.csv")
+
+#         self.all_files = glob(os.path.join(self.file_path_directory, "*.npy"))
+#         print(f"Found {len(self.all_files)} files in {self.file_path_directory}")
+#         self.df_labels = pd.read_csv(self.label_file, index_col=0)
+
+#     def __len__(self):
+#         return len(self.all_files)
+
+#     def __getitem__(self, index):
+#         file_path = self.all_files[index]
+#         x_sample = np.load(file_path)
+#         file_name = Path(file_path).stem
+#         y_sample = self.df_labels.loc[int(file_name), "target"]  # Labels are already zero-based indexed
+
+#         x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
+#         y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+        
+#         return x_tensor, y_tensor
+
 class ABIDEDataset(Dataset):
     def __init__(self, root, split: str):
         self.root = root
-        self.file_path_directory = os.path.join(self.root, f"{split}_pca")
+        self.split = split
+        self.file_dir = os.path.join(self.root, f"{split}_pca")
         self.label_file = os.path.join(self.root, "labels.csv")
-
-        self.all_files = glob(os.path.join(self.file_path_directory, "*.npy"))
-        print(f"Found {len(self.all_files)} files in {self.file_path_directory}")
+        
+        self.all_files = sorted(glob(os.path.join(self.file_dir, "*.npy")))
         self.df_labels = pd.read_csv(self.label_file, index_col=0)
+        
+        # Lists to hold the actual data
+        self.data = []
+        self.labels = []
+        self.ids = []
+
+        self._load_data()
+
+    def _load_data(self):
+        print(f"--- Loading {self.split} set into RAM ---")
+        # tqdm gives you the progress bar you requested
+        for f_path in tqdm(self.all_files, desc=f"Loading {self.split}"):
+            file_name = Path(f_path).stem
+            sub_id = int(file_name)
+            
+            # Load and convert
+            x_sample = np.load(f_path)
+            y_sample = self.df_labels.loc[sub_id, "target"]
+            
+            self.data.append(x_sample)
+            self.labels.append(y_sample)
+            self.ids.append(sub_id)
+
+        # Convert list of arrays into a single float32 tensor
+        # Shape: (N, Time, PCA_Components)
+        self.data = torch.from_numpy(np.array(self.data)).float()
+        self.labels = torch.tensor(self.labels, dtype=torch.long)
 
     def __len__(self):
-        return len(self.all_files)
+        return len(self.data)
 
     def __getitem__(self, index):
-        file_path = self.all_files[index]
-        x_sample = np.load(file_path)
-        file_name = Path(file_path).stem
-        y_sample = self.df_labels.loc[int(file_name), "target"]  # Labels are already zero-based indexed
-
-        x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
-        y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
-        
-        return x_tensor, y_tensor
+        # O(1) complexity since data is already in memory as a tensor
+        return self.data[index], self.labels[index]
