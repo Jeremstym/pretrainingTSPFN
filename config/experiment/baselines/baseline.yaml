@@ -20,8 +20,8 @@ output_dir: ${sys.getcwd:}
 updated_pfn_path: null
 
 data:
-  batch_size: 64
-  test_batch_size: 34 # Defaults to all data in one batch
+  batch_size: 20
+  test_batch_size: 1 # Defaults to all data in one batch
   num_workers: 4 # try 4, 8, 16 depending on the system capabilities
 
 task:
@@ -38,12 +38,14 @@ task:
   seed : ${seed}
   optim:
     optimizer:
-      _target_: torch.optim.AdamW
-      lr: 1e-4
-      weight_decay: 1e-5
-    scheduler:
-      _target_: transformers.get_linear_schedule_with_warmup
-      num_warmup_steps: 0.1
+      _target_: torch.optim.Adam
+      lr: 0.0025
+    #   _target_: torch.optim.AdamW
+    #   lr: 1e-4
+    #   weight_decay: 1e-5
+    # scheduler:
+    #   _target_: transformers.get_linear_schedule_with_warmup
+    #   num_warmup_steps: 0.1
 
 
 # Change checkpoint loading defaults to:
