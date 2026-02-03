@@ -125,13 +125,17 @@ class ECG5000Dataset(Dataset):
 
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
+        self.scaler = None
 
         if split == "train":
             scaler = StandardScaler()
             self.X = scaler.fit_transform(self.X)
             self.scaler = scaler
         else:
-            self.X = self.scaler.transform(self.X)
+            if self.scaler is not None:
+                self.X = self.scaler.transform(self.X)
+            else:
+                continue  # No scaling applied if scaler is not set
 
     def __len__(self):
         return len(self.data)
