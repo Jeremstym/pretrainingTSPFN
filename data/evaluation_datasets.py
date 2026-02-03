@@ -135,6 +135,9 @@ class ECG5000Dataset(Dataset):
                 raise ValueError("A fitted scaler must be provided for the test/val split!")
             self.scaler = scaler
             self.X = self.scaler.transform(self.X)
+        
+        print(f"ECG5000Dataset {split} set: X shape {self.X.shape}, Y shape {self.Y.shape}")
+        print(f"X is {self.X[:5,:]}")
 
     def __len__(self):
         return len(self.data)
