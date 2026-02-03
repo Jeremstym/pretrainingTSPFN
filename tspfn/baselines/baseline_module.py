@@ -281,6 +281,8 @@ class BaselineModule(TSPFNSystem):
                 if y_hat.ndim == 1:
                     y_hat = y_hat.unsqueeze(dim=0)  # (N, num_classes=1)
                 target = target_labels  # (N,)
+                if target.dim() == 0:
+                    target = target.unsqueeze(0)  # (1,)
                 # Convert target to long if classification with >2 classes, float otherwise
                 if num_classes > 2:
                     target = target.long()
