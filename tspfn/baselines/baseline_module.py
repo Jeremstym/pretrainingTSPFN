@@ -287,7 +287,7 @@ class BaselineModule(TSPFNSystem):
                 else:
                     target = target.float()
                     y_hat = y_hat[:, 1]  # (N,) Take positive class logits for binary classification
-                print(f"y_hat shape: {y_hat.shape}, target shape: {target.shape}")
+                print(f"y_hat shape: {y_hat.shape}, target shape: {target}")
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                     y_hat,
                     target,
