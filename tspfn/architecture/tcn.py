@@ -88,6 +88,9 @@ class Small_TCN(nn.Module):
         self.linear = nn.Linear(in_features = Ft*140, out_features = classes, bias=False)
         
     def forward(self, x):
+        if x.dim() == 2:
+            x = x.unsqueeze(1)  # (N, 1, T)
+
         #Now we propagate through the network correctly
         x = self.pad0(x)
         x = self.conv0(x)
