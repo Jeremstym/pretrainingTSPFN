@@ -164,15 +164,15 @@ class ESRDataset(Dataset):
         self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
         self.scaler = None
 
-        if split == "train":
-            self.scaler = StandardScaler()
-            self.X = self.scaler.fit_transform(self.X)
-        else:
-            # Use the passed scaler, or handle the case where it's missing
-            if scaler is None:
-                raise ValueError("A fitted scaler must be provided for the test/val split!")
-            self.scaler = scaler
-            self.X = self.scaler.transform(self.X)
+        # if split == "train":
+        #     self.scaler = StandardScaler()
+        #     self.X = self.scaler.fit_transform(self.X)
+        # else:
+        #     # Use the passed scaler, or handle the case where it's missing
+        #     if scaler is None:
+        #         raise ValueError("A fitted scaler must be provided for the test/val split!")
+        #     self.scaler = scaler
+        #     self.X = self.scaler.transform(self.X)
 
     def __len__(self):
         return len(self.data)
