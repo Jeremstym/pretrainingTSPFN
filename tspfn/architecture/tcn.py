@@ -142,8 +142,8 @@ class Small_TCN(nn.Module):
         self.reluadd3 = nn.ReLU()
 
         # Last layer adjusted for sequence length 178
-        self.linear = nn.Linear(in_features = Ft * seq_length, out_features = classes, bias=False)
-        
+        # self.linear = nn.Linear(in_features = Ft * seq_length, out_features = classes, bias=False)
+        self.linear = nn.Linear(in_features = 1947, out_features = classes, bias=False)        
         self.init_pact_bounds(6.0)
 
     def init_pact_bounds(self, alpha_val=6.0):
