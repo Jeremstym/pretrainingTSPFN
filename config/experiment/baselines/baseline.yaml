@@ -1,9 +1,9 @@
 # @package _global_
 
 defaults:
-  - /task/model/prediction_head: null
   - /task/model/encoder: tcn
   - override /task/model: null
+  - override /task/model/prediction_head: null
   - override /task/optim: adamw
   - override /data: finetuning-ecg5000
 
