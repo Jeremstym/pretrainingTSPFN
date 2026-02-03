@@ -1,21 +1,3 @@
-#*----------------------------------------------------------------------------*
-#* Copyright (C) 2021 ETH Zurich, Switzerland                                 *
-#* SPDX-License-Identifier: Apache-2.0                                        *
-#*                                                                            *
-#* Licensed under the Apache License, Version 2.0 (the "License");            *
-#* you may not use this file except in compliance with the License.           *
-#* You may obtain a copy of the License at                                    *
-#*                                                                            *
-#* http://www.apache.org/licenses/LICENSE-2.0                                 *
-#*                                                                            *
-#* Unless required by applicable law or agreed to in writing, software        *
-#* distributed under the License is distributed on an "AS IS" BASIS,          *
-#* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
-#* See the License for the specific language governing permissions and        *
-#* limitations under the License.                                             *
-#*                                                                            *
-#* Author:  Thorir Mar Ingolfsson                                             *
-#*----------------------------------------------------------------------------*
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -25,7 +7,6 @@ class Small_TCN(nn.Module):
     def __init__(self):
         super(Small_TCN, self).__init__()
         n_inputs = 1
-        #Hyperparameters for TCN
         Kt = 11
         pt = 0.3
         Ft = 11
@@ -36,7 +17,7 @@ class Small_TCN(nn.Module):
         self.act0 = nn.ReLU()
         self.batchnorm0 = nn.BatchNorm1d(num_features = n_inputs + 1)
 
-        #First block
+        # First block
         dilation = 1
         self.upsample = nn.Conv1d(in_channels = n_inputs + 1, out_channels = Ft, kernel_size = 1, bias=False)
         self.upsamplerelu = nn.ReLU()
@@ -54,7 +35,7 @@ class Small_TCN(nn.Module):
         self.add1 = nemo.quant.pact.PACT_IntegerAdd()
         self.reluadd1 = nn.ReLU()
         
-        #Second block
+        # Second block
         dilation = 2
         self.pad3 = nn.ConstantPad1d(padding = ((Kt-1) * dilation, 0), value = 0)
         self.conv3 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
@@ -69,7 +50,7 @@ class Small_TCN(nn.Module):
         self.add2 = nemo.quant.pact.PACT_IntegerAdd()
         self.reluadd2 = nn.ReLU()
         
-        #Third block
+        # Third block
         dilation = 4
         self.pad5 = nn.ConstantPad1d(padding = ((Kt-1) * dilation, 0), value = 0)
         self.conv5 = nn.Conv1d(in_channels = Ft, out_channels = Ft, kernel_size = Kt, dilation = dilation, bias=False)
@@ -84,22 +65,36 @@ class Small_TCN(nn.Module):
         self.add3 = nemo.quant.pact.PACT_IntegerAdd()
         self.reluadd3 = nn.ReLU()
 
-        #Last layer
+        # Last layer
         self.linear = nn.Linear(in_features = Ft*140, out_features = classes, bias=False)
         
-    def forward(self, x):
-        if x.dim() == 2:
-            x = x.unsqueeze(1)  # (N, 1, T)
+        # --- NEW: INITIALIZE PACT BOUNDS ---
+        self.init_pact_bounds(6.0)
 
-        #Now we propagate through the network correctly
+    def init_pact_bounds(self, alpha_val=6.0):
+        """Initializes NEMO PACT alpha parameters to avoid zero-clipping."""
+        for m in self.modules():
+            if isinstance(m, nemo.quant.pact.PACT_ReLU) or isinstance(m, (nemo.quant.pact.PACT_IntegerAdd, nemo.quant.pact.PACT_Act)):
+                if hasattr(m, 'alpha'):
+                    m.alpha.data.fill_(alpha_val)
+
+    def forward(self, x):
+        # Ensure input is [Batch, 1, 140]
+        if x.dim() == 2:
+            x = x.unsqueeze(1)
+
+        # Better than slicing: Interpolate to preserve heartbeat shape
+        if x.size(-1) != 140:
+            x = F.interpolate(x, size=140, mode='linear', align_corners=False)
+
+        # Propagation
         x = self.pad0(x)
         x = self.conv0(x)
         x = self.batchnorm0(x)
         x = self.act0(x)
         
-        
-        #TCN
-        #First block
+        # TCN Blocks
+        # Block 1
         res = self.pad1(x)
         res = self.conv1(res)
         res = self.batchnorm1(res)
@@ -115,15 +110,11 @@ class Small_TCN(nn.Module):
         x = self.upsamplebn(x)
         x = self.upsamplerelu(x)
         
-        
-        
-        
         x = self.add1(x, res)
         x = self.reluadd1(x)
         
-        #Second block
+        # Block 2
         res = self.pad3(x)
-        #res = self.pad3(res)
         res = self.conv3(res)
         res = self.batchnorm3(res)
         res = self.act3(res)
@@ -136,9 +127,8 @@ class Small_TCN(nn.Module):
         x = self.add2(x, res)
         x = self.reluadd2(x)
         
-        #Second block
+        # Block 3
         res = self.pad5(x)
-        #res = self.pad5(res)
         res = self.conv5(res)
         res = self.batchnorm5(res)
         res = self.act5(res)
@@ -151,9 +141,6 @@ class Small_TCN(nn.Module):
         x = self.add3(x, res)
         x = self.reluadd3(x)
         
-        
-        #Linear layer to classify
         x = x.flatten(1)
         o = self.linear(x)
-        # return F.log_softmax(o, dim=1)
         return o

@@ -18,7 +18,8 @@ from collections import defaultdict, deque
 import datetime
 import numpy as np
 import pandas as pd
-
+from scipy.io import arff
+from sklearn.preprocessing import StandardScaler
 from pathlib import Path
 import argparse
 
@@ -124,6 +125,13 @@ class ECG5000Dataset(Dataset):
 
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
+
+        if split == "train":
+            scaler = StandardScaler()
+            self.X = scaler.fit_transform(self.X)
+            self.scaler = scaler
+        else:
+            self.X = self.scaler.transform(self.X)
 
     def __len__(self):
         return len(self.data)
