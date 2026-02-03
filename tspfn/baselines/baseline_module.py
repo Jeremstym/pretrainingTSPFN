@@ -262,7 +262,11 @@ class BaselineModule(TSPFNSystem):
         time_series_input, target_labels = batch  # (N, C, T), (N,)
 
         out_features = self.encode(time_series=time_series_input)
-        predictions = prediction_head(out_features)  # (N, num_classes)
+        # predictions = prediction_head(out_features)  # (N, num_classes)
+        predictions = {}
+        for target_task, prediction_head in self.prediction_heads.items():
+            pred = prediction_head(out_features)
+            predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
@@ -276,26 +280,27 @@ class BaselineModule(TSPFNSystem):
 
         for target_task, target_loss in self.predict_losses.items():
             if target_task == "classification":
-                if predictions.ndim == 1:
-                    predictions = predictions.unsqueeze(dim=0)  # (N, num_classes=1)
+                y_hat = predictions[target_task]  # (N, num_classes)
+                if y_hat.ndim == 1:
+                    y_hat = y_hat.unsqueeze(dim=0)  # (N, num_classes=1)
                 target = target_labels.squeeze(dim=0)  # (N,)
                 # Convert target to long if classification with >2 classes, float otherwise
                 if num_classes > 2:
                     target = target.long()
                 else:
                     target = target.float()
-                    predictions = predictions[:, 1]  # (N,) Take positive class logits for binary classification
+                    y_hat = y_hat[:, 1]  # (N,) Take positive class logits for binary classification
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
-                    predictions,
+                    y_hat,
                     target,
                 )
 
                 # Metrics are automatically updated inside the Metric objects
                 if num_classes > 2:
-                    self.metrics[stage][target_task].update(predictions, target)
+                    self.metrics[stage][target_task].update(y_hat, target)
                 else:
                     target = target.long()
-                    self.metrics_binary[stage][target_task].update(predictions, target)
+                    self.metrics_binary[stage][target_task].update(y_hat, target)
             else:
                 raise ValueError(f"Unknown target task '{target_task}' for prediction.")
 
