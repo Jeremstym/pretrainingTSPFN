@@ -254,17 +254,26 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
             root=self.data_roots,
             split="train",
         )
+        
+        train_scaler = full_train_dataset.scaler
+
+        self.test_dataset = ECG5000Dataset(
+            root=self.data_roots,
+            split="test",
+            scaler=train_scaler
+        )
+
+        # Handle Subsets
         labels = full_train_dataset.Y
         train_indices, val_indices = train_test_split(
-            range(len(full_train_dataset)), test_size=0.2, stratify=labels, random_state=self.seed
+            range(len(full_train_dataset)), 
+            test_size=0.2, 
+            stratify=labels, 
+            random_state=self.seed
         )
 
         self.train_dataset = Subset(full_train_dataset, train_indices)
         self.val_dataset = Subset(full_train_dataset, val_indices)
-        self.test_dataset = ECG5000Dataset(
-            root=self.data_roots,
-            split="test",
-        )
 
     def train_dataloader(self):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)

@@ -116,7 +116,7 @@ class FilteredTUEVDataset(Dataset):
 
 
 class ECG5000Dataset(Dataset):
-    def __init__(self, root, split: str):
+    def __init__(self, root, split: str, scaler=None): # Added scaler argument
         self.root = root
         self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
 
@@ -124,18 +124,17 @@ class ECG5000Dataset(Dataset):
         self.data = df.values
 
         self.X = self.data[:, :-1]
-        self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
-        self.scaler = None
+        self.Y = self.data[:, -1].astype(int) - 1
 
         if split == "train":
-            scaler = StandardScaler()
-            self.X = scaler.fit_transform(self.X)
-            self.scaler = scaler
+            self.scaler = StandardScaler()
+            self.X = self.scaler.fit_transform(self.X)
         else:
-            if self.scaler is not None:
-                self.X = self.scaler.transform(self.X)
-            else:
-                continue  # No scaling applied if scaler is not set
+            # Use the passed scaler, or handle the case where it's missing
+            if scaler is None:
+                raise ValueError("A fitted scaler must be provided for the test/val split!")
+            self.scaler = scaler
+            self.X = self.scaler.transform(self.X)
 
     def __len__(self):
         return len(self.data)
