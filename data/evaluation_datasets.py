@@ -126,6 +126,8 @@ class ECG5000Dataset(Dataset):
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1
 
+        self.scaler = None
+
         # if split == "train":
         #     self.scaler = StandardScaler()
         #     self.X = self.scaler.fit_transform(self.X)
