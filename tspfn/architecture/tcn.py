@@ -16,38 +16,6 @@
 #*                                                                            *
 #* Author:  Thorir Mar Ingolfsson                                             *
 #*----------------------------------------------------------------------------*
-# import torch
-# import torch.nn as nn
-
-# # Fake NEMO classes to keep the code running without the library
-# class FakePACTAdd(nn.Module):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__()
-#     def forward(self, x, y):
-#         return x + y
-
-# class FakePACTConv2d(nn.Conv2d):
-#     def __init__(self, *args, **kwargs):
-#         # Filter out Nemo-specific args like 'quantize' or 'precision'
-#         valid_kwargs = {k: v for k, v in kwargs.items() if k in 
-#                         ['stride', 'padding', 'dilation', 'groups', 'bias', 'padding_mode']}
-#         super().__init__(*args, **valid_kwargs)
-
-# # Point your code to these substitutes
-# import sys
-# from types import ModuleType
-
-# # We create a "dummy" nemo module in memory
-# mock_nemo = ModuleType("nemo")
-# mock_nemo.quant = ModuleType("quant")
-# mock_nemo.quant.pact = ModuleType("pact")
-# mock_nemo.quant.pact.PACT_IntegerAdd = FakePACTAdd
-# mock_nemo.quant.pact.PACT_Conv2d = FakePACTConv2d
-
-# sys.modules["nemo"] = mock_nemo
-# sys.modules["nemo.quant"] = mock_nemo.quant
-# sys.modules["nemo.quant.pact"] = mock_nemo.quant.pact
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -186,11 +154,3 @@ class Small_TCN(nn.Module):
         o = self.linear(x)
         # return F.log_softmax(o, dim=1)
         return o
-
-# class TCN_Baseline(nemo.backends.pytorch.nm.NeuralModule):
-#     def __init__(self):
-#         super().__init__()
-#         self.tcn = Small_TCN()
-        
-#     def forward(self, x):
-#         return self.tcn(x)
