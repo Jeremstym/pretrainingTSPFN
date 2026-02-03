@@ -156,8 +156,8 @@ class Small_TCN(nn.Module):
 
     def forward(self, x):
         # Ensure input is [Batch, 1, 140]
-        # if x.dim() == 2:
-        #     x = x.unsqueeze(1)
+        if x.dim() == 2:
+            x = x.unsqueeze(1)
 
         # # Better than slicing: Interpolate to preserve heartbeat shape
         # if x.size(-1) != 140:
