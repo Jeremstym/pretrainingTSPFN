@@ -9,6 +9,8 @@ import pickle
 
 from multiprocessing import Pool
 import numpy as np
+import scipy.signal as sgn
+import torch.nn.functional as F
 import mne
 
 
@@ -17,6 +19,8 @@ drop_channels = ['PHOTIC-REF', 'IBI', 'BURSTS', 'SUPPR', 'EEG ROC-REF', 'EEG LOC
 drop_channels.extend([f'EEG {i}-REF' for i in range(20, 129)])
 chOrder_standard = ['EEG FP1-REF', 'EEG FP2-REF', 'EEG F3-REF', 'EEG F4-REF', 'EEG C3-REF', 'EEG C4-REF', 'EEG P3-REF', 'EEG P4-REF', 'EEG O1-REF', 'EEG O2-REF', 'EEG F7-REF', \
                     'EEG F8-REF', 'EEG T3-REF', 'EEG T4-REF', 'EEG T5-REF', 'EEG T6-REF', 'EEG A1-REF', 'EEG A2-REF', 'EEG FZ-REF', 'EEG CZ-REF', 'EEG PZ-REF', 'EEG T1-REF', 'EEG T2-REF']
+
+relevant_channels = ['EEG O1-REF', 'EEG T5-REF']
 
 standard_channels = [
     "EEG FP1-REF",
@@ -42,8 +46,49 @@ standard_channels = [
 ]
 
 
+# def split_and_dump(params):
+#     fetch_folder, sub, dump_folder, label = params
+#     for file in os.listdir(fetch_folder):
+#         if sub in file:
+#             print("process", file)
+#             file_path = os.path.join(fetch_folder, file)
+#             raw = mne.io.read_raw_edf(file_path, preload=True)
+#             try:
+#                 if drop_channels is not None:
+#                     useless_chs = []
+#                     for ch in drop_channels:
+#                         if ch in raw.ch_names:
+#                             useless_chs.append(ch)
+#                     raw.drop_channels(useless_chs)
+#                 if chOrder_standard is not None and len(chOrder_standard) == len(raw.ch_names):
+#                     raw.reorder_channels(chOrder_standard)
+#                 if raw.ch_names != chOrder_standard:
+#                     raise Exception("channel order is wrong!")
+
+#                 raw.filter(l_freq=0.1, h_freq=75.0)
+#                 raw.notch_filter(50.0)
+#                 raw.resample(200, n_jobs=5)
+
+#                 ch_name = raw.ch_names
+#                 raw_data = raw.get_data(units='uV')
+#                 channeled_data = raw_data.copy()
+#             except:
+#                 with open("tuab-process-error-files.txt", "a") as f:
+#                     f.write(file + "\n")
+#                 continue
+#             for i in range(channeled_data.shape[1] // 2000):
+#                 dump_path = os.path.join(
+#                     dump_folder, file.split(".")[0] + "_" + str(i) + ".pkl"
+#                 )
+#                 pickle.dump(
+#                     {"X": channeled_data[:, i * 2000 : (i + 1) * 2000], "y": label},
+#                     open(dump_path, "wb"),
+#                 )
+
 def split_and_dump(params):
+
     fetch_folder, sub, dump_folder, label = params
+    nb_loaded_files = 0
     for file in os.listdir(fetch_folder):
         if sub in file:
             print("process", file)
@@ -56,10 +101,11 @@ def split_and_dump(params):
                         if ch in raw.ch_names:
                             useless_chs.append(ch)
                     raw.drop_channels(useless_chs)
-                if chOrder_standard is not None and len(chOrder_standard) == len(raw.ch_names):
-                    raw.reorder_channels(chOrder_standard)
-                if raw.ch_names != chOrder_standard:
-                    raise Exception("channel order is wrong!")
+                for ch in raw.ch_names:
+                    if ch not in relevant_channels:
+                        raw.drop_channels(ch)                
+
+                print(f"Keeping channels: {raw.ch_names}")
 
                 raw.filter(l_freq=0.1, h_freq=75.0)
                 raw.notch_filter(50.0)
@@ -72,14 +118,54 @@ def split_and_dump(params):
                 with open("tuab-process-error-files.txt", "a") as f:
                     f.write(file + "\n")
                 continue
-            for i in range(channeled_data.shape[1] // 2000):
-                dump_path = os.path.join(
-                    dump_folder, file.split(".")[0] + "_" + str(i) + ".pkl"
-                )
-                pickle.dump(
-                    {"X": channeled_data[:, i * 2000 : (i + 1) * 2000], "y": label},
-                    open(dump_path, "wb"),
-                )
+
+            FS = 200
+            WINDOW_SIZE = 400  # 2 seconds
+            LOW_VAR_LIMIT = 5.0   # Reject windows that are too "quiet"
+            HIGH_VAR_LIMIT = 800.0 # Reject massive artifacts (clipping/physical movement)
+
+            # 1. Skip first 60 seconds (noise)
+            start_idx = 60 * FS
+            
+            for i in range(start_idx, channeled_data.shape[1] - WINDOW_SIZE, WINDOW_SIZE):
+                signal_data = channeled_data[:, i : i + WINDOW_SIZE] # Shape: (23, 400)
+                
+                # 2. Calculate Variance across the time dimension (axis 1)
+                # We take the mean variance across all channels
+                win_variance = np.mean(np.var(signal_data, axis=1))
+
+                # 3. Decision Logic
+                if label == 1: # For Abnormal files
+                    if win_variance < LOW_VAR_LIMIT:
+                        continue # Skip this window; it's likely just normal background
+                
+                # Always reject technical artifacts
+                if win_variance > HIGH_VAR_LIMIT:
+                    continue
+
+                # 4. Decimate and Save
+                decimate_data = sgn.decimate(signal_data, 2, axis=1)
+                
+                dump_path = os.path.join(dump_folder, f"{file.split('.')[0]}_{i}.pkl")
+                pickle.dump({"X": decimate_data, "y": label}, open(dump_path, "wb"))
+                nb_loaded_files += 1
+                if nb_loaded_files > 80:
+                    print(f"Reached 80 files for subject {sub}, moving to next subject.")
+                    break
+
+            # for i in range(channeled_data.shape[1] // 400):
+            #     dump_path = os.path.join(
+            #         dump_folder, file.split(".")[0] + "_" + str(i) + ".pkl"
+            #     )
+
+            #     signal_data = channeled_data[:, i * 400 : (i + 1) * 400]
+            #     decimate_data = sgn.decimate(signal_data, 2, axis=1) # Shape: (num_channels, 200)
+
+            #     pickle.dump(
+            #         {"X": decimate_data, "y": label},
+            #         open(dump_path, "wb"),
+            #     )
+                
 
 # def split_and_dump(params):
 #     fetch_folder, sub, dump_folder, label = params
@@ -173,35 +259,59 @@ if __name__ == "__main__":
     test_n_sub = list(set([item.split("_")[0] for item in os.listdir(test_normal)]))
 
     # create the train, val, test sample folder
-    if not os.path.exists(os.path.join(root, "processed")):
-        os.makedirs(os.path.join(root, "processed"))
+    if not os.path.exists(os.path.join(root, "twochannels")):
+        os.makedirs(os.path.join(root, "twochannels"))
 
-    if not os.path.exists(os.path.join(root, "processed", "train")):
-        os.makedirs(os.path.join(root, "processed", "train"))
-    train_dump_folder = os.path.join(root, "processed", "train")
+    if not os.path.exists(os.path.join(root, "twochannels", "train")):
+        os.makedirs(os.path.join(root, "twochannels", "train"))
+    train_dump_folder = os.path.join(root, "twochannels", "train")
 
-    if not os.path.exists(os.path.join(root, "processed", "val")):
-        os.makedirs(os.path.join(root, "processed", "val"))
-    val_dump_folder = os.path.join(root, "processed", "val")
+    if not os.path.exists(os.path.join(root, "twochannels", "val")):
+        os.makedirs(os.path.join(root, "twochannels", "val"))
+    val_dump_folder = os.path.join(root, "twochannels", "val")
 
-    if not os.path.exists(os.path.join(root, "processed", "test")):
-        os.makedirs(os.path.join(root, "processed", "test"))
-    test_dump_folder = os.path.join(root, "processed", "test")
+    if not os.path.exists(os.path.join(root, "twochannels", "test")):
+        os.makedirs(os.path.join(root, "twochannels", "test"))
+    test_dump_folder = os.path.join(root, "twochannels", "test")
 
     # fetch_folder, sub, dump_folder, labels
     parameters = []
+    counter = 0
     for train_sub in train_a_sub:
         parameters.append([train_val_abnormal, train_sub, train_dump_folder, 1])
+        counter += 1
+        if counter >= 200:  # Limit to 200 subjects for abnormal class in training
+            break
+    counter = 0
     for train_sub in train_n_sub:
         parameters.append([train_val_normal, train_sub, train_dump_folder, 0])
+        counter += 1
+        if counter >= 200:  # Limit to 200 subjects for normal class in training
+            break
+    counter = 0
     for val_sub in val_a_sub:
         parameters.append([train_val_abnormal, val_sub, val_dump_folder, 1])
+        counter += 1
+        if counter >= 50:  # Limit to 50 subjects for abnormal class in validation
+            break
+    counter = 0
     for val_sub in val_n_sub:
         parameters.append([train_val_normal, val_sub, val_dump_folder, 0])
+        counter += 1
+        if counter >= 50:  # Limit to 50 subjects for normal class in validation
+            break
+    counter = 0
     for test_sub in test_a_sub:
         parameters.append([test_abnormal, test_sub, test_dump_folder, 1])
+        counter += 1
+        if counter >= 50:  # Limit to 50 subjects for abnormal class in testing
+            break
+    counter = 0
     for test_sub in test_n_sub:
         parameters.append([test_normal, test_sub, test_dump_folder, 0])
+        counter += 1
+        if counter >= 50:  # Limit to 50 subjects for normal class in testing
+            break
 
     # split and dump in parallel
     with Pool(processes=24) as pool:
