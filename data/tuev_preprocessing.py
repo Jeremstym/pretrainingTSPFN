@@ -7,6 +7,7 @@
 import mne
 import numpy as np
 import pandas as pd
+import scipy.signal as sgn
 import os
 import pickle
 from tqdm import tqdm
@@ -98,65 +99,76 @@ def convert_signals(signals, Rawdata):
             (signals[signal_names["EEG FP2-REF"]] - signals[signal_names["EEG F4-REF"]]),  # 18
             (signals[signal_names["EEG F4-REF"]] - signals[signal_names["EEG C4-REF"]]),  # 19
             (signals[signal_names["EEG C4-REF"]] - signals[signal_names["EEG P4-REF"]]),  # 20
-            (signals[signal_names["EEG P4-REF"]] - signals[signal_names["EEG O2-REF"]]),
+            (signals[signal_names["EEG P4-REF"]] - signals[signal_names["EEG O2-REF"]]),  # 21
         )
-    )  # 21
+    )
 
     keep_channels = [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21]
     return new_signals, keep_channels
 
 
 def BuildEvents(signals, times, EventData, keep_channels):
-    fs = 100.0
-    # Your window is 2s total: 0.5s pre + 1s event + 0.5s post
-    window_samples = int(fs * 2)
-    pad_width = int(fs * 1)
+    fs = 200.0
+    # To get exactly 400 points at 200Hz, we need a 2.0s window
+    target_pre_resample_points = 400 
+    window_samples = target_pre_resample_points 
+    pad_width = int(fs * 2) # Increased padding to be safe for 2s windows
 
-    # 1. Filter channels
     mask = np.isin(EventData[:, 0], keep_channels)
     df = pd.DataFrame(EventData[mask], columns=["chan", "start", "end", "label_id"])
 
-    # 2. GROUPING: Instead of dropping, group by the unique time window
-    # This finds all channels associated with the exact same (start, end, label)
+    # Grouping to keep multi-channel context unique to the time window
     grouped = df.groupby(["start", "end", "label_id"])["chan"].apply(list).reset_index()
 
-    numEvents = len(grouped)
-    numChan = len(keep_channels)
-
-    # Pre-pad the signals
+    # Pre-pad the signals (16, length)
     signals_padded = np.pad(signals, ((0, 0), (pad_width, pad_width)), mode="edge")
 
-    # This will hold your final multi-channel "Stacked" samples
-    final_features = []  # List of [16, 200] arrays
+    all_segments = [] 
     final_labels = []
-    final_masks = []  # Optional: which channels actually showed the event
+
+    # Map original channel IDs to 0-15 indices for indexing 'segment'
+    chan_map = {orig: i for i, orig in enumerate(keep_channels)}
 
     for _, row in grouped.iterrows():
         t_start, t_end, label = row["start"], row["end"], row["label_id"]
-        chans_present = row["chan"]  # List of original channel IDs for this event
+        chans_present = row["chan"] 
 
         idx_start = np.searchsorted(times, t_start)
-        idx_end = np.searchsorted(times, t_end)
-
-        # 0.5s pre + 1s event + 0.5s post = 2s total
+        
+        # Centering the 2s window: 0.5s before the 'start' marker
+        # This gives you 400 points total
         start_slice = pad_width + idx_start - int(0.5 * fs)
         end_slice = start_slice + window_samples
 
-        # Extract the segment for ALL 16 channels
+        # 1. Extract the segment for ALL 16 channels first -> Shape (16, 400)
         segment = signals_padded[:, start_slice:end_slice]
+        
+        if segment.shape[1] < target_pre_resample_points:
+            continue # Skip if window goes out of bounds
 
-        # Create a spatial mask (1 if channel was labeled "offending", 0 otherwise)
-        # This helps the model know WHICH channels in the 16 were labeled
-        spatial_mask = np.zeros(numChan)
-        chan_map = {orig: i for i, orig in enumerate(keep_channels)}
-        for c in chans_present:
-            spatial_mask[chan_map[c]] = 1
+        # 2. Select 2 channels (as per your logic)
+        if len(chans_present) >= 2:
+            # Pick two from the offending channels
+            chosen_chans_orig = np.random.choice(chans_present, size=2, replace=False)
+        else:
+            # If only 1 offending channel, pick it and a helper channel
+            primary = chans_present[0]
+            helper = keep_channels[1] if primary == keep_channels[0] else keep_channels[0]
+            chosen_chans_orig = [primary, helper]
 
-        final_features.append(segment)
+        # Convert original IDs to 0-15 indices
+        indices = [chan_map[c] for c in chosen_chans_orig]
+        
+        # 3. Reduce to (2, 400)
+        reduced_segment = segment[indices, :] 
+
+        # 4. Resample from 400 points to 248 points -> Shape (2, 248)
+        resampled_segment = sgn.resample(reduced_segment, 248, axis=1)
+
+        all_segments.append(resampled_segment)
         final_labels.append(label)
-        final_masks.append(spatial_mask)
 
-    return np.array(final_features), np.array(final_labels), np.array(final_masks)
+    return np.array(all_segments), np.array(final_labels)
 
 
 def readEDF(fileName):
@@ -174,11 +186,11 @@ def readEDF(fileName):
 
     Rawdata.filter(l_freq=0.1, h_freq=75.0)
     Rawdata.notch_filter(50.0)
-    Rawdata.resample(100, n_jobs=5)
+    Rawdata.resample(200, n_jobs=5)
 
     _, times = Rawdata[:]
     signals = Rawdata.get_data(units="uV")
-    signals /= 100.0  # Normalize to 0.1mV units
+    # signals /= 100.0  # Normalize to 0.1mV units
     RecFile = fileName[0:-3] + "rec"
     eventData = np.genfromtxt(RecFile, delimiter=",")
     Rawdata.close()
@@ -204,7 +216,6 @@ def load_up_objects(BaseDir, OutDir):
                     sample = {
                         "signal": signal,
                         "label": label,
-                        "mask": mask,
                     }
                     save_pickle(
                         sample,
@@ -225,9 +236,9 @@ if __name__ == "__main__":
     TUEV dataset is downloaded from https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml
     """
 
-    root = "/data/stympopper/FilteredTUEV"
-    train_out_dir = os.path.join(root, "processed_train")
-    eval_out_dir = os.path.join(root, "processed_eval")
+    root = "/data/stympopper/TUEV/edf"
+    train_out_dir = os.path.join(root, "twochannels", "processed_train")
+    eval_out_dir = os.path.join(root, "twochannels", "processed_eval")
     if not os.path.exists(train_out_dir):
         os.makedirs(train_out_dir)
     if not os.path.exists(eval_out_dir):
@@ -240,31 +251,40 @@ if __name__ == "__main__":
     load_up_objects(BaseDirEval, eval_out_dir)
 
     # transfer to train, eval, and test
-    root = "/data/stympopper/FilteredTUEV"
+    root = "/data/stympopper/TUEV/edf/"
     seed = 4523
     np.random.seed(seed)
 
-    train_files = os.listdir(os.path.join(root, "processed_train"))
-    train_sub = list(set([f.split("_")[0] for f in train_files]))
+    train_files_path = os.listdir(os.path.join(root, "twochannels", "processed_train"))
+    test_files_path = os.listdir(os.path.join(root, "twochannels", "processed_eval"))
+    train_sub = list(set([f.split("_")[0] for f in train_files_path]))
     print("train sub", len(train_sub))
-    test_files = os.listdir(os.path.join(root, "processed_eval"))
+    target_train_dir = os.path.join(root, "processed", "processed_train")
+    target_eval_dir = os.path.join(root, "processed", "processed_eval")
+    target_test_dir = os.path.join(root, "processed", "processed_test")
+    if not os.path.exists(target_train_dir):
+        os.makedirs(target_train_dir)
+    if not os.path.exists(target_eval_dir):
+        os.makedirs(target_eval_dir)
+    if not os.path.exists(target_test_dir):
+        os.makedirs(target_test_dir)
 
     val_sub = np.random.choice(train_sub, size=int(len(train_sub) * 0.2), replace=False)
     train_sub = list(set(train_sub) - set(val_sub))
-    val_files = [f for f in train_files if f.split("_")[0] in val_sub]
-    train_files = [f for f in train_files if f.split("_")[0] in train_sub]
+    val_files = [f for f in train_files_path if f.split("_")[0] in val_sub]
+    train_files = [f for f in train_files_path if f.split("_")[0] in train_sub]
 
     for file in train_files:
         os.system(
-            f"mv {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_train')}"
+            f"mv {os.path.join(root, 'twochannels', 'processed_train', file)} {target_train_dir}"
         )
     for file in val_files:
         os.system(
-            f"mv {os.path.join(root, 'processed_train', file)} {os.path.join(root, 'processed', 'processed_eval')}"
+            f"mv {os.path.join(root, 'twochannels', 'processed_train', file)} {target_eval_dir}"
         )
-    for file in test_files:
+    for file in test_files_path:
         os.system(
-            f"mv {os.path.join(root, 'processed_eval', file)} {os.path.join(root, 'processed', 'processed_test')}"
+            f"mv {os.path.join(root, 'twochannels', 'processed_eval', file)} {target_test_dir}"
         )
 
     # root = "/data/stympopper/TUEV/edf/processed"
