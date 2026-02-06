@@ -157,13 +157,12 @@ if __name__ == "__main__":
     df = pd.concat([df_train, df_test])
     df.to_pickle(path+"ptbxl_dataframe.pkl")
     
-    if os.path.exists(path+"ptbxl_dataframe_rp.pkl"):
-        df_rp = pd.read_pickle(path+"ptbxl_dataframe_rp.pkl")
-    else:   
-        df_rp = find_rpeaks_clean_ecgs_in_dataframe(data=df)
-        df_rp.to_pickle(path+"ptbxl_dataframe_rp.pkl")
+    # if os.path.exists(path+"ptbxl_dataframe_rp.pkl"):
+    #     df_rp = pd.read_pickle(path+"ptbxl_dataframe_rp.pkl")
+    # else:   
+    df_rp = find_rpeaks_clean_ecgs_in_dataframe(data=df)
+    df_rp.to_pickle(path+"ptbxl_dataframe_rp.pkl")
 
-    
     df_final = segment_ecg_in_clean_dataframe(ROOT=path, data=df_rp)
     print(df_final.columns)
     df_final['heartbeat_indexes']
