@@ -79,6 +79,7 @@ def segment_ecg_in_clean_dataframe(index_pkl: int=0, ROOT: str='.', data: pd.Dat
 
     def get_heartbeats_indexes(indexes, size_before_index=200, size_after_index=300):
         if len(indexes) == 0:
+            raise ValueError("No R-peaks detected in the signal. Please check the data preprocessing or the R-peak detection parameters.")
             return exit()
         indexes = filter(lambda x: 5000 - size_after_index > x > size_before_index, indexes)
         indexes_new = [[index - size_before_index] + [index + size_after_index] for index in indexes]
