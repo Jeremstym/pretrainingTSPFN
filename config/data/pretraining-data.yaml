@@ -42,6 +42,6 @@ test_datasets:
   #   root: ${oc.env:TWOCHANS_PTB_DATA_PATH}
   #   split: test
 meta_batch_size: 1
-chunk_size: 10000
+chunk_size: 5000
 num_workers: 4
 num_channels: 2
