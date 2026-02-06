@@ -129,9 +129,9 @@ class TSPFNPretraining(TSPFNSystem):
         # 2 is the size of the batch in the example
         num_classes = 10  # Default number of classes in TabPFN prediction head
         # labels = torch.cat([torch.randperm(5)]*2)
-        labels = torch.arange(10000) % num_classes
+        labels = torch.arange(self.chunk_size) % num_classes
         labels = labels.unsqueeze(0)
-        time_series_attrs = torch.randn(1, 10000, 499)  # (B, S, T)
+        time_series_attrs = torch.randn(1, self.chunk_size, 499)  # (B, S, T)
         # ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(-1)], dim=2)  # (B, S, T+1)
         # num_classes = len(torch.unique(labels))
         return time_series_attrs, labels  # (B, S, T), (B, S, 1)

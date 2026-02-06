@@ -163,25 +163,28 @@ class TSPFNMetaDataset(Dataset):
 
 
 class TSPFNValidationDataset(Dataset):
-    def __init__(self, train_datasets_list: Dict, val_datasets_list: Dict, n_support=8000, n_query=2000):
-        self.n_support = n_support
-        self.n_query = n_query
+    def __init__(self, train_datasets_list: Dict, val_datasets_list: Dict, chunk_size=10000):
+        # self.n_support = n_support
+        # self.n_query = n_query
         self.pairs = []
+
+        self.n_support = int(chunk_size * 0.8)  # 80% for support
+        self.n_query = chunk_size - self.n_support  # 20% for query
 
         for d_train, d_val in zip(train_datasets_list.values(), val_datasets_list.values()):
             # 1. On découpe le Val en chunks de 2000 (les Query)
             n_v = len(d_val)
             # On utilise le sliding window pour ne rien perdre du Val
-            indices = range(0, n_v - n_query + 1, n_query)
+            indices = range(0, n_v - self.n_query + 1, self.n_query)
 
             for i in indices:
-                query_chunk = d_val[i : i + n_query]
+                query_chunk = d_val[i : i + self.n_query]
                 # On stocke le chunk de val ET une référence au train complet associé
                 self.pairs.append({"full_train": d_train, "query_chunk": query_chunk})
 
             # (Overlapping last chunk for Val)
-            if n_v % n_query != 0:
-                self.pairs.append({"full_train": d_train, "query_chunk": d_val[-n_query:]})
+            if n_v % self.n_query != 0:
+                self.pairs.append({"full_train": d_train, "query_chunk": d_val[-self.n_query:]})
 
     def __len__(self):
         return len(self.pairs)
@@ -202,25 +205,24 @@ class TSPFNValidationDataset(Dataset):
 
 
 class TSPFNTestDataset(Dataset):
-    def __init__(self, train_datasets_list: Dict, test_datasets_list: Dict, n_support=8000, n_query=2000):
-        self.n_support = n_support
-        self.n_query = n_query
+    def __init__(self, train_datasets_list: Dict, test_datasets_list: Dict, chunk_size=10000):
+        self.n_support = int(chunk_size * 0.8)  # 80% for support
+        self.n_query = chunk_size - self.n_support  # 20% for query
         self.pairs = []
 
         for d_train, d_test in zip(train_datasets_list.values(), test_datasets_list.values()):
             # 1. On découpe le Val en chunks de 2000 (les Query)
             n_v = len(d_test)
             # On utilise le sliding window pour ne rien perdre du Val
-            indices = range(0, n_v - n_query + 1, n_query)
-
+            indices = range(0, n_v - self.n_query + 1, self.n_query)
             for i in indices:
-                query_chunk = d_test[i : i + n_query]
+                query_chunk = d_test[i : i + self.n_query]
                 # On stocke le chunk de val ET une référence au train complet associé
                 self.pairs.append({"full_train": d_train, "query_chunk": query_chunk})
 
             # (Overlapping last chunk for Val)
-            if n_v % n_query != 0:
-                self.pairs.append({"full_train": d_train, "query_chunk": d_test[-n_query:]})
+            if n_v % self.n_query != 0:
+                self.pairs.append({"full_train": d_train, "query_chunk": d_test[-self.n_query:]})
 
     def __len__(self):
         return len(self.pairs)
