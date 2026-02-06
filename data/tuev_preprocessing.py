@@ -211,8 +211,8 @@ def load_up_objects(BaseDir, OutDir):
                 except (ValueError, KeyError):
                     print("something funky happened in " + dirName + "/" + fname)
                     continue
-                signals, labels, masks = BuildEvents(signals, times, event, keep_channels)
-                for idx, (signal, label, mask) in enumerate(zip(signals, labels, masks)):
+                signals, labels = BuildEvents(signals, times, event, keep_channels)
+                for idx, (signal, label) in enumerate(zip(signals, labels)):
                     sample = {
                         "signal": signal,
                         "label": label,
