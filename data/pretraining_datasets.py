@@ -53,6 +53,7 @@ class TUAB2ChannelDataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, index):
+        print(f"Index: {index}, X shape: {self.X[index].shape}, Y shape: {self.Y[index].shape}")
         ds = torch.cat((self.X[index], self.Y[index].unsqueeze(0)), dim=-1)  # Shape [Batch, Channels*499+1]
         return ds
 
