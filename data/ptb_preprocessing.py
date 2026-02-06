@@ -18,7 +18,7 @@ from data.utils_ptb.segment_utils import values_from_dataframe_ny_list
 
 sys.path.insert(0, os.path.abspath(".."))
 
-CHOSEN_CHANNELS = [2]  # Use only the two channels that are common across all samples (1 and 2)
+CHOSEN_CHANNELS = [3]  # Use only the two channels that are common across all samples (1 and 2)
 
 def convert_labels(label):
     labels = {"MI": 1, "NORM": 0, "HYP": 1, "CD": 1, "STTC": 1}
