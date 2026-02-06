@@ -11,6 +11,10 @@ from tqdm import tqdm
 import os
 import sys
 
+from data.utils_ptb.segment_utils import find_rpeaks_clean_ecgs_in_dataframe, segment_ecg_in_clean_dataframe
+from data.utils_ptb.segment_utils import values_from_dataframe_ny_list
+
+
 sys.path.insert(0, os.path.abspath(".."))
 
 CHOSEN_CHANNELS = [1,2]  # Use only the two channels that are common across all samples (1 and 2)
