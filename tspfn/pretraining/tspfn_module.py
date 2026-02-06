@@ -30,7 +30,7 @@ from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
-from tspfn.utils import half_batch_split, stratified_batch_split, z_scoring
+from tspfn.utils import half_batch_split, stratified_batch_split, z_scoring, get_stratified_batch_split
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ class TSPFNPretraining(TSPFNSystem):
         num_classes: int = 10,  # Default to 10 classes as in original TabPFN
         split_finetuning: float = 0.5,
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
+        chunk_size: int = 10000,
         # time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         *args,
         **kwargs,
@@ -61,6 +62,8 @@ class TSPFNPretraining(TSPFNSystem):
         # And do it before call to the parent's `init` so that the converted values are saved in `hparams`
 
         super().__init__(*args, **kwargs)
+
+        self.chunk_size = chunk_size
 
         # Add shortcut to lr to work with Lightning's learning rate finder
         self.hparams["lr"] = None
@@ -187,9 +190,10 @@ class TSPFNPretraining(TSPFNSystem):
         # y = time_series_attrs[:, :, -1]  # (B, S, 1)
 
         if self.training or summary_mode:
-            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = stratified_batch_split(
+            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = get_stratified_batch_split(
                 data=time_series_attrs,
                 labels=labels,
+                n_total=self.chunk_size,
             )
         else:
             ts_batch_support = time_series_attrs.to(self.device)  # (Support+Query, C, T)
