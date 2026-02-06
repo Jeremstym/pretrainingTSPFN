@@ -24,12 +24,13 @@ class TSPFNEncoder(nn.Module, ABC):
         updated_pfn_path: Union[Path, None] = None,
         random_init: bool = False,
         recompute_layer: bool = True,
-        positional_encoding: Literal["none", "sinusoidal", "rope", "learned"] = "none",
         num_channels: int = 1,
+        positional_encoding: Literal["none", "sinusoidal", "rope", "learned"] = "none",
         **kwargs,
     ):
         super().__init__()
         
+        self.channel_positional_encoding = nn.Parameter(torch.zeros(1, 1, 5, embed_dim))
         if positional_encoding == "learned":
             self.pe = nn.Parameter(torch.zeros(1, 1, 499, embed_dim))
             nn.init.xavier_uniform_(self.pe)
@@ -44,19 +45,10 @@ class TSPFNEncoder(nn.Module, ABC):
                 pe_state = state_dict.pop("pe")
                 with torch.no_grad():
                     self.pe.copy_(pe_state)
-            # new_state_dict = {}
-            # if "learned_pos_enc" in state_dict:
-            #     self.learned_pos_enc_dict = {"learned_pos_enc": state_dict.pop("learned_pos_enc")}
-            # else:
-            #     self.learned_pos_enc_dict = None
-            # new_state_disct = {}
-            # print(f"state_dict.keys()", state_dict.keys())
-            # for k, v in state_dict.items():
-            #     if k.startswith("model."):
-            #         new_key = k[len("model.") :]  # strip the prefix
-            #         new_state_dict[new_key] = v
-            #     else:
-            #         new_state_dict[k] = v
+            if "channel_positional_encoding" in state_dict:
+                channel_pe_state = state_dict.pop("channel_positional_encoding")
+                with torch.no_grad():
+                    self.channel_positional_encoding.copy_(channel_pe_state)
             self.model.load_state_dict(state_dict, strict=True)
 
         self.encoder = self.model.encoder
@@ -64,12 +56,19 @@ class TSPFNEncoder(nn.Module, ABC):
         self.transformer_encoder = self.model.transformer_encoder
         self.features_per_group = features_per_group  # 1 for TabPFN v2, 3 for TabPFN v2.5
         self.recompute_layer = recompute_layer
+        self.num_channels = num_channels
         self.positional_encoding = positional_encoding
 
         print(f"---------Using positional encoding: {self.positional_encoding}---------")
 
         if self.positional_encoding == "rope":
             # Modify attention mechanism to include RoPE
+            for layer in self.transformer_encoder.layers:
+                layer.self_attn_between_features.compute_attention_heads = partial(
+                    rope_compute_heads_wrapper, num_channels=num_channels
+                )
+        elif self.positional_encoding == "rope+channel":
+            # Modify attention mechanism to include RoPE with channel-wise application
             for layer in self.transformer_encoder.layers:
                 layer.self_attn_between_features.compute_attention_heads = partial(
                     rope_compute_heads_wrapper, num_channels=num_channels
@@ -183,26 +182,34 @@ class TSPFNEncoder(nn.Module, ABC):
                 seq_len=seq_len,
             )
 
+        elif self.positional_encoding == "rope+channel":
+            # Use PE from TabPFN model and add channel-wise positional encodings
+            emb_x, emb_y = self.model.add_embeddings(
+                emb_x,
+                emb_y,
+                data_dags=None,
+                num_features=num_features,
+                seq_len=seq_len,
+            )
+            # Add channel-wise positional encodings
+            if self.channel_positional_encoding is not None:
+                if self.channel_positional_encoding.shape[2] != num_features:
+                    # Interpolate channel positional encoding if number of features differs
+                    self.channel_positional_encoding = nn.Parameter(
+                        interpolate_pos_encoding(self.channel_positional_encoding, new_len=num_features)
+                    )
+                # Broadcast to (B, Seq, num_features, E)
+                channel_pe_broadcasted = self.channel_positional_encoding.expand(
+                    batch_size, seq_len, num_features, self.embed_dim
+                )
+                emb_x += channel_pe_broadcasted
+
         elif self.positional_encoding == "sinusoidal":
             # Add sinusoidal positional encodings to time series attributes
             pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
             # Broadcast to (B, Seq, T, E)
             pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
             emb_x += pos_broadcasted
-
-        # elif self.positional_encoding == "mixed":
-        #     # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
-        #     pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
-        #     # Broadcast to (B, Seq, T, E)
-        #     pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
-        #     emb_x, emb_y = self.model.add_embeddings(
-        #         emb_x,
-        #         emb_y,
-        #         data_dags=None,
-        #         num_features=num_features,
-        #         seq_len=seq_len,
-        #     )
-        #     emb_x += pos_broadcasted
 
         elif self.positional_encoding == "learned":
             emb_x, emb_y = self.model.add_embeddings(
