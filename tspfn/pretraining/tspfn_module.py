@@ -196,10 +196,10 @@ class TSPFNPretraining(TSPFNSystem):
                 n_total=self.chunk_size,
             )
         else:
-            ts_batch_support = time_series_attrs.to(self.device)  # (Support+Query, C, T)
-            ts_batch_query = time_series_attrs.to(self.device)  # (Support+Query, C, T)
-            y_batch_support = labels.to(self.device)  # (Support, 1)
-            y_batch_query = labels.to(self.device)  # (Query, 1)
+            ts_batch_support = time_series_attrs  # (Support+Query, C, T)
+            ts_batch_query = time_series_attrs  # (Support+Query, C, T)
+            y_batch_support = labels  # (Support, 1)
+            y_batch_query = labels  # (Query, 1)
 
         # Apply z-scoring normalization to the time-series data using the support set statistics
         ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = z_scoring(
