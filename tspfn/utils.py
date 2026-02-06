@@ -70,7 +70,10 @@ def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tens
 
     return support_data, query_data, support_labels, query_labels
 
-def z_scoring(data_support: Tensor, data_query: Tensor, label_support: Tensor, label_query: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+
+def z_scoring(
+    data_support: Tensor, data_query: Tensor, label_support: Tensor, label_query: Tensor
+) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
     # 1. Compute mean and std from the support set
     mean = data_support.mean(dim=0, keepdim=True)
     std = data_support.std(dim=0, keepdim=True) + 1e-8  # Avoid division by zero
@@ -81,30 +84,32 @@ def z_scoring(data_support: Tensor, data_query: Tensor, label_support: Tensor, l
 
     return data_support_z, data_query_z, label_support, label_query
 
+
 def get_stratified_batch_split(data, labels, n_total=10000):
+    device = data.device
+
     min_support = 16
     max_support = n_total - int(0.5 * n_total)  # We keep at least 50% for the query to have a meaningful evaluation
 
-        
     log_min, log_max = np.log(min_support), np.log(max_support)
     n_support = int(np.exp(np.random.uniform(log_min, log_max)))
 
     query_ratio = (n_total - n_support) / n_total
     print(f"Query Ratio: {query_ratio:.4f} (Support Size: {n_support}, Query Size: {n_total - n_support})")
 
-    if len(data.shape) == 3:
-        data = data.squeeze(0)
-        labels = labels.squeeze(0)
-        # The data and label will be unsqueezed back before encoder forward pass
+    data_np = data.squeeze().cpu().numpy()
+    labels_np = labels.squeeze().cpu().numpy()
 
     X_sup, X_query, y_sup, y_query = train_test_split(
-        data, labels, test_size=query_ratio, stratify=labels, random_state=None  # To vary at each iteration
+        data_np, labels_np, test_size=query_ratio, stratify=labels_np, random_state=None  # To vary at each iteration
     )
 
-    # single_eval_pos is exactly n_support
-    single_eval_pos = len(X_sup)
+    X_sup = torch.from_numpy(X_sup).to(device)
+    X_query = torch.from_numpy(X_query).to(device)
+    y_sup = torch.from_numpy(y_sup).to(device)
+    y_query = torch.from_numpy(y_query).to(device)
 
-    return X_sup, X_query, y_sup, y_query, single_eval_pos
+    return X_sup, X_query, y_sup, y_query
 
 
 def get_sizes_per_class(class_choice: str, y_train: np.ndarray, num_classes: int, context_length: int):
