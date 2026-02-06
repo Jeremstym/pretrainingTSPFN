@@ -91,8 +91,8 @@ def segment_ecg_in_clean_dataframe(index_pkl: int=0, ROOT: str='.', data: pd.Dat
         import itertools
         # if len(indexes) == 0:
         #     return []
-        if len(indexes) > 8:
-            indexes = rng.choice(indexes, size=8, replace=False)
+        if len(indexes) > 4:
+            indexes = rng.choice(indexes, size=4, replace=False)
         else:            
             raise ValueError(f"Too few R-peaks detected in the signal ({len(indexes)}). Please check the data preprocessing or the R-peak detection parameters.")
         indexes_final = list(itertools.chain(*get_heartbeats_indexes(indexes, size_before_index, size_after_index)))
@@ -133,8 +133,8 @@ def split_ecgs(ecg, indexes, size_before_index=200, size_after_index=300):
     import itertools
     # if len(indexes) == 0:
     #     return []
-    if len(indexes) > 8:
-        indexes = rng.choice(indexes, size=8, replace=False)
+    if len(indexes) > 4:
+        indexes = rng.choice(indexes, size=4, replace=False)
     else:
         raise ValueError(f"Too few R-peaks detected in the signal ({len(indexes)}). Please check the data preprocessing or the R-peak detection parameters.")
     indexes_final = list(itertools.chain(*get_heartbeats_indexes(indexes, size_before_index, size_after_index)))
