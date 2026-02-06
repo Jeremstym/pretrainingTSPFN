@@ -33,7 +33,7 @@ class TUAB2ChannelDataset(Dataset):
         all_x = []
         all_y = []
         
-        print(f"Loading {len(self.files)} samples into RAM...")
+        print(f"Loading {len(self.files)} samples into RAM for TUAB 2 channels...")
         for f in tqdm(self.files):
             with open(os.path.join(self.root, f), "rb") as rb:
                 sample = pickle.load(rb)
@@ -66,7 +66,7 @@ class TUEV2ChannelDataset(Dataset):
         all_x = []
         all_y = []
         
-        print(f"Loading {len(self.files)} samples into RAM...")
+        print(f"Loading {len(self.files)} samples into RAM for TUEV 2 channels...")
         for f in tqdm(self.files):
             with open(os.path.join(self.root, f), "rb") as rb:
                 sample = pickle.load(rb)
@@ -91,7 +91,7 @@ class PTB2ChannelDataset(Dataset):
         all_x = []
         all_y = []
         
-        print(f"Loading {len(self.files)} samples into RAM...")
+        print(f"Loading {len(self.files)} samples into RAM for PTB 2 channels...")
         for f in tqdm(self.files):
             with open(os.path.join(self.root, f), "rb") as rb:
                 sample = pickle.load(rb)
