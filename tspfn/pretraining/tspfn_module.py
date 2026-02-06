@@ -256,6 +256,8 @@ class TSPFNPretraining(TSPFNSystem):
         #     )[:, :, -1, :]
         if self.training or y_inference_support is None:
             ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
+            print(f"ts shape after concatenation: {ts.shape}")
+            print(f"y_batch_support shape: {y_batch_support.shape}")
             out_features = self.encoder(
                 ts.transpose(0, 1),
                 y_batch_support.transpose(0, 1),
@@ -263,6 +265,8 @@ class TSPFNPretraining(TSPFNSystem):
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
+            print(f"ts_inference_support shape: {ts_inference_support.shape}")
+            print(f"ts_batch_query shape: {ts_batch_query.shape}")
             ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
             y_train = y_inference_support
             out_features = self.encoder(
@@ -272,6 +276,8 @@ class TSPFNPretraining(TSPFNSystem):
 
         else:
             raise ValueError("During inference, both support ts and labels must be provided.")
+
+        print(f"out_features shape: {out_features.shape}")
 
         return out_features  # (B, Query, E)
 
