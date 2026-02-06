@@ -14,7 +14,7 @@ trainer:
   devices: ${sys.num_gpus:}
   accelerator: gpu
   precision: 32 #16-mixed, 32
-  max_epochs: 500
+  max_epochs: 100
   
 output_dir: ${sys.getcwd:}
 updated_pfn_path: null
@@ -44,7 +44,7 @@ task:
       eps: 1e-8
     scheduler:
       _target_: transformers.get_cosine_schedule_with_warmup
-      num_warmup_steps: 1000 # Warmup should be step-based, not epoch-based
+      num_warmup_steps: 100 # Warmup should be step-based, not epoch-based
 
 # Change checkpoint loading defaults to:
 ckpt: ??? # Make it mandatory to provide a checkpoint
