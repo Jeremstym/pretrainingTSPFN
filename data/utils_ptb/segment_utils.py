@@ -82,7 +82,6 @@ def segment_ecg_in_clean_dataframe(index_pkl: int=0, ROOT: str='.', data: pd.Dat
     def get_heartbeats_indexes(indexes, size_before_index=200, size_after_index=300):
         if len(indexes) == 0:
             raise ValueError("No R-peaks detected in the signal. Please check the data preprocessing or the R-peak detection parameters.")
-            return exit()
         indexes = filter(lambda x: 5000 - size_after_index > x > size_before_index, indexes)
         indexes_new = [[index - size_before_index] + [index + size_after_index] for index in indexes]
         # print('1', indexes_new)
@@ -90,8 +89,12 @@ def segment_ecg_in_clean_dataframe(index_pkl: int=0, ROOT: str='.', data: pd.Dat
 
     def split_ecgs(ecg, indexes, size_before_index=200, size_after_index=300):
         import itertools
-        if len(indexes) == 0:
-            return []
+        # if len(indexes) == 0:
+        #     return []
+        if len(indexes) > 8:
+            indexes = rng.choice(indexes, size=8, replace=False)
+        else:            
+            raise ValueError(f"Too few R-peaks detected in the signal ({len(indexes)}). Please check the data preprocessing or the R-peak detection parameters.")
         indexes_final = list(itertools.chain(*get_heartbeats_indexes(indexes, size_before_index, size_after_index)))
         heart_beats = np.split(ecg, indexes_final)[1::2]#[:-1]
         # print(len(heart_beats))
@@ -135,6 +138,7 @@ def split_ecgs(ecg, indexes, size_before_index=200, size_after_index=300):
     else:
         raise ValueError(f"Too few R-peaks detected in the signal ({len(indexes)}). Please check the data preprocessing or the R-peak detection parameters.")
     indexes_final = list(itertools.chain(*get_heartbeats_indexes(indexes, size_before_index, size_after_index)))
+    print('Indexes for heartbeats segmentation:', len(indexes_final))
     heart_beats = np.split(ecg, indexes_final)[1::2]#[:-1]
     arr = np.stack(heart_beats, axis=0) if len(heart_beats) > 1 else heart_beats
     return arr
