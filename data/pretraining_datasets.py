@@ -41,7 +41,7 @@ class TUAB2ChannelDataset(Dataset):
                 all_y.append(sample["y"])
         
         self.X = torch.stack(all_x) 
-        self.Y = torch.tensor(all_y, dtype=torch.long)
+        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
 
         if self.X.shape[2] < 500:
             self.X = F.pad(self.X, (0, 500 - self.X.shape[2] - 1), "constant", 0) # New shape [Batch, Channels, 499]
@@ -75,6 +75,7 @@ class TUEV2ChannelDataset(Dataset):
         
         self.X = torch.stack(all_x) 
         self.Y = torch.tensor(all_y, dtype=torch.long) - 1  # Convert labels from 1-6 to 0-5
+        self.Y = self.Y.unsqueeze(1)  # Shape [Batch, 1]
 
         if self.X.shape[2] < 500:
             self.X = F.pad(self.X, (0, 500 - self.X.shape[2] - 1), "constant", 0) # New shape [Batch, Channels, 499]
@@ -99,7 +100,7 @@ class PTB2ChannelDataset(Dataset):
                 all_y.append(sample["true_label"])
         
         self.X = torch.stack(all_x) 
-        self.Y = torch.tensor(all_y, dtype=torch.long)
+        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
 
         if self.X.shape[2] < 500:
             self.X = F.pad(self.X, (0, 500 - self.X.shape[2] - 1), "constant", 0) # New shape [Batch, Channels, 499]
