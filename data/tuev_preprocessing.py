@@ -262,9 +262,9 @@ if __name__ == "__main__":
     test_files_path = os.listdir(os.path.join(root, "twochannels", "processed_eval"))
     train_sub = list(set([f.split("_")[0] for f in train_files_path]))
     print("train sub", len(train_sub))
-    target_train_dir = os.path.join(root, "twochannels", "processed", "processed_train")
-    target_eval_dir = os.path.join(root, "twochannels", "processed", "processed_eval")
-    target_test_dir = os.path.join(root, "twochannels", "processed", "processed_test")
+    target_train_dir = os.path.join(root, "twochannels", "train")
+    target_eval_dir = os.path.join(root, "twochannels", "val")
+    target_test_dir = os.path.join(root, "twochannels", "test")
     if not os.path.exists(target_train_dir):
         os.makedirs(target_train_dir)
     if not os.path.exists(target_eval_dir):
