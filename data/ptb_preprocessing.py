@@ -67,7 +67,6 @@ def get_values(signals):
 
 
 def extract_hb_from_dataframe(df):
-    from utils.segment_utils import values_from_dataframe_ny_list
 
     heart_beats, len_heart_beats = values_from_dataframe_ny_list(df, "ecg_standardize_signal_heartbeats", as_list=True)
     heart_beats_indexes, _ = values_from_dataframe_ny_list(df, "heartbeat_indexes", as_list=True)
