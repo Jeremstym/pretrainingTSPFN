@@ -171,8 +171,6 @@ class TSPFNRunner(ABC):
                     assert cfg.ckpt is not None, "To resume training, a checkpoint path must be provided in cfg.ckpt"
                     trainer.fit(model, datamodule=datamodule, ckpt_path=ckpt_path)
                 else:
-                    print(f"VRAM allouée AVANT fit: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
-                    print(f"VRAM réservée AVANT fit: {torch.cuda.memory_reserved() / 1e9:.2f} GB")
                     trainer.fit(model, datamodule=datamodule)
                 # Copy best model checkpoint to a predictable path + online tracker (if used)
                 # Ensure we use the best weights (and not the latest ones) by loading back the best model
