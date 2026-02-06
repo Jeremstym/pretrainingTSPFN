@@ -7,6 +7,7 @@ from abc import ABC
 import einops
 import torch
 import torch.nn as nn
+from functools import partial
 from tabpfn.model_loading import load_model_criterion_config
 from tspfn.architecture.pe_utils import rope_compute_heads_wrapper, interpolate_pos_encoding
 
@@ -24,6 +25,7 @@ class TSPFNEncoder(nn.Module, ABC):
         random_init: bool = False,
         recompute_layer: bool = True,
         positional_encoding: Literal["none", "sinusoidal", "rope", "learned"] = "none",
+        num_channels: int = 1,
         **kwargs,
     ):
         super().__init__()
@@ -69,7 +71,9 @@ class TSPFNEncoder(nn.Module, ABC):
         if self.positional_encoding == "rope":
             # Modify attention mechanism to include RoPE
             for layer in self.transformer_encoder.layers:
-                layer.self_attn_between_features.compute_attention_heads = rope_compute_heads_wrapper
+                layer.self_attn_between_features.compute_attention_heads = partial(
+                    rope_compute_heads_wrapper, num_channels=num_channels
+                )
 
         self.embed_dim = embed_dim
 

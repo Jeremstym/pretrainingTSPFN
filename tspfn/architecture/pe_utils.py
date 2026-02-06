@@ -1,6 +1,8 @@
 import torch
 import einops
 from torch import nn
+from torch import Tensor
+from typing import Tuple, Union, Dict, Sequence
 import torch.nn.functional as F
 from typing import Tuple
 from tabpfn.architectures.base.attention.full_attention import MultiHeadAttention
@@ -46,7 +48,9 @@ def _apply_rope(x, d_k):
 
 
 # 2. Define the new logic
-def rope_compute_heads_wrapper(q, k, v, kv, qkv, dropout_p=None, softmax_scale=None):
+def rope_compute_heads_wrapper(
+    q: Tensor, k: Tensor, v: Tensor, kv, qkv, num_channels: int = 1, dropout_p=None, softmax_scale=None
+):
     # Step A: Let the existing static logic unbind the tensors
     # We use the class name to call the original static method
     if qkv is not None:
@@ -54,10 +58,24 @@ def rope_compute_heads_wrapper(q, k, v, kv, qkv, dropout_p=None, softmax_scale=N
     elif kv is not None:
         k, v = kv.unbind(dim=-3)
 
-    # Step B: Apply RoPE to the unbundled Q and K
-    d_k = q.shape[-1]
-    q = _apply_rope(q, d_k)
-    k = _apply_rope(k, d_k)
+    batch, total_seq_len, num_heads, d_k = q.shape
+    if total_seq_len % num_channels != 0:
+        raise ValueError(f"Seq len {total_seq_len} non divisible by {num_channels} channels.")
+
+    q_chunks = torch.chunk(q, num_channels, dim=1)
+    k_chunks = torch.chunk(k, num_channels, dim=1)
+    
+    rotated_q = []
+    rotated_k = []
+
+    for q_c, k_c in zip(q_chunks, k_chunks):
+        q_c = _apply_rope(q_c, d_k)
+        k_c = _apply_rope(k_c, d_k)
+        rotated_q.append(q_c)
+        rotated_k.append(k_c)
+
+    q = torch.cat(rotated_q, dim=1)
+    k = torch.cat(rotated_k, dim=1)
 
     # Step C: Call original static method with our rotated tensors
     # We set qkv and kv to None so the original method uses our provided q, k, v
@@ -70,23 +88,18 @@ def interpolate_pos_encoding(pos_embed, new_len):
     # Current shape: [1, 1, old_len, embed_dim]
     old_len = pos_embed.shape[2]
     embed_dim = pos_embed.shape[3]
-    
+
     if old_len == new_len:
         return pos_embed
 
     # Then permute to [Batch, Channels, Length] -> [1, embed_dim, old_len]
     x = pos_embed.squeeze(0).permute(0, 2, 1)
 
-    # 'linear' is the standard for 1D. 
+    # 'linear' is the standard for 1D.
     # 'bicubic' is only for 2D inputs (Height x Width).
-    x = F.interpolate(
-        x, 
-        size=new_len, 
-        mode="linear", 
-        align_corners=False
-    )
+    x = F.interpolate(x, size=new_len, mode="linear", align_corners=False)
 
     # then unsqueeze to get back to [1, 1, new_len, embed_dim]
     x = x.permute(0, 2, 1).unsqueeze(0)
-    
+
     return x
