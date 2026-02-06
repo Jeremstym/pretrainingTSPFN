@@ -189,7 +189,6 @@ class TSPFNPretraining(TSPFNSystem):
         # indices = torch.arange(1024)  # Fix for pretraining with sequence length S =1024
         # y = time_series_attrs[:, :, -1]  # (B, S, 1)
         
-        print(f"VRAM initiale before split: {torch.cuda.memory_allocated()/1e9:.2f} GB")
         if self.training or summary_mode:
             ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = get_stratified_batch_split(
                 data=time_series_attrs,
@@ -202,7 +201,6 @@ class TSPFNPretraining(TSPFNSystem):
             y_batch_support = labels  # (Support, 1)
             y_batch_query = labels  # (Query, 1)
 
-        print(f"VRAM initiale before z-scoring: {torch.cuda.memory_allocated()/1e9:.2f} GB")
         # Apply z-scoring normalization to the time-series data using the support set statistics
         ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = z_scoring(
             data_support=ts_batch_support,
@@ -257,7 +255,6 @@ class TSPFNPretraining(TSPFNSystem):
         #         ts_full.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
         #     )[:, :, -1, :]
 
-        print(f"VRAM initiale before encode: {torch.cuda.memory_allocated()/1e9:.2f} GB")
         if self.training or y_inference_support is None:
             ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
             print(f"ts shape after concatenation: {ts.shape}")
@@ -283,7 +280,6 @@ class TSPFNPretraining(TSPFNSystem):
 
         print(f"out_features shape: {out_features.shape}")
 
-        print(f"VRAM initiale after encode: {torch.cuda.memory_allocated()/1e9:.2f} GB")
 
         return out_features  # (B, Query, E)
 
@@ -389,7 +385,6 @@ class TSPFNPretraining(TSPFNSystem):
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
         if self.training:
-            print(f"VRAM initiale at the beginning of TRAINING: {torch.cuda.memory_allocated()/1e9:.2f} GB")
             time_series_input, target_labels = batch  # (N, C*T), (N,)
             time_series_support = None
         else:
