@@ -81,7 +81,7 @@ def z_scoring(data_support: Tensor, data_query: Tensor, label_support: Tensor, l
 
     return data_support_z, data_query_z, label_support, label_query
 
-def get_stratified_batch_split(X, y, n_total=10000):
+def get_stratified_batch_split(data, labels, n_total=10000):
     # 1. On détermine la taille du support (Log-Uniforme)
     min_support = 16
     max_support = n_total - 500  # On garde 500 pour la Query (stabilité de la Loss)
@@ -98,7 +98,7 @@ def get_stratified_batch_split(X, y, n_total=10000):
     # 3. Split Stratifié
     # On split X et y de taille n_total pour obtenir nos deux blocs
     X_sup, X_query, y_sup, y_query = train_test_split(
-        X, y, test_size=query_ratio, stratify=y, random_state=None  # Pour varier à chaque itération
+        data, labels, test_size=query_ratio, stratify=labels, random_state=None  # Pour varier à chaque itération
     )
 
     # single_eval_pos est exactement n_support
