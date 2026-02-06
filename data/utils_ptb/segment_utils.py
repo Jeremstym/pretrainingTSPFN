@@ -82,7 +82,7 @@ def segment_ecg_in_clean_dataframe(index_pkl: int=0, ROOT: str='.', data: pd.Dat
             return exit()
         indexes = filter(lambda x: 5000 - size_after_index > x > size_before_index, indexes)
         indexes_new = [[index - size_before_index] + [index + size_after_index] for index in indexes]
-        print('1', indexes_new)
+        # print('1', indexes_new)
         return indexes_new
 
     def split_ecgs(ecg, indexes, size_before_index=200, size_after_index=300):
@@ -91,11 +91,11 @@ def segment_ecg_in_clean_dataframe(index_pkl: int=0, ROOT: str='.', data: pd.Dat
             return []
         indexes_final = list(itertools.chain(*get_heartbeats_indexes(indexes, size_before_index, size_after_index)))
         heart_beats = np.split(ecg, indexes_final)[1::2]#[:-1]
-        print(len(heart_beats))
-        for hb in heart_beats:
-            print(hb.shape)
+        # print(len(heart_beats))
+        # for hb in heart_beats:
+        #     print(hb.shape)
         arr = np.stack(heart_beats, axis=0) if len(heart_beats) > 1 else heart_beats
-        print('2', arr)
+        # print('2', arr)
         return arr
 
     # filename = f"{ROOT}dataframe_batch_{index_pkl}"
@@ -113,7 +113,7 @@ def segment_ecg_in_clean_dataframe(index_pkl: int=0, ROOT: str='.', data: pd.Dat
 
     df['ecg_signal_heartbeat'] = df.apply(lambda x: split_ecgs(x['ecg_signal_raw'], x['rpeaks_indexes']), axis=1)
     df['heartbeat_indexes'] = df['rpeaks_indexes'].apply(get_heartbeats_indexes)
-    print(df['ecg_signal_heartbeat'])
+    # print(df['ecg_signal_heartbeat'])
     return df
 
 def get_heartbeats_indexes(indexes, size_before_index=200, size_after_index=300):

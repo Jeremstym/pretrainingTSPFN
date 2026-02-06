@@ -30,7 +30,7 @@ def get_data_competitors(n_type, return_as_numpy: bool=False):
     y_train = torch.FloatTensor(y_train)
     y_train = y_train.permute(0, 2, 1)
 
-    print(X_train.shape, y_train.shape)
+    # print(X_train.shape, y_train.shape)
 
     X_test = torch.FloatTensor(X_test)
     X_test = X_test.permute(0, 2, 1)
@@ -77,22 +77,22 @@ def get_data_deepfade(return_as_numpy: bool=False, signal_size: int=500, train: 
                 y_test = torch.vstack((y_test, load_features(batch_id=i, partition='holdout', type='labels', data_source=data_source).unsqueeze(1)))
 
     if signal_size == 512:
-        print(f"Converting the signal to size {signal_size}")
+        # print(f"Converting the signal to size {signal_size}")
 
         if train:
 
             X_train = torch.Tensor(undersample_signal(X_train, signal_size))
             y_train = torch.Tensor(undersample_signal(y_train, signal_size))
-            print("Shape X_train, y_train:", X_train.shape, y_train.shape)
+            # print("Shape X_train, y_train:", X_train.shape, y_train.shape)
 
             X_val = torch.Tensor(undersample_signal(X_val, signal_size))
             y_val = torch.Tensor(undersample_signal(y_val, signal_size))
-            print("Shape X_val, y_val:", X_val.shape, y_val.shape)
+            # print("Shape X_val, y_val:", X_val.shape, y_val.shape)
 
         else:
             X_test = torch.Tensor(undersample_signal(X_test, signal_size))
             y_test = torch.Tensor(undersample_signal(y_test, signal_size))
-            print("Shape X_test, y_test:", X_test.shape, y_test.shape)
+            # print("Shape X_test, y_test:", X_test.shape, y_test.shape)
 
     if return_as_numpy:
 
@@ -166,4 +166,4 @@ def normalize_signals_for_comparison(signal_1_d):
 
 if __name__ == '__main__':
     ecgs = load_heartbeats_ecg_generepol('Generepol', 'holdout')
-    print(ecgs.shape)
+    # print(ecgs.shape)
