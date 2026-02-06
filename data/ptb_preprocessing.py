@@ -19,7 +19,7 @@ from data.utils_ptb.segment_utils import values_from_dataframe_ny_list
 sys.path.insert(0, os.path.abspath(".."))
 rng = np.random.default_rng(seed=42)
 
-CHOSEN_CHANNELS = 1 # Fix channel
+CHOSEN_CHANNELS = 3 # Fix channel
 
 def convert_labels(label):
     labels = {"MI": 1, "NORM": 0, "HYP": 1, "CD": 1, "STTC": 1}
@@ -244,9 +244,9 @@ if __name__ == "__main__":
 
     target_path = path + 'twochannels/'
     os.makedirs(target_path, exist_ok=True)
-    np.save(target_path+"hb_training_ch1.npy", X_train)
-    np.save(target_path+"hb_validation_ch1.npy", X_val)
-    np.save(target_path+"hb_holdout_ch1.npy", X_test)
-    np.save(target_path+"hb_labels_training_ch1.npy", y_train)
-    np.save(target_path+"hb_labels_validation_ch1.npy", y_val)
-    np.save(target_path+"hb_labels_holdout_ch1.npy", y_test)
+    np.save(target_path+"hb_training_ch3.npy", X_train)
+    np.save(target_path+"hb_validation_ch3.npy", X_val)
+    np.save(target_path+"hb_holdout_ch3.npy", X_test)
+    np.save(target_path+"hb_labels_training_ch3.npy", y_train)
+    np.save(target_path+"hb_labels_validation_ch3.npy", y_val)
+    np.save(target_path+"hb_labels_holdout_ch3.npy", y_test)
