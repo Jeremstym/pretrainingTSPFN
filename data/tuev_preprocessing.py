@@ -147,18 +147,20 @@ def BuildEvents(signals, times, EventData, keep_channels):
             continue # Skip if window goes out of bounds
 
         # 2. Select 2 channels (as per your logic)
-        print(f"channels present for label {label}: {chans_present}")
-        if len(chans_present) >= 2:
-            # Pick two from the offending channels
-            chosen_chans_orig = np.random.choice(chans_present, size=2, replace=False)
-        else:
-            # If only 1 offending channel, pick it and a helper channel
-            primary = chans_present[0]
-            helper = keep_channels[1] if primary == keep_channels[0] else keep_channels[0]
-            chosen_chans_orig = [primary, helper]
+        # if len(chans_present) >= 2:
+        #     # Pick two from the offending channels
+        #     chosen_chans_orig = np.random.choice(chans_present, size=2, replace=False)
+        # else:
+        #     # If only 1 offending channel, pick it and a helper channel
+        #     primary = chans_present[0]
+        #     helper = keep_channels[1] if primary == keep_channels[0] else keep_channels[0]
+        #     chosen_chans_orig = [primary, helper]
 
-        # Convert original IDs to 0-15 indices
-        indices = [chan_map[c] for c in chosen_chans_orig]
+        # # Convert original IDs to 0-15 indices
+        # indices = [chan_map[c] for c in chosen_chans_orig]
+
+        # For now, arbitrary chosen channels:
+        indices = [chan_map[keep_channels[-1]], chan_map[keep_channels[-2]]] # Always pick the last two channels (O1 and O2) for consistency
         
         # 3. Reduce to (2, 400)
         reduced_segment = segment[indices, :] 
