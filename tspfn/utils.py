@@ -82,26 +82,20 @@ def z_scoring(data_support: Tensor, data_query: Tensor, label_support: Tensor, l
     return data_support_z, data_query_z, label_support, label_query
 
 def get_stratified_batch_split(data, labels, n_total=10000):
-    # 1. On détermine la taille du support (Log-Uniforme)
     min_support = 16
-    max_support = n_total - 500  # On garde 500 pour la Query (stabilité de la Loss)
+    max_support = n_total - int(0.5 * n_total)  # We keep at least 50% for the query to have a meaningful evaluation
 
     log_min, log_max = np.log(min_support), np.log(max_support)
     n_support = int(np.exp(np.random.uniform(log_min, log_max)))
 
-    # 2. Calcul du ratio pour scikit-learn
-    # train_test_split veut test_size (la Query)
-    # n_query = n_total - n_support
     query_ratio = (n_total - n_support) / n_total
     print(f"Query Ratio: {query_ratio:.4f} (Support Size: {n_support}, Query Size: {n_total - n_support})")
 
-    # 3. Split Stratifié
-    # On split X et y de taille n_total pour obtenir nos deux blocs
     X_sup, X_query, y_sup, y_query = train_test_split(
-        data, labels, test_size=query_ratio, stratify=labels, random_state=None  # Pour varier à chaque itération
+        data, labels, test_size=query_ratio, stratify=labels, random_state=None  # To vary at each iteration
     )
 
-    # single_eval_pos est exactement n_support
+    # single_eval_pos is exactly n_support
     single_eval_pos = len(X_sup)
 
     return X_sup, X_query, y_sup, y_query, single_eval_pos
