@@ -135,7 +135,6 @@ if __name__ == "__main__":
     y_train = y_train.apply(lambda x: x[0])
     y_train = y_train.apply(lambda x: convert_labels(x))
     print(X_train.shape, y_test.shape)
-    raise Exception("STOP")
     X_train = X_train[:, :, CHOSEN_CHANNELS]
 
     print(X_test.shape, y_test.shape)
