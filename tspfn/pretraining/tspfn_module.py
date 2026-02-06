@@ -438,7 +438,7 @@ class TSPFNPretraining(TSPFNSystem):
             loss_val = target_loss(y_hat_flat, target_flat)
 
             loss_name = f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"
-            losses[loss_name] = loss_val
+            losses[loss_name] = loss_val.detach()  # Detach to avoid backprop through the loss when logging
 
             # Metrics are automatically updated inside the Metric objects
             self.metrics[stage][target_task].update(y_hat_flat, target_flat)
