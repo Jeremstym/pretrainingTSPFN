@@ -18,7 +18,7 @@ from data.utils_ptb.segment_utils import values_from_dataframe_ny_list
 
 sys.path.insert(0, os.path.abspath(".."))
 
-CHOSEN_CHANNELS = [1,2]  # Use only the two channels that are common across all samples (1 and 2)
+CHOSEN_CHANNELS = [1]  # Use only the two channels that are common across all samples (1 and 2)
 
 def convert_labels(label):
     labels = {"MI": 1, "NORM": 0, "HYP": 1, "CD": 1, "STTC": 1}
@@ -224,9 +224,9 @@ if __name__ == "__main__":
 
     target_path = path + 'twochannels/'
     os.makedirs(target_path, exist_ok=True)
-    np.save(target_path+"hb_training.npy", X_train)
-    np.save(target_path+"hb_validation.npy", X_val)
-    np.save(target_path+"hb_holdout.npy", X_test)
-    np.save(target_path+"hb_labels_training.npy", y_train)
-    np.save(target_path+"hb_labels_validation.npy", y_val)
-    np.save(target_path+"hb_labels_holdout.npy", y_test)
+    np.save(target_path+"hb_training_ch1.npy", X_train)
+    np.save(target_path+"hb_validation_ch1.npy", X_val)
+    np.save(target_path+"hb_holdout_ch1.npy", X_test)
+    np.save(target_path+"hb_labels_training_ch1.npy", y_train)
+    np.save(target_path+"hb_labels_validation_ch1.npy", y_val)
+    np.save(target_path+"hb_labels_holdout_ch1.npy", y_test)
