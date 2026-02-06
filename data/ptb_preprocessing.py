@@ -132,7 +132,7 @@ if __name__ == "__main__":
     X_test = X_test[index_ok_test]
     # Subsample
     indices = np.arange(len(y_test))
-    test_selected_indices = rng.choice(indices, size=100, replace=False)
+    test_selected_indices = rng.choice(indices, size=300, replace=False)
     y_test = y_test.iloc[test_selected_indices]
     X_test = X_test[test_selected_indices]
     y_test = y_test.apply(lambda x: x[0])
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     X_train = X_train[index_ok_train]
     # Subsample
     indices = np.arange(len(y_train))
-    train_selected_indices = rng.choice(indices, size=1000, replace=False)
+    train_selected_indices = rng.choice(indices, size=3000, replace=False)
     y_train = y_train.iloc[train_selected_indices]
     X_train = X_train[train_selected_indices]
     y_train = y_train.apply(lambda x: x[0])
