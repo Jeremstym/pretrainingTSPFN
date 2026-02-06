@@ -10,6 +10,7 @@ from typing import Tuple, Union, Dict, Sequence
 import torch.nn as nn
 import shutil
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset, DataLoader
 
 
@@ -35,7 +36,7 @@ def stratified_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor
 
 
 def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
-    
+
     if data.ndim == 2:
         total_size = data.size(0)
         half_size = total_size // 2
@@ -52,14 +53,14 @@ def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tens
     elif data.ndim == 3:
         # data: [Batch, Samples, Features]
         # labels: [Batch, Samples]
-        
+
         total_samples = data.size(1)
         half_size = total_samples // 2
-        
+
         # Split Data on dimension 1
         support_data = data[:, :half_size, :]
         query_data = data[:, half_size:, :]
-        
+
         # Split Labels on dimension 1
         support_labels = labels[:, :half_size]
         query_labels = labels[:, half_size:]
@@ -68,6 +69,32 @@ def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tens
         raise ValueError("Data tensor must be 2D or 3D")
 
     return support_data, query_data, support_labels, query_labels
+
+
+def get_stratified_batch_split(X, y, n_total=10000):
+    # 1. On détermine la taille du support (Log-Uniforme)
+    min_support = 16
+    max_support = n_total - 500  # On garde 500 pour la Query (stabilité de la Loss)
+
+    log_min, log_max = np.log(min_support), np.log(max_support)
+    n_support = int(np.exp(np.random.uniform(log_min, log_max)))
+
+    # 2. Calcul du ratio pour scikit-learn
+    # train_test_split veut test_size (la Query)
+    # n_query = n_total - n_support
+    query_ratio = (n_total - n_support) / n_total
+    print(f"Query Ratio: {query_ratio:.4f} (Support Size: {n_support}, Query Size: {n_total - n_support})")
+
+    # 3. Split Stratifié
+    # On split X et y de taille n_total pour obtenir nos deux blocs
+    X_sup, X_query, y_sup, y_query = train_test_split(
+        X, y, test_size=query_ratio, stratify=y, random_state=None  # Pour varier à chaque itération
+    )
+
+    # single_eval_pos est exactement n_support
+    single_eval_pos = len(X_sup)
+
+    return X_sup, X_query, y_sup, y_query, single_eval_pos
 
 
 def get_sizes_per_class(class_choice: str, y_train: np.ndarray, num_classes: int, context_length: int):
