@@ -3,6 +3,8 @@ import numpy as np
 import torch
 import pandas as pd
 
+rng = np.random.default_rng(seed=42)
+
 
 def detect_rpeaks(ecg, rate, ransac_window_size=5.0, lowfreq=35.0, highfreq=43.0):
     """
@@ -126,8 +128,12 @@ def get_heartbeats_indexes(indexes, size_before_index=200, size_after_index=300)
 
 def split_ecgs(ecg, indexes, size_before_index=200, size_after_index=300):
     import itertools
-    if len(indexes) == 0:
-        return []
+    # if len(indexes) == 0:
+    #     return []
+    if len(indexes) > 8:
+        indexes = rng.choice(indexes, size=8, replace=False)
+    else:
+        raise ValueError(f"Too few R-peaks detected in the signal ({len(indexes)}). Please check the data preprocessing or the R-peak detection parameters.")
     indexes_final = list(itertools.chain(*get_heartbeats_indexes(indexes, size_before_index, size_after_index)))
     heart_beats = np.split(ecg, indexes_final)[1::2]#[:-1]
     arr = np.stack(heart_beats, axis=0) if len(heart_beats) > 1 else heart_beats
