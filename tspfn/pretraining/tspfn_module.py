@@ -126,12 +126,12 @@ class TSPFNPretraining(TSPFNSystem):
         # 2 is the size of the batch in the example
         num_classes = 10  # Default number of classes in TabPFN prediction head
         # labels = torch.cat([torch.randperm(5)]*2)
-        labels = torch.arange(10) % num_classes
-        labels = labels.repeat(16, 1)
-        time_series_attrs = torch.randn(16, 10, 499)  # (B, S, T)
+        labels = torch.arange(10000) % num_classes
+        labels = labels.unsqueeze(0)
+        time_series_attrs = torch.randn(1, 10000, 499)  # (B, S, T)
         # ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(-1)], dim=2)  # (B, S, T+1)
         # num_classes = len(torch.unique(labels))
-        return time_series_attrs, labels.unsqueeze(-1)  # (B, S, T+1), (B, S, 1)
+        return time_series_attrs, labels  # (B, S, T), (B, S, 1)
 
     def configure_model(
         self,
@@ -187,7 +187,7 @@ class TSPFNPretraining(TSPFNSystem):
         # y = time_series_attrs[:, :, -1]  # (B, S, 1)
 
         if self.training or summary_mode:
-            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = half_batch_split(
+            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = stratified_batch_split(
                 data=time_series_attrs,
                 labels=labels,
             )
@@ -196,6 +196,14 @@ class TSPFNPretraining(TSPFNSystem):
             ts_batch_query = time_series_attrs.to(self.device)  # (Support+Query, C, T)
             y_batch_support = labels.to(self.device)  # (Support, 1)
             y_batch_query = labels.to(self.device)  # (Query, 1)
+
+        # Apply z-scoring normalization to the time-series data using the support set statistics
+        ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = z_scoring(
+            data_support=ts_batch_support,
+            data_query=ts_batch_query,
+            label_support=y_batch_support,
+            label_query=y_batch_query,
+        )
 
         # Unsqueeze to comply with expected input shape for TabPFN encoder
         if ts_batch_support.ndim == 2:
@@ -365,12 +373,12 @@ class TSPFNPretraining(TSPFNSystem):
             self.prediction_heads is not None
         ), "You requested to perform a prediction task, but the model does not include any prediction heads."
         if self.training:
-            time_series_input, target_labels = batch  # (N, C, T), (N,)
+            time_series_input, target_labels = batch  # (N, C*T), (N,)
             time_series_support = None
         else:
             batch_dict, _, _ = batch
-            time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
-            time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
+            time_series_input, target_labels = batch_dict["query"]  # (N, C*T), (N,)
+            time_series_support, support_labels = batch_dict["support"]  # (N, C*T), (N,)
 
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels

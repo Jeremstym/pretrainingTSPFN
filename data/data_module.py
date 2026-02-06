@@ -14,6 +14,7 @@ import sys
 from typing import Optional, Callable, Dict, Sequence, List, Union
 from pathlib import Path
 from tqdm import tqdm
+from omegaconf import DictConfig
 
 import torch
 import pytorch_lightning as pl
@@ -24,38 +25,20 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
 from data.evaluation_datasets import (
-    TUABDataset,
-    TUEVDataset,
-    FilteredTUEVDataset,
     ECG5000Dataset,
     ESRDataset,
     ABIDEDataset,
 )
+from data.pretraining_datasets import (
+    TUAB2ChannelDataset,
+    TUEV2ChannelDataset,
+    PTB2ChannelDataset,
+    TSPFNMetaDataset,
+    TSPFNValidationDataset,
+    TSPFNTestDataset,
+)
 from data.utils.sampler import StratifiedBatchSampler
 from data.utils.processing_csv import load_csv
-
-
-def stratified_batch_collate(batch):
-    xs, ys = zip(*batch)
-    xs = torch.stack(xs)
-    ys = torch.tensor(ys)
-
-    unique_labels = torch.unique(ys)
-    first_half_idxs = []
-    second_half_idxs = []
-
-    for label in unique_labels:
-        label_indices = (ys == label).nonzero(as_tuple=True)[0]
-
-        # Split these specific label indices in half
-        mid = len(label_indices) // 2
-        first_half_idxs.append(label_indices[:mid])
-        second_half_idxs.append(label_indices[mid:])
-
-    # Combine indices for both halves
-    new_order = torch.cat(first_half_idxs + second_half_idxs)
-
-    return xs[new_order], ys[new_order]
 
 
 class TSPFNDataset(Dataset):
@@ -72,6 +55,82 @@ class TSPFNDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
         return sample[:, :-1], sample[:, -1]
+
+
+class PretrainingTSPFNDataModule(pl.LightningDataModule):
+    """LightningDataModule for TSP-style pretraining datasets.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        train_datasets: DictConfig,
+        val_datasets: DictConfig,
+        test_datasets: DictConfig,
+        meta_batch_size=1, 
+        chunk_size=10000,
+        num_workers: int = 0,
+        pin_memory: bool = False,
+        seed: int = 42,
+        **kwargs,
+    ) -> None:
+        super().__init__()
+        self.train_datasets = train_datasets
+        self.val_datasets = val_datasets
+        self.test_datasets = test_datasets
+        self.meta_batch_size = meta_batch_size
+        self.chunk_size = chunk_size
+        self.num_workers = num_workers
+        self.pin_memory = num_workers > 0
+        self.seed = seed
+
+    def setup(self, stage=None):
+        if stage == "fit" or stage is None:
+            # On instancie les datasets de train un par un
+            train_instances = {
+                name: instantiate(cfg) for name, cfg in self.train_datasets.items()
+            }
+            # On instancie les datasets de val
+            val_instances = {
+                name: instantiate(cfg) for name, cfg in self.val_datasets.items()
+            }
+            
+            self.train_ds = TSPFNMetaDataset(train_instances, self.chunk_size)
+            self.val_ds = TSPFNValidationDataset(train_instances, val_instances, self.chunk_size)
+            
+        if stage == "test":
+            test_instances = {
+                name: instantiate(cfg) for name, cfg in self.test_datasets.items()
+            }
+            self.test_ds = TSPFNTestDataset(train_instances, test_instances, self.chunk_size)
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train_ds, 
+            batch_size=self.meta_batch_size, 
+            num_workers=self.num_workers,
+            pin_memory=self.num_workers > 0,
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val_ds, 
+            batch_size=self.meta_batch_size, 
+            num_workers=self.num_workers,
+            pin_memory=self.num_workers > 0,
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.test_ds, 
+            batch_size=self.meta_batch_size, 
+            num_workers=self.num_workers,
+            pin_memory=self.num_workers > 0,
+        )
 
 
 class TSPFNDataModule(pl.LightningDataModule):

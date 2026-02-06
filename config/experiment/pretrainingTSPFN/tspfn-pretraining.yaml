@@ -5,7 +5,7 @@ defaults:
   - /task/model/encoder: tspfn-encoder
   - override /task/model: null
   - override /task/optim: adamw
-  - override /data: pretraining-csv
+  - override /data: pretraining-data
 
 
 resume: False
@@ -20,12 +20,13 @@ output_dir: ${sys.getcwd:}
 updated_pfn_path: null
 
 data:
-  batch_size: 1
+  meta_batch_size: 1
 
 task:
   _target_: tspfn.pretraining.tspfn_module.TSPFNPretraining
   embed_dim: 192 # 192 for V2, 512 for V2.5
   num_classes: 10 # As in TabPFN_v2 paper
+  num_channels: ${data.num_channels}
   split_finetuning: 0.5
   predict_losses:
     classification:
