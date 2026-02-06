@@ -55,7 +55,7 @@ def standardize_hb(row):
     hb = row.ecg_signal_heartbeat
     if isinstance(hb, list):
         hb = np.array(hb)
-    print(hb, mean)
+    # print(hb, mean)
     return (hb - mean) / std
 
 
@@ -164,10 +164,10 @@ if __name__ == "__main__":
     df_rp.to_pickle(path+"ptbxl_dataframe_rp.pkl")
 
     df_final = segment_ecg_in_clean_dataframe(ROOT=path, data=df_rp)
-    print(df_final.columns)
+    # print(df_final.columns)
     df_final['heartbeat_indexes']
 
-    print(df_final)
+    # print(df_final)
     df_final.to_pickle(path+"ptbxl_dataframe_final.pkl")
 
     df_final = pd.read_pickle(path+"ptbxl_dataframe_final.pkl")
