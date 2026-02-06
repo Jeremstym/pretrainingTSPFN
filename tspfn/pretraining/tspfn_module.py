@@ -424,6 +424,7 @@ class TSPFNPretraining(TSPFNSystem):
         else:
             stage = "test_metrics"
 
+        trainable_losses = []
         for target_task, target_loss in self.predict_losses.items():
             y_hat = predictions[target_task]  # Shape: (B, Q, num_classes)
             target = target_batch.long()  # Shape: (B, Q)
@@ -436,6 +437,7 @@ class TSPFNPretraining(TSPFNSystem):
 
             # Compute loss for the entire batch at once
             loss_val = target_loss(y_hat_flat, target_flat)
+            trainable_losses.append(loss_val)
 
             loss_name = f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"
             losses[loss_name] = loss_val.detach()  # Detach to avoid backprop through the loss when logging
@@ -443,7 +445,8 @@ class TSPFNPretraining(TSPFNSystem):
             # Metrics are automatically updated inside the Metric objects
             self.metrics[stage][target_task].update(y_hat_flat, target_flat)
 
-        losses["s_loss"] = torch.stack(list(losses.values())).mean()
+        # losses["s_loss"] = torch.stack(list(losses.values())).mean()
+        losses["s_loss"] = torch.stack(trainable_losses).mean()
         metrics.update(losses)
 
         return metrics
