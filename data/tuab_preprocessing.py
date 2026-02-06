@@ -123,6 +123,7 @@ def split_and_dump(params):
             WINDOW_SIZE = 400  # 2 seconds
             LOW_VAR_LIMIT = 5.0   # Reject windows that are too "quiet"
             HIGH_VAR_LIMIT = 800.0 # Reject massive artifacts (clipping/physical movement)
+            SUBSAMPLE_SIZE = 248 
 
             # 1. Skip first 60 seconds (noise)
             start_idx = 60 * FS
@@ -143,11 +144,12 @@ def split_and_dump(params):
                 if win_variance > HIGH_VAR_LIMIT:
                     continue
 
-                # 4. Decimate and Save
-                decimate_data = sgn.decimate(signal_data, 2, axis=1)
+                # 4. Subsample and Save
+                # decimate_data = sgn.decimate(signal_data, 2, axis=1)
+                subsampled_data = sgn.resample(signal_data, SUBSAMPLE_SIZE, axis=1) # Shape: (23, SUBSAMPLE_SIZE)
                 
                 dump_path = os.path.join(dump_folder, f"{file.split('.')[0]}_{i}.pkl")
-                pickle.dump({"X": decimate_data, "y": label}, open(dump_path, "wb"))
+                pickle.dump({"X": subsampled_data, "y": label}, open(dump_path, "wb"))
                 nb_loaded_files += 1
                 if nb_loaded_files > 80:
                     print(f"Reached 80 files for subject {sub}, moving to next subject.")
