@@ -160,10 +160,14 @@ if __name__ == "__main__":
     # if os.path.exists(path+"ptbxl_dataframe_rp.pkl"):
     #     df_rp = pd.read_pickle(path+"ptbxl_dataframe_rp.pkl")
     # else:   
+    print("Finding R-peaks in the ECG signals...")
     df_rp = find_rpeaks_clean_ecgs_in_dataframe(data=df)
+    print("R-peaks found and added to the dataframe.")
     df_rp.to_pickle(path+"ptbxl_dataframe_rp.pkl")
 
+    print("Segmenting ECG signals into heartbeats...")
     df_final = segment_ecg_in_clean_dataframe(ROOT=path, data=df_rp)
+    print("ECG signals segmented into heartbeats and added to the dataframe.")
     # print(df_final.columns)
     df_final['heartbeat_indexes']
 
@@ -173,10 +177,12 @@ if __name__ == "__main__":
     df_final = pd.read_pickle(path+"ptbxl_dataframe_final.pkl")
     df_final.head()
 
+    print("Standardizing ECG signals...")
     df_final['mean_ecg'] = df_final.ecg_signal_raw.apply(np.mean)
     df_final['std_ecg'] = df_final.ecg_signal_raw.apply(np.std)
     df_final['ecg_standardize_signal'] = df_final.apply(standardize, axis=1)
     df_final['ecg_standardize_signal_heartbeats'] = df_final.apply(standardize_hb, axis=1)
+    print("ECG signals standardized and added to the dataframe.")
 
     df_final.to_pickle(path+"ptbxl_dataframe_final.pkl")
     df_final.head()
@@ -185,12 +191,14 @@ if __name__ == "__main__":
     y = df_final.true_label.values[:]
     print(f"features shape: {features.shape}, y shape: {y.shape}")
 
+    print("Extracting heartbeats and labels from the dataframe...")
     heart_beats, len_heart_beats = values_from_dataframe_ny_list(df_final, 'ecg_standardize_signal_heartbeats', as_list=True)
     heart_beats_indexes, _ = values_from_dataframe_ny_list(df_final, 'heartbeat_indexes', as_list=True)
     true_labels_ = df_final.true_label.values[:]
     true_labels = np.array([item for item, count in zip(true_labels_, len_heart_beats) for _ in range(count)])
     heart_beats = np.vstack(heart_beats)
     heart_beats_indexes = np.vstack(heart_beats_indexes)
+    print("Heartbeats and labels extracted.")
 
     print(f"heart_beats shape: {heart_beats.shape}, true_labels shape: {true_labels.shape}, heart_beats_indexes shape: {heart_beats_indexes.shape}")
 
@@ -205,9 +213,11 @@ if __name__ == "__main__":
     test = df_updated[df_updated.partition == 'test']
     valid = df_updated[df_updated.partition == 'valid']
 
+    print("Extracting heartbeats and labels for train, validation, and test sets...")
     X_train, y_train = extract_hb_from_dataframe(train)
     X_val, y_val = extract_hb_from_dataframe(valid)
     X_test, y_test = extract_hb_from_dataframe(test)
+    print("Heartbeats and labels extracted for train, validation, and test sets.")
 
     print("TRAIN")
     print(X_train.shape, y_train.shape)
