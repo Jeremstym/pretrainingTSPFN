@@ -13,6 +13,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
+CHOSEN_CHANNELS = [1,2]  # Use only the two channels that are common across all samples (1 and 2)
 
 def convert_labels(label):
     labels = {"MI": 1, "NORM": 0, "HYP": 1, "CD": 1, "STTC": 1}
@@ -127,7 +128,7 @@ if __name__ == "__main__":
     y_test = y_test.apply(lambda x: x[0])
     y_test = y_test.apply(lambda x: convert_labels(x))
     print(X_test.shape, y_test.shape)
-    X_test = X_test[:, :, 1]
+    X_test = X_test[:, :, CHOSEN_CHANNELS]
 
     y_train = y_train[index_ok_train]
     X_train = X_train[index_ok_train]
@@ -135,7 +136,7 @@ if __name__ == "__main__":
     y_train = y_train.apply(lambda x: convert_labels(x))
     print(X_train.shape, y_test.shape)
     raise Exception("STOP")
-    X_train = X_train[:, :, 1]
+    X_train = X_train[:, :, CHOSEN_CHANNELS]
 
     print(X_test.shape, y_test.shape)
     print(y_test.value_counts(sort=False))
