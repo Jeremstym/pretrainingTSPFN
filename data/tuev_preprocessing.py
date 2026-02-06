@@ -147,6 +147,7 @@ def BuildEvents(signals, times, EventData, keep_channels):
             continue # Skip if window goes out of bounds
 
         # 2. Select 2 channels (as per your logic)
+        print(f"channels present for label {label}: {chans_present}")
         if len(chans_present) >= 2:
             # Pick two from the offending channels
             chosen_chans_orig = np.random.choice(chans_present, size=2, replace=False)
