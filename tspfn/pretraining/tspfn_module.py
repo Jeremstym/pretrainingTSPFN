@@ -30,7 +30,7 @@ from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
-from tspfn.utils import half_batch_split
+from tspfn.utils import half_batch_split, stratified_batch_split, z_scoring
 
 logger = logging.getLogger(__name__)
 

@@ -70,6 +70,16 @@ def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tens
 
     return support_data, query_data, support_labels, query_labels
 
+def z_scoring(data_support: Tensor, data_query: Tensor, label_support: Tensor, label_query: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    # 1. Compute mean and std from the support set
+    mean = data_support.mean(dim=0, keepdim=True)
+    std = data_support.std(dim=0, keepdim=True) + 1e-8  # Avoid division by zero
+
+    # 2. Apply z-scoring to both support and query sets
+    data_support_z = (data_support - mean) / std
+    data_query_z = (data_query - mean) / std
+
+    return data_support_z, data_query_z, label_support, label_query
 
 def get_stratified_batch_split(X, y, n_total=10000):
     # 1. On détermine la taille du support (Log-Uniforme)
