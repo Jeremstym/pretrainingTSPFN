@@ -155,13 +155,13 @@ if __name__ == "__main__":
     df_test = pd.DataFrame({'ecg_signal_raw': list_of_arrays_test, 'true_label': y_test, 'partition': ['test'] * len(y_test)})
 
     df = pd.concat([df_train, df_test])
-    # df.to_pickle(path+"ptbxl_dataframe.pkl")
+    df.to_pickle(path+"ptbxl_dataframe.pkl")
     
     if os.path.exists(path+"ptbxl_dataframe_rp.pkl"):
         df_rp = pd.read_pickle(path+"ptbxl_dataframe_rp.pkl")
     else:   
         df_rp = find_rpeaks_clean_ecgs_in_dataframe(data=df)
-        # df_rp.to_pickle(path+"ptbxl_dataframe_rp.pkl")
+        df_rp.to_pickle(path+"ptbxl_dataframe_rp.pkl")
 
     
     df_final = segment_ecg_in_clean_dataframe(ROOT=path, data=df_rp)
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     df_final['heartbeat_indexes']
 
     print(df_final)
-    # df_final.to_pickle(path+"ptbxl_dataframe_final.pkl")
+    df_final.to_pickle(path+"ptbxl_dataframe_final.pkl")
 
     df_final = pd.read_pickle(path+"ptbxl_dataframe_final.pkl")
     df_final.head()
@@ -179,7 +179,7 @@ if __name__ == "__main__":
     df_final['ecg_standardize_signal'] = df_final.apply(standardize, axis=1)
     df_final['ecg_standardize_signal_heartbeats'] = df_final.apply(standardize_hb, axis=1)
 
-    # df_final.to_pickle(path+"ptbxl_dataframe_final.pkl")
+    df_final.to_pickle(path+"ptbxl_dataframe_final.pkl")
     df_final.head()
 
     features = get_values(df_final.ecg_standardize_signal.values[:])
