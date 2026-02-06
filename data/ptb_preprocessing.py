@@ -129,6 +129,11 @@ if __name__ == "__main__":
 
     y_test = y_test[index_ok_test]
     X_test = X_test[index_ok_test]
+    # Subsample
+    indices = np.arange(len(y_test))
+    test_selected_indices = np.random.choice(indices, size=100, replace=False, random_state=42)
+    y_test = y_test.iloc[test_selected_indices]
+    X_test = X_test[test_selected_indices]
     y_test = y_test.apply(lambda x: x[0])
     y_test = y_test.apply(lambda x: convert_labels(x))
     print(X_test.shape, y_test.shape)
@@ -136,6 +141,11 @@ if __name__ == "__main__":
 
     y_train = y_train[index_ok_train]
     X_train = X_train[index_ok_train]
+    # Subsample
+    indices = np.arange(len(y_train))
+    train_selected_indices = np.random.choice(indices, size=1000, replace=False, random_state=42)
+    y_train = y_train.iloc[train_selected_indices]
+    X_train = X_train[train_selected_indices]
     y_train = y_train.apply(lambda x: x[0])
     y_train = y_train.apply(lambda x: convert_labels(x))
     print(X_train.shape, y_test.shape)
