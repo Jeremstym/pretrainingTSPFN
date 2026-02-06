@@ -62,6 +62,7 @@ def rope_compute_heads_wrapper(
     if total_seq_len % num_channels != 0:
         raise ValueError(f"Seq len {total_seq_len} non divisible by {num_channels} channels.")
 
+    print(f"VRAM initiale before chunking for RoPE: {torch.cuda.memory_allocated()/1e9:.2f} GB")
     q_chunks = torch.chunk(q, num_channels, dim=1)
     k_chunks = torch.chunk(k, num_channels, dim=1)
     
@@ -73,6 +74,8 @@ def rope_compute_heads_wrapper(
         k_c = _apply_rope(k_c, d_k)
         rotated_q.append(q_c)
         rotated_k.append(k_c)
+
+    print(f"VRAM initiale before concatenation of RoPE: {torch.cuda.memory_allocated()/1e9:.2f} GB")
 
     q = torch.cat(rotated_q, dim=1)
     k = torch.cat(rotated_k, dim=1)
