@@ -85,11 +85,17 @@ def get_stratified_batch_split(data, labels, n_total=10000):
     min_support = 16
     max_support = n_total - int(0.5 * n_total)  # We keep at least 50% for the query to have a meaningful evaluation
 
+        
     log_min, log_max = np.log(min_support), np.log(max_support)
     n_support = int(np.exp(np.random.uniform(log_min, log_max)))
 
     query_ratio = (n_total - n_support) / n_total
     print(f"Query Ratio: {query_ratio:.4f} (Support Size: {n_support}, Query Size: {n_total - n_support})")
+
+    if len(data.shape) == 3:
+        data = data.squeeze(0)
+        labels = labels.squeeze(0)
+        # The data and label will be unsqueezed back before encoder forward pass
 
     X_sup, X_query, y_sup, y_query = train_test_split(
         data, labels, test_size=query_ratio, stratify=labels, random_state=None  # To vary at each iteration
