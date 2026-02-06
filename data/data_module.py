@@ -15,6 +15,7 @@ from typing import Optional, Callable, Dict, Sequence, List, Union
 from pathlib import Path
 from tqdm import tqdm
 from omegaconf import DictConfig
+from hydra.utils import instantiate
 
 import torch
 import pytorch_lightning as pl
