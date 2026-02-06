@@ -231,7 +231,6 @@ class TSPFNEncoder(nn.Module, ABC):
         assert not torch.isnan(
             embedded_input
         ).any(), f"{torch.isnan(embedded_input).any()=}, Make sure to add nan handlers"
-        print(f"VRAM initiale before transformer_encoder: {torch.cuda.memory_allocated()/1e9:.2f} GB")
         output = self.transformer_encoder(
             embedded_input,
             single_eval_pos=single_eval_pos,
@@ -239,7 +238,6 @@ class TSPFNEncoder(nn.Module, ABC):
             recompute_layer=self.recompute_layer,
             save_peak_mem_factor=None,
         )
-        print(f"VRAM initiale after transformer_encoder: {torch.cuda.memory_allocated()/1e9:.2f} GB")
         out_query = output[:, single_eval_pos:, :]  # (B, Query, num_features + 1, d_model)
 
         return out_query
