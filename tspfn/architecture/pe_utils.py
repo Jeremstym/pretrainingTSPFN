@@ -162,6 +162,8 @@ def rope_compute_heads_wrapper(q, k, v, kv, qkv, seq_len=1000, time_points=500, 
     elif kv is not None:
         k, v = kv.unbind(dim=-3)
 
+    raise Exception("Check if the wrapper is called")
+
     # 2. Application chirurgicale du RoPE
     # q shape: [1, 501000, 8, 24]
     b, total_len, h, d_k = q.shape
