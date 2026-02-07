@@ -94,7 +94,8 @@ def get_stratified_batch_split(data, labels, n_total=10000):
     log_min, log_max = np.log(min_support), np.log(max_support)
     n_support = int(np.exp(np.random.uniform(log_min, log_max)))
 
-    query_ratio = (n_total - n_support) / n_total
+    # query_ratio = (n_total - n_support) / n_total
+    query_ratio = 0.5 # We keep a fixed query ratio to ensure a meaningful evaluation
 
     data_np = data.squeeze().cpu().numpy()
     labels_np = labels.squeeze().cpu().numpy()
