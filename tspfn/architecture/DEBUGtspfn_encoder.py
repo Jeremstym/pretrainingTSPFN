@@ -49,19 +49,6 @@ class TSPFNEncoder(nn.Module, ABC):
                 channel_pe_state = state_dict.pop("channel_positional_encoding")
                 with torch.no_grad():
                     self.channel_positional_encoding.copy_(channel_pe_state)
-            # new_state_dict = {}
-            # if "learned_pos_enc" in state_dict:
-            #     self.learned_pos_enc_dict = {"learned_pos_enc": state_dict.pop("learned_pos_enc")}
-            # else:
-            #     self.learned_pos_enc_dict = None
-            # new_state_disct = {}
-            # print(f"state_dict.keys()", state_dict.keys())
-            # for k, v in state_dict.items():
-            #     if k.startswith("model."):
-            #         new_key = k[len("model.") :]  # strip the prefix
-            #         new_state_dict[new_key] = v
-            #     else:
-            #         new_state_dict[k] = v
             self.model.load_state_dict(state_dict, strict=True)
 
         self.encoder = self.model.encoder
@@ -224,20 +211,6 @@ class TSPFNEncoder(nn.Module, ABC):
             pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
             emb_x += pos_broadcasted
 
-        # elif self.positional_encoding == "mixed":
-        #     # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
-        #     pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
-        #     # Broadcast to (B, Seq, T, E)
-        #     pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
-        #     emb_x, emb_y = self.model.add_embeddings(
-        #         emb_x,
-        #         emb_y,
-        #         data_dags=None,
-        #         num_features=num_features,
-        #         seq_len=seq_len,
-        #     )
-        #     emb_x += pos_broadcasted
-
         elif self.positional_encoding == "learned":
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
@@ -258,7 +231,6 @@ class TSPFNEncoder(nn.Module, ABC):
         assert not torch.isnan(
             embedded_input
         ).any(), f"{torch.isnan(embedded_input).any()=}, Make sure to add nan handlers"
-
         output = self.transformer_encoder(
             embedded_input,
             single_eval_pos=single_eval_pos,
