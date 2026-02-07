@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset, DataLoader
 
 
-def stratified_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+def stratified_batch_split(data: Tensor, labels: Tensor, **kwargs) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
     unique_labels = torch.unique(labels)
     support_indices = []
     query_indices = []
@@ -35,7 +35,7 @@ def stratified_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor
     return data[support_indices], data[query_indices], labels[support_indices], labels[query_indices]
 
 
-def half_batch_split(data: Tensor, labels: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+def half_batch_split(data: Tensor, labels: Tensor, **kwargs) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
 
     if data.ndim == 2:
         total_size = data.size(0)
