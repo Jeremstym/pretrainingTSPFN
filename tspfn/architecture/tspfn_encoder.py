@@ -183,10 +183,12 @@ class TSPFNEncoder(nn.Module, ABC):
     ) -> Tuple[torch.torch.Tensor, torch.torch.Tensor]:
 
         seq_len, batch_size, num_features = X_full.shape
+        print("STARTING ENCODING")
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
 
         if self.positional_encoding == "none" or self.positional_encoding == "rope":
             # Use PE from TabPFN model
+            print("STARTING PE")
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
                 emb_y,
@@ -258,7 +260,7 @@ class TSPFNEncoder(nn.Module, ABC):
         assert not torch.isnan(
             embedded_input
         ).any(), f"{torch.isnan(embedded_input).any()=}, Make sure to add nan handlers"
-
+        print("STARTING TRANSFORMER ENCODER")
         output = self.transformer_encoder(
             embedded_input,
             single_eval_pos=single_eval_pos,
@@ -267,5 +269,5 @@ class TSPFNEncoder(nn.Module, ABC):
             save_peak_mem_factor=None,
         )
         out_query = output[:, single_eval_pos:, :]  # (B, Query, num_features + 1, d_model)
-
+        print("FINISHED ENCODING")
         return out_query
