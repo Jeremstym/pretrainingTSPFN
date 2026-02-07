@@ -225,7 +225,13 @@ class TSPFNPretraining(TSPFNSystem):
             ts_batch_support,
             ts_batch_query,
         )
-
+    def on_exception(self, exception):
+        # C'est ici que la magie opère : si ça crash (OOM), 
+        # on force le profiler à s'arrêter et à écrire les fichiers.
+        if isinstance(exception, torch.OutOfMemoryError):
+            if self.trainer.profiler:
+                print("OOM détecté ! Fermeture forcée du profiler pour sauvegarde...")
+                self.trainer.profiler.stop("fit") # ou le nom de l'action en cours
     @auto_move_data
     def encode(
         self,
