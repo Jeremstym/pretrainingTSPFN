@@ -93,6 +93,8 @@ class TSPFNSystem(pl.LightningModule, ABC):
         optimizer_cfg = self.hparams["optim"]["optimizer"]
         scheduler_cfg = None
         if scheduler_cfg := self.hparams["optim"].get("scheduler"):
+            print("Configuring scheduler with the following config:")
+            print(scheduler_cfg)
             total_steps = self.trainer.estimated_stepping_batches
             warmup_ratio = scheduler_cfg.get("num_warmup_steps", 0)
             num_warmup = int(total_steps * warmup_ratio)

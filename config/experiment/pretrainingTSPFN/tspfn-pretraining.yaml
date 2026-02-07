@@ -50,9 +50,9 @@ task:
       lr: 5e-5              # Slightly higher than single-set tuning, but still cautious
       weight_decay: 0.1     # Stronger decay is essential for multi-dataset meta-learning
       eps: 1e-8
-    scheduler:
-      _target_: transformers.get_cosine_schedule_with_warmup
-      num_warmup_steps: 100 # Warmup should be step-based, not epoch-based
+    # scheduler:
+    #   _target_: transformers.get_cosine_schedule_with_warmup
+    #   num_warmup_steps: 100 # Warmup should be step-based, not epoch-based
 
 # Change checkpoint loading defaults to:
 ckpt: ??? # Make it mandatory to provide a checkpoint
