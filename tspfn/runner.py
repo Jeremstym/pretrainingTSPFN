@@ -140,19 +140,20 @@ class TSPFNRunner(ABC):
         #     if not datamodule.switch_to_next_dataset():
         #         break
         # Instantiate Lightning Trainer
-        # trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
-        profiler = hydra.utils.instantiate(cfg.profiler)
-        trainer_args = dict(cfg.trainer)
+        trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
+        trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
+
+        # profiler = hydra.utils.instantiate(cfg.profiler)
+        # trainer_args = dict(cfg.trainer)
         # trainer_args.pop("profiler", None)
 
-        # 3. On crée le Trainer avec le profiler déjà prêt
-        trainer = pl.Trainer(
-            devices=1,
-            accelerator="gpu",
-            precision=32,
-            max_epochs=100,
-            profiler=profiler
-        )
+        # trainer = pl.Trainer(
+        #     devices=1,
+        #     accelerator="gpu",
+        #     precision=32,
+        #     max_epochs=100,
+        #     profiler=profiler
+        # )
 
         # Instantiate system (which will handle instantiating the model and optimizer).
         model = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
