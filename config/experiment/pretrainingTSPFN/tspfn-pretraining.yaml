@@ -17,7 +17,7 @@ trainer:
   max_epochs: 100
   profiler:
     _target_: pytorch_lightning.profilers.PyTorchProfiler
-    dirpath: "."
+    dirpath: ${sys.getcwd:}
     filename: "oom_profile_report"
     profile_memory: True        # Indispensable pour voir l'OOM
     with_stack: True           # Permet de voir quelle ligne de code alloue quoi
