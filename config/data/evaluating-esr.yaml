@@ -6,6 +6,8 @@ data_roots: ${oc.env:ESR_DATA_PATH}
 time_series_length: 178
 num_channels: 1
 num_classes: 5
+time_points: ${data.time_series_length
+sequence_length: ${data.time_series_length}
 
 predict_losses:
   classification:

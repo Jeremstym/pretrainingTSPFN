@@ -164,6 +164,8 @@ class ESRDataset(Dataset):
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
         self.scaler = None
+        
+        print(f"Loaded {len(self.X)} samples for {split} split of ESR dataset.")
 
         # if split == "train":
         #     self.scaler = StandardScaler()
