@@ -278,10 +278,8 @@ def rope_compute_heads_wrapper(
     frame = inspect.currentframe().f_back
     caller_self = frame.f_locals.get("self", None)
     if not getattr(caller_self, "is_feature_attn", False):
-        print("Attention non appliquée (pas une attention entre features). Appel de la fonction originale.")
         return original_func(q, k, v, kv, qkv, dropout_p, softmax_scale, **kwargs)
 
-    print("Attention entre features détectée. Application du RoPE par channel.")
 
     # B. Extraction des tenseurs (Unpack)
     if qkv is not None:
