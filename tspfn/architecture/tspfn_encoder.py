@@ -26,7 +26,7 @@ class TSPFNEncoder(nn.Module, ABC):
         recompute_layer: bool = True,
         num_channels: int = 1,
         sequence_length: int = 1000,
-        time_points: int = 499,
+        time_points: int = 500,
         positional_encoding: Literal["none", "sinusoidal", "rope", "learned"] = "none",
         **kwargs,
     ):
@@ -34,7 +34,7 @@ class TSPFNEncoder(nn.Module, ABC):
 
         self.channel_positional_encoding = nn.Parameter(torch.zeros(1, 1, 5, embed_dim)) # Leave 5 hardcoded
         if positional_encoding == "learned":
-            self.pe = nn.Parameter(torch.zeros(1, 1, 499, embed_dim)) # Leave 499 hardcoded
+            self.pe = nn.Parameter(torch.zeros(1, 1, 500, embed_dim)) # Leave 500 hardcoded
             nn.init.xavier_uniform_(self.pe)
 
         list_model, _, self.model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
@@ -126,7 +126,7 @@ class TSPFNEncoder(nn.Module, ABC):
         elif isinstance(module, nn.Embedding):
             nn.init.normal_(module.weight, mean=0, std=1)
 
-    def sinusoidal_positional_encoding(self, sequence_length=499, embedding_dim=192, n=10000.0):
+    def sinusoidal_positional_encoding(self, sequence_length=500, embedding_dim=192, n=10000.0):
         if embedding_dim % 2 != 0:
             raise ValueError("Embedding dimension must be even")
 
