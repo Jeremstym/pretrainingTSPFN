@@ -68,12 +68,26 @@ class TSPFNEncoder(nn.Module, ABC):
                     rope_compute_heads_wrapper, num_channels=num_channels
                 )
         elif self.positional_encoding == "rope+channel":
-            # Modify attention mechanism to include RoPE with channel-wise application
-            for layer in self.transformer_encoder.layers:
-                layer.self_attn_between_features.compute_attention_heads = partial(
-                    rope_compute_heads_wrapper, num_channels=num_channels
-                )
+            # # Modify attention mechanism to include RoPE with channel-wise application
+            # for layer in self.transformer_encoder.layers:
+            #     layer.self_attn_between_features.compute_attention_heads = partial(
+            #         rope_compute_heads_wrapper, num_channels=num_channels
+            #     )
+        # Définit le wrapper pour qu'il accepte 'self' si ce n'est pas une staticmethod
+            def rope_compute_heads_wrapper(q, k, v, kv, qkv, **kwargs):
+                # Ton code ici...
+                raise Exception("Wrapper enfin détecté !")
 
+            for layer in self.transformer_encoder.layers:
+                # On remplace directement sur l'objet d'attention
+                # On utilise setattr pour être plus explicite
+                target_attn = layer.self_attn_between_features
+                
+                # On écrase la méthode de l'instance
+                target_attn.compute_attention_heads = partial(
+                    rope_compute_heads_wrapper, 
+                    num_channels=num_channels
+                )
         self.embed_dim = embed_dim
 
         if random_init:  # random_init:
