@@ -10,6 +10,7 @@ import torch.nn as nn
 from functools import partial
 from tabpfn.model_loading import load_model_criterion_config
 from tspfn.architecture.pe_utils import rope_compute_heads_wrapper, interpolate_pos_encoding
+from tabpfn.architectures.base.attention.full_attention import MultiHeadAttention
 
 import logging
 
