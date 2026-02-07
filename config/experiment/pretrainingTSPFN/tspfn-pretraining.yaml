@@ -15,6 +15,13 @@ trainer:
   accelerator: gpu
   precision: 32 #16-mixed, 32
   max_epochs: 100
+  profiler:
+    _target_: pytorch_lightning.profilers.PyTorchProfiler
+    dirpath: "."
+    filename: "oom_profile_report"
+    profile_memory: True        # Indispensable pour voir l'OOM
+    with_stack: True           # Permet de voir quelle ligne de code alloue quoi
+    export_to_chrome: True
   
 output_dir: ${sys.getcwd:}
 updated_pfn_path: null
