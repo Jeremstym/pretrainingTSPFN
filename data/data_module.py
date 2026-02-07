@@ -145,12 +145,12 @@ class TSPFNDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         val_loader = self._dataloader(self.val_dataset, shuffle=False, batch_size=self.batch_size)
         train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
-        return CombinedLoader({"val": val_loader, "train": train_loader}, "min_size")
+        return CombinedLoader({"query": val_loader, "support": train_loader}, "min_size")
 
     def test_dataloader(self):
         test_loader = self._dataloader(self.test_dataset, shuffle=False, batch_size=self.batch_size)
         train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
-        return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
+        return CombinedLoader({"query": test_loader, "support": train_loader}, "min_size")
 
 
 # class TSPFNDataModule(pl.LightningDataModule):
