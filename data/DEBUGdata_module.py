@@ -14,6 +14,8 @@ import sys
 from typing import Optional, Callable, Dict, Sequence, List, Union
 from pathlib import Path
 from tqdm import tqdm
+from omegaconf import DictConfig
+from hydra.utils import instantiate
 
 import torch
 import pytorch_lightning as pl
@@ -28,32 +30,16 @@ from data.evaluation_datasets import (
     ESRDataset,
     ABIDEDataset,
 )
-from data.pretraining_datasets import TUABDataset, TUEVDataset
+from data.pretraining_datasets import (
+    TUAB2ChannelDataset,
+    TUEV2ChannelDataset,
+    PTB2ChannelDataset,
+    TSPFNMetaDataset,
+    TSPFNValidationDataset,
+    TSPFNTestDataset,
+)
 from data.utils.sampler import StratifiedBatchSampler
 from data.utils.processing_csv import load_csv
-
-
-# def stratified_batch_collate(batch):
-#     xs, ys = zip(*batch)
-#     xs = torch.stack(xs)
-#     ys = torch.tensor(ys)
-
-#     unique_labels = torch.unique(ys)
-#     first_half_idxs = []
-#     second_half_idxs = []
-
-#     for label in unique_labels:
-#         label_indices = (ys == label).nonzero(as_tuple=True)[0]
-
-#         # Split these specific label indices in half
-#         mid = len(label_indices) // 2
-#         first_half_idxs.append(label_indices[:mid])
-#         second_half_idxs.append(label_indices[mid:])
-
-#     # Combine indices for both halves
-#     new_order = torch.cat(first_half_idxs + second_half_idxs)
-
-#     return xs[new_order], ys[new_order]
 
 
 class TSPFNDataset(Dataset):
@@ -70,6 +56,82 @@ class TSPFNDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
         return sample[:, :-1], sample[:, -1]
+
+
+class PretrainingTSPFNDataModule(pl.LightningDataModule):
+    """LightningDataModule for TSP-style pretraining datasets.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        train_datasets: DictConfig,
+        val_datasets: DictConfig,
+        test_datasets: DictConfig,
+        meta_batch_size=1, 
+        chunk_size=10000,
+        num_workers: int = 0,
+        pin_memory: bool = False,
+        seed: int = 42,
+        **kwargs,
+    ) -> None:
+        super().__init__()
+        self.train_datasets = train_datasets
+        self.val_datasets = val_datasets
+        self.test_datasets = test_datasets
+        self.meta_batch_size = meta_batch_size
+        self.chunk_size = chunk_size
+        self.num_workers = num_workers
+        self.pin_memory = num_workers > 0
+        self.seed = seed
+
+    def setup(self, stage=None):
+        if stage == "fit" or stage is None:
+            # On instancie les datasets de train un par un
+            train_instances = {
+                name: instantiate(cfg) for name, cfg in self.train_datasets.items()
+            }
+            # On instancie les datasets de val
+            val_instances = {
+                name: instantiate(cfg) for name, cfg in self.val_datasets.items()
+            }
+            
+            self.train_ds = TSPFNMetaDataset(train_instances, self.chunk_size)
+            self.val_ds = TSPFNValidationDataset(train_instances, val_instances, self.chunk_size)
+            
+        if stage == "test":
+            test_instances = {
+                name: instantiate(cfg) for name, cfg in self.test_datasets.items()
+            }
+            self.test_ds = TSPFNTestDataset(train_instances, test_instances, self.chunk_size)
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train_ds, 
+            batch_size=self.meta_batch_size, 
+            num_workers=self.num_workers,
+            pin_memory=self.num_workers > 0,
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val_ds, 
+            batch_size=self.meta_batch_size, 
+            num_workers=self.num_workers,
+            pin_memory=self.num_workers > 0,
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.test_ds, 
+            batch_size=self.meta_batch_size, 
+            num_workers=self.num_workers,
+            pin_memory=self.num_workers > 0,
+        )
 
 
 class TSPFNDataModule(pl.LightningDataModule):
@@ -91,6 +153,7 @@ class TSPFNDataModule(pl.LightningDataModule):
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
+        **kwargs,
     ) -> None:
         super().__init__()
         self.data_roots = data_roots
@@ -144,92 +207,12 @@ class TSPFNDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         val_loader = self._dataloader(self.val_dataset, shuffle=False, batch_size=self.batch_size)
         train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
-        return CombinedLoader({"val": val_loader, "train": train_loader}, "min_size")
+        return CombinedLoader({"query": val_loader, "support": train_loader}, "min_size")
 
     def test_dataloader(self):
         test_loader = self._dataloader(self.test_dataset, shuffle=False, batch_size=self.batch_size)
         train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
-        return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
-
-
-# class TSPFNDataModule(pl.LightningDataModule):
-#     """LightningDataModule for TSP datasets.
-
-#     Parameters
-#     - data_roots: root directory for data
-#     - batch_size, num_workers, pin_memory: DataLoader args
-#     - transform: optional callable applied to subsets
-#     """
-
-#     def __init__(
-#         self,
-#         data_roots: str,
-#         subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
-#         num_workers: int = 0,
-#         batch_size: int = 32,
-#         test_batch_size: Optional[int] = None,
-#         pin_memory: bool = True,
-#         transform: Optional[Callable] = None,
-#         seed: int = 42,
-#     ) -> None:
-#         super().__init__()
-#         self.data_roots = data_roots
-#         self.subsets = subsets
-#         self.batch_size = batch_size
-#         self.test_batch_size = test_batch_size
-#         self.num_workers = num_workers
-#         self.pin_memory = pin_memory
-#         self.transform = transform
-#         self.seed = seed
-#         if subsets is not None:
-#             self.subset_list = [subset_path for _, subset_path in subsets.items()]
-#         else:
-#             self.subset_list = [Path(data_roots)]
-#         self.current_dataset_idx = 0
-
-#     def setup(self, stage: Optional[str] = None) -> None:
-#         if not hasattr(self, "all_train_chunks") or not hasattr(self, "all_val_chunks"):
-#             self.all_train_chunks = []
-#             self.all_val_chunks = []
-
-#             for subset_path in self.subset_list:
-#                 train_chunks, val_chunks = load_csv(subset_path, split_ratio=0.8)
-#                 self.all_train_chunks.extend(train_chunks)
-#                 self.all_val_chunks.extend(val_chunks)
-
-#         if stage == "fit" or stage is None:
-#             self.train_dataset = TSPFNDataset(data_ts=self.all_train_chunks)
-#             self.val_dataset = TSPFNDataset(data_ts=self.all_val_chunks)
-
-#         if stage == "test":
-#             self.test_dataset = TSPFNDataset(data_ts=self.all_val_chunks)
-
-#     def _dataloader(
-#         self, dataset: Dataset, shuffle: bool, batch_size: int, collate_fn=None, drop_last=False
-#     ) -> DataLoader:
-#         return DataLoader(
-#             dataset,
-#             batch_size=batch_size,
-#             shuffle=shuffle,
-#             num_workers=self.num_workers,
-#             pin_memory=self.pin_memory,
-#             collate_fn=collate_fn,
-#             drop_last=drop_last,
-#             persistent_workers=self.num_workers > 0,
-#         )
-
-#     def train_dataloader(self):
-#         return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
-
-#     def val_dataloader(self):
-#         val_loader = self._dataloader(self.val_dataset, shuffle=False, batch_size=self.batch_size)
-#         train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
-#         return CombinedLoader({"val": val_loader, "train": train_loader}, "min_size")
-
-#     def test_dataloader(self):
-#         test_loader = self._dataloader(self.test_dataset, shuffle=False, batch_size=self.batch_size)
-#         train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.batch_size)
-#         return CombinedLoader({"val": test_loader, "train": train_loader}, "min_size")
+        return CombinedLoader({"query": test_loader, "support": train_loader}, "min_size")
 
 
 class ECG5000DataModule(TSPFNDataModule):
