@@ -7,8 +7,7 @@ time_series_length: 178
 num_channels: 1
 num_classes: 5
 time_points: ${data.time_series_length
-sequence_length: ${data.time_series_length}
-
+sequence_length: 1000
 predict_losses:
   classification:
     _target_: torch.nn.CrossEntropyLoss
