@@ -141,9 +141,9 @@ class TSPFNRunner(ABC):
         #         break
         # Instantiate Lightning Trainer
         # trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
-        profiler = hydra.utils.instantiate(cfg.trainer.profiler)
+        profiler = hydra.utils.instantiate(cfg.profiler)
         trainer_args = dict(cfg.trainer)
-        trainer_args.pop("profiler", None)
+        # trainer_args.pop("profiler", None)
 
         # 3. On crée le Trainer avec le profiler déjà prêt
         trainer = pl.Trainer(
