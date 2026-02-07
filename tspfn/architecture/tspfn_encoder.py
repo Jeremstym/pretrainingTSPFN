@@ -196,6 +196,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 num_features=num_features,
                 seq_len=seq_len,
             )
+            print("FINISHED PE")
 
         elif self.positional_encoding == "rope+channel":
             # Use PE from TabPFN model and add channel-wise positional encodings
