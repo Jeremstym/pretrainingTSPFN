@@ -190,7 +190,7 @@ class TSPFNPretraining(TSPFNSystem):
         # y = time_series_attrs[:, :, -1]  # (B, S, 1)
         
         if self.training or summary_mode:
-            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = half_batch_split(
+            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = get_stratified_batch_split(
                 data=time_series_attrs,
                 labels=labels,
                 n_total=self.chunk_size,
