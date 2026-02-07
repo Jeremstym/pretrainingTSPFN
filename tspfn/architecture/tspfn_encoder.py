@@ -49,19 +49,6 @@ class TSPFNEncoder(nn.Module, ABC):
                 channel_pe_state = state_dict.pop("channel_positional_encoding")
                 with torch.no_grad():
                     self.channel_positional_encoding.copy_(channel_pe_state)
-            # new_state_dict = {}
-            # if "learned_pos_enc" in state_dict:
-            #     self.learned_pos_enc_dict = {"learned_pos_enc": state_dict.pop("learned_pos_enc")}
-            # else:
-            #     self.learned_pos_enc_dict = None
-            # new_state_disct = {}
-            # print(f"state_dict.keys()", state_dict.keys())
-            # for k, v in state_dict.items():
-            #     if k.startswith("model."):
-            #         new_key = k[len("model.") :]  # strip the prefix
-            #         new_state_dict[new_key] = v
-            #     else:
-            #         new_state_dict[k] = v
             self.model.load_state_dict(state_dict, strict=True)
 
         self.encoder = self.model.encoder
@@ -183,12 +170,10 @@ class TSPFNEncoder(nn.Module, ABC):
     ) -> Tuple[torch.torch.Tensor, torch.torch.Tensor]:
 
         seq_len, batch_size, num_features = X_full.shape
-        print("STARTING ENCODING")
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
 
         if self.positional_encoding == "none" or self.positional_encoding == "rope":
             # Use PE from TabPFN model
-            print("STARTING PE")
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
                 emb_y,
@@ -196,7 +181,6 @@ class TSPFNEncoder(nn.Module, ABC):
                 num_features=num_features,
                 seq_len=seq_len,
             )
-            print("FINISHED PE")
 
         elif self.positional_encoding == "rope+channel":
             # Use PE from TabPFN model and add channel-wise positional encodings
@@ -227,20 +211,6 @@ class TSPFNEncoder(nn.Module, ABC):
             pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
             emb_x += pos_broadcasted
 
-        # elif self.positional_encoding == "mixed":
-        #     # Use PE from TabPFN model and add sinusoidal positional encodings to time series attributes
-        #     pos = self.sinusoidal_positional_encoding().to(emb_x.device)  # (T, E)
-        #     # Broadcast to (B, Seq, T, E)
-        #     pos_broadcasted = pos.unsqueeze(0).unsqueeze(0).expand(batch_size, seq_len, -1, -1)
-        #     emb_x, emb_y = self.model.add_embeddings(
-        #         emb_x,
-        #         emb_y,
-        #         data_dags=None,
-        #         num_features=num_features,
-        #         seq_len=seq_len,
-        #     )
-        #     emb_x += pos_broadcasted
-
         elif self.positional_encoding == "learned":
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
@@ -257,11 +227,11 @@ class TSPFNEncoder(nn.Module, ABC):
             raise ValueError(f"Unknown ts positional encoding option: {self.positional_encoding}")
 
         # (B, Seq, num_features, d_model) + (B, Seq, 1, d_model) -> (B, Seq, num_features + 1, d_model)
-        print("STARTING CONCATENATION")
+        print("STARTING CONCATENATION OF EMBEDDINGS")
         print(f"emb_x.shape: {emb_x.shape}, emb_y.shape: {emb_y.shape}")
         embedded_input = torch.cat((emb_x, emb_y.unsqueeze(2)), dim=2)
+        print("FINISHED CONCATENATION OF EMBEDDINGS")
         print(f"embedded_input.shape after concatenation: {embedded_input.shape}")
-        print("FINISHED CONCATENATION")
         assert not torch.isnan(
             embedded_input
         ).any(), f"{torch.isnan(embedded_input).any()=}, Make sure to add nan handlers"
@@ -274,5 +244,5 @@ class TSPFNEncoder(nn.Module, ABC):
             save_peak_mem_factor=None,
         )
         out_query = output[:, single_eval_pos:, :]  # (B, Query, num_features + 1, d_model)
-        print("FINISHED ENCODING")
+
         return out_query
