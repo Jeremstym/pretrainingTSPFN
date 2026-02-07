@@ -163,7 +163,7 @@ class TSPFNPretraining(TSPFNSystem):
                 param.requires_grad = False
         return super().configure_optimizers()
 
-    # @auto_move_data
+    @auto_move_data
     def process_data(
         self,
         time_series_attrs: Tensor,
@@ -226,7 +226,7 @@ class TSPFNPretraining(TSPFNSystem):
             ts_batch_query,
         )
 
-    # @auto_move_data
+    @auto_move_data
     def encode(
         self,
         y_batch_support: Tensor,
@@ -283,7 +283,7 @@ class TSPFNPretraining(TSPFNSystem):
 
         return out_features  # (B, Query, E)
 
-    # @auto_move_data
+    @auto_move_data
     def forward(
         self,
         time_series_attrs: Tensor,
@@ -344,7 +344,7 @@ class TSPFNPretraining(TSPFNSystem):
         else:
             raise ValueError(f"Unknown task '{task}' requested for forward pass.")
 
-    # @auto_move_data
+    @auto_move_data
     def get_latent_vectors(
         self,
         batch: Tensor,
