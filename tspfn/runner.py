@@ -147,7 +147,10 @@ class TSPFNRunner(ABC):
 
         # 3. On crée le Trainer avec le profiler déjà prêt
         trainer = pl.Trainer(
-            **trainer_args,
+            devices=1,
+            accelerator="gpu",
+            precison=32,
+            max_epochs=100,
             profiler=profiler
         )
 
