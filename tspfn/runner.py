@@ -25,6 +25,7 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, open_dict
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.loggers import CometLogger, Logger
+import pytorch_lightning as pl
 
 logger = logging.getLogger(__name__)
 
