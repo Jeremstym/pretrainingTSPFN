@@ -47,44 +47,192 @@ def _apply_rope(x, d_k):
     return (x * cos) + (_rotate_half(x) * sin)
 
 
+# def _apply_rope_vectorized(x):
+#     # x: [batch, seq_len, nhead, d_k]
+#     b, n, h, d_k = x.shape
+#     device = x.device
+
+#     # On calcule les fréquences une seule fois pour toute la séquence
+#     inv_freq = 1.0 / (10000 ** (torch.arange(0, d_k, 2, device=device).float() / d_k))
+#     t = torch.arange(n, device=device).float()
+#     freqs = torch.outer(t, inv_freq)  # [seq_len, d_k/2]
+
+#     # On concatène pour avoir [seq_len, d_k]
+#     emb = torch.cat((freqs, freqs), dim=-1)
+
+#     # On prépare pour le broadcasting unique : [1, seq_len, 1, d_k]
+#     cos = emb.cos().view(1, n, 1, d_k)
+#     sin = emb.sin().view(1, n, 1, d_k)
+
+#     return (x * cos) + (_rotate_half(x) * sin)
+
+
+def _apply_rope_per_channel(x, num_channels, d_k):
+    # x shape initial: [batch, total_seq_len, nhead, d_k]
+    b, t, h, d = x.shape
+    device = x.device
+
+    # 1. Calculer la longueur d'un channel
+    samples_per_channel = t // num_channels
+
+    # 2. Reshape pour isoler les channels dans une nouvelle dimension
+    # [batch, num_channels, samples_per_channel, nhead, d_k]
+    x = x.view(b, num_channels, samples_per_channel, h, d)
+
+    # 3. Calculer RoPE pour la longueur d'UN SEUL channel (samples_per_channel)
+    inv_freq = 1.0 / (10000 ** (torch.arange(0, d, 2, device=device).float() / d))
+    t_pos = torch.arange(samples_per_channel, device=device).float()
+    freqs = torch.outer(t_pos, inv_freq)  # [samples_per_channel, d/2]
+    emb = torch.cat((freqs, freqs), dim=-1)  # [samples_per_channel, d]
+
+    # 4. Préparer cos/sin pour le broadcasting
+    # [1, 1, samples_per_channel, 1, d]
+    cos = emb.cos().view(1, 1, samples_per_channel, 1, d)
+    sin = emb.sin().view(1, 1, samples_per_channel, 1, d)
+
+    # 5. Appliquer RoPE sur tous les channels en une seule opération (Vectorisé !)
+    x_rotated = (x * cos) + (_rotate_half(x) * sin)
+
+    # 6. Revenir à la forme originale [batch, total_seq_len, nhead, d_k]
+    return x_rotated.view(b, t, h, d)
+
+
 # 2. Define the new logic
-def rope_compute_heads_wrapper(
-    q: Tensor, k: Tensor, v: Tensor, kv, qkv, num_channels: int = 1, dropout_p=None, softmax_scale=None
-):
-    # Step A: Let the existing static logic unbind the tensors
-    # We use the class name to call the original static method
+# def rope_compute_heads_wrapper(
+#     q: Tensor, k: Tensor, v: Tensor, kv, qkv, num_channels: int = 1, dropout_p=None, softmax_scale=None
+# ):
+#     # Step A: Let the existing static logic unbind the tensors
+#     # We use the class name to call the original static method
+#     if qkv is not None:
+#         q, k, v = qkv.unbind(dim=-3)
+#     elif kv is not None:
+#         k, v = kv.unbind(dim=-3)
+
+#     batch, total_seq_len, num_heads, d_k = q.shape
+#     if total_seq_len % num_channels != 0:
+#         raise ValueError(f"Seq len {total_seq_len} non divisible by {num_channels} channels.")
+
+#     q_chunks = torch.chunk(q, num_channels, dim=1)
+#     k_chunks = torch.chunk(k, num_channels, dim=1)
+
+#     rotated_q = []
+#     rotated_k = []
+
+#     for q_c, k_c in zip(q_chunks, k_chunks):
+#         # q_c = _apply_rope(q_c, d_k)
+#         # k_c = _apply_rope(k_c, d_k)
+#         q_c = _apply_rope_vectorized(q_c)
+#         k_c = _apply_rope_vectorized(k_c)
+#         rotated_q.append(q_c)
+#         rotated_k.append(k_c)
+
+#     q = torch.cat(rotated_q, dim=1)
+#     k = torch.cat(rotated_k, dim=1)
+
+#     # Step C: Call original static method with our rotated tensors
+#     # We set qkv and kv to None so the original method uses our provided q, k, v
+#     return MultiHeadAttention.compute_attention_heads(
+#         q=q, k=k, v=v, kv=None, qkv=None, dropout_p=dropout_p, softmax_scale=softmax_scale
+#     )
+
+# def rope_compute_heads_wrapper(
+#     q: Tensor, k: Tensor, v: Tensor, kv, qkv, num_channels: int = 1, dropout_p=None, softmax_scale=None
+# ):
+#     # Étape A : Récupération des tensors originaux
+#     if qkv is not None:
+#         q, k, v = qkv.unbind(dim=-3)
+#     elif kv is not None:
+#         k, v = kv.unbind(dim=-3)
+
+#     # Étape B : Application du RoPE par channel de façon vectorisée (SANS BOUCLE)
+#     # On délègue tout au reshape pour éviter les 'cat' et 'chunk'
+#     q = _apply_rope_per_channel_vectorized(q, num_channels)
+#     k = _apply_rope_per_channel_vectorized(k, num_channels)
+
+#     # Étape C : Appel de l'attention originale
+#     return MultiHeadAttention.compute_attention_heads(
+#         q=q, k=k, v=v, kv=None, qkv=None, dropout_p=dropout_p, softmax_scale=softmax_scale
+#     )
+
+
+def rope_compute_heads_wrapper(q, k, v, kv, qkv, seq_len=1000, time_points=500, num_channels=1, dropout_p=None, softmax_scale=None):
+    # 1. Extraction standard (Step A du code original)
     if qkv is not None:
         q, k, v = qkv.unbind(dim=-3)
     elif kv is not None:
         k, v = kv.unbind(dim=-3)
 
-    batch, total_seq_len, num_heads, d_k = q.shape
-    if total_seq_len % num_channels != 0:
-        raise ValueError(f"Seq len {total_seq_len} non divisible by {num_channels} channels.")
+    # 2. Application chirurgicale du RoPE
+    # q shape: [1, 501000, 8, 24]
+    b, total_len, h, d_k = q.shape
 
-    print(f"VRAM initiale before chunking for RoPE: {torch.cuda.memory_allocated()/1e9:.2f} GB")
-    q_chunks = torch.chunk(q, num_channels, dim=1)
-    k_chunks = torch.chunk(k, num_channels, dim=1)
-    
-    rotated_q = []
-    rotated_k = []
+    # On reshape pour retrouver la structure [Batch, Temporel, Features, Heads, D]
+    # [1, 1000, 501, 8, 24]
+    q = q.view(b, seq_len, time_points+1, h, d_k)
+    k = k.view(b, seq_len, time_points+1, h, d_k)
 
-    for q_c, k_c in zip(q_chunks, k_chunks):
-        q_c = _apply_rope(q_c, d_k)
-        k_c = _apply_rope(k_c, d_k)
-        rotated_q.append(q_c)
-        rotated_k.append(k_c)
+    # 3. Isoler les 500 features du label (le 501ème)
+    q_feat = q[:, :, :time_points, :, :]
+    q_label = q[:, :, time_points:, :, :]
 
-    print(f"VRAM initiale before concatenation of RoPE: {torch.cuda.memory_allocated()/1e9:.2f} GB")
+    k_feat = k[:, :, :time_points, :, :]
+    k_label = k[:, :, time_points:, :, :]
 
-    q = torch.cat(rotated_q, dim=1)
-    k = torch.cat(rotated_k, dim=1)
+    # 4. Appliquer RoPE sur les features par channel (ex: num_channels=2 -> 250 feat chacun)
+    f_per_ch = time_points // num_channels
+    # Reshape pour isoler les channels : [1, 1000, num_channels, 250, 8, 24]
+    q_feat = q_feat.view(b, seq_len, num_channels, f_per_ch, h, d_k)
+    k_feat = k_feat.view(b, seq_len, num_channels, f_per_ch, h, d_k)
 
-    # Step C: Call original static method with our rotated tensors
-    # We set qkv and kv to None so the original method uses our provided q, k, v
+    # --- Calcul RoPE vectorisé ---
+    inv_freq = 1.0 / (10000 ** (torch.arange(0, d_k, 2, device=q.device).float() / d_k))
+    t_pos = torch.arange(f_per_ch, device=q.device).float()
+    freqs = torch.outer(t_pos, inv_freq)
+    emb = torch.cat((freqs, freqs), dim=-1)
+    cos = emb.cos().view(1, 1, 1, f_per_ch, 1, d_k)
+    sin = emb.sin().view(1, 1, 1, f_per_ch, 1, d_k)
+
+    q_feat = (q_feat * cos) + (_rotate_half(q_feat) * sin)
+    k_feat = (k_feat * cos) + (_rotate_half(k_feat) * sin)
+    # -----------------------------
+
+    # 5. Recollement et remise à plat
+    q_feat = q_feat.view(b, seq_len, time_points, h, d_k)
+    k_feat = k_feat.view(b, seq_len, time_points, h, d_k)
+
+    q = torch.cat([q_feat, q_label], dim=2).view(b, total_len, h, d_k)
+    k = torch.cat([k_feat, k_label], dim=2).view(b, total_len, h, d_k)
+
+    # 6. Appel de la logique originale de Prior Labs
     return MultiHeadAttention.compute_attention_heads(
         q=q, k=k, v=v, kv=None, qkv=None, dropout_p=dropout_p, softmax_scale=softmax_scale
     )
+
+
+def _apply_rope_per_channel_vectorized(x, num_channels):
+    # x shape: [B, T, H, D]
+    b, t, h, d = x.shape
+    assert t % num_channels == 0, f"Seq len {t} must be divisible by num_channels {num_channels}"
+    samples_per_channel = t // num_channels
+
+    # On reshape pour "isoler" les channels : [B, num_channels, samples_per_channel, H, D]
+    x_reshaped = x.view(b, num_channels, samples_per_channel, h, d)
+
+    # On calcule le RoPE uniquement pour la longueur d'UN channel
+    inv_freq = 1.0 / (10000 ** (torch.arange(0, d, 2, device=x.device).float() / d))
+    t_pos = torch.arange(samples_per_channel, device=x.device).float()
+    freqs = torch.outer(t_pos, inv_freq)
+    emb = torch.cat((freqs, freqs), dim=-1)
+
+    # Broadcasting : [1, 1, samples_per_channel, 1, D]
+    cos = emb.cos().view(1, 1, samples_per_channel, 1, d)
+    sin = emb.sin().view(1, 1, samples_per_channel, 1, d)
+
+    # Application globale
+    x_rotated = (x_reshaped * cos) + (_rotate_half(x_reshaped) * sin)
+
+    # On revient à la forme plate [B, T, H, D] sans avoir fait de 'cat' !
+    return x_rotated.view(b, t, h, d)
 
 
 def interpolate_pos_encoding(pos_embed, new_len):
