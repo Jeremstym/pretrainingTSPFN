@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=heavy
-#SBATCH --nodelist=dc
+#SBATCH --nodelist=ac
 #SBATCH --job-name=TSPFN-pretraining
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
@@ -21,7 +21,7 @@ nvidia-smi
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_v2-LearnedPE' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 task.time_series_positional_encoding=learned
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_v2-LearnedPE' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 task.time_series_positional_encoding=learned ckpt="/data/stympopper/TSPFN_v2-LearnedPE/checkpoints/epoch\=499-step\=37500_FL.ckpt" trainer.max_epochs=1000
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
 poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 task.time_series_positional_encoding=rope+channel
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_v2-RoPE' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 task.time_series_positional_encoding=rope task.optim.scheduler=null ckpt="/data/stympopper/TSPFN_v2-RoPE/checkpoints/epoch\=499-step\=37500_FL.ckpt" trainer.max_epochs=1000
