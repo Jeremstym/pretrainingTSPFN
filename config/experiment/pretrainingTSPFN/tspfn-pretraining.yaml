@@ -5,7 +5,7 @@ defaults:
   - /task/model/encoder: tspfn-encoder
   - override /task/model: null
   - override /task/optim: adamw
-  - override /data: pretraining-csv
+  - override /data: pretraining-data
 
 
 resume: False
