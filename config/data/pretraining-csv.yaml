@@ -86,3 +86,5 @@ subsets:
   starlight_curves: ${oc.env:TSPFN_DATA_PATH}/StarLightCurves_dataset.csv
 
 num_workers: 4
+num_channels: 1
+chunk_size: 1024
