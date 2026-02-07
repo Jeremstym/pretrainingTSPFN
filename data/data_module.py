@@ -75,7 +75,6 @@ class PretrainingTSPFNDataModule(pl.LightningDataModule):
         meta_batch_size=1, 
         chunk_size=10000,
         num_workers: int = 0,
-        pin_memory: bool = False,
         seed: int = 42,
         **kwargs,
     ) -> None:
