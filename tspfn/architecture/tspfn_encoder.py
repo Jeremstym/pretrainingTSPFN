@@ -25,16 +25,18 @@ class TSPFNEncoder(nn.Module, ABC):
         random_init: bool = False,
         recompute_layer: bool = True,
         num_channels: int = 1,
+        sequence_length: int = 1000,
+        time_points: int = 499,
         positional_encoding: Literal["none", "sinusoidal", "rope", "learned"] = "none",
         **kwargs,
     ):
         super().__init__()
-        
-        self.channel_positional_encoding = nn.Parameter(torch.zeros(1, 1, 5, embed_dim))
+
+        self.channel_positional_encoding = nn.Parameter(torch.zeros(1, 1, 5, embed_dim)) # Leave 5 hardcoded
         if positional_encoding == "learned":
-            self.pe = nn.Parameter(torch.zeros(1, 1, 499, embed_dim))
+            self.pe = nn.Parameter(torch.zeros(1, 1, 499, embed_dim)) # Leave 499 hardcoded
             nn.init.xavier_uniform_(self.pe)
-        
+
         list_model, _, self.model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
         self.model = list_model[0]
         if updated_pfn_path is not None:
@@ -58,37 +60,49 @@ class TSPFNEncoder(nn.Module, ABC):
         self.recompute_layer = recompute_layer
         self.num_channels = num_channels
         self.positional_encoding = positional_encoding
+        self.embed_dim = embed_dim
+
 
         print(f"---------Using positional encoding: {self.positional_encoding}---------")
 
         if self.positional_encoding == "rope":
-            # Modify attention mechanism to include RoPE
+            # Modify attention mechanism to include RoPE with channel-wise application
+            original_static_compute = MultiHeadAttention.compute_attention_heads
+            patched_rope = partial(
+                rope_compute_heads_wrapper,
+                original_func=original_static_compute,
+                num_channels=self.num_channels,
+                seq_len=self.sequence_length,
+                time_points=self.time_points,
+            )
+            MultiHeadAttention.compute_attention_heads = staticmethod(patched_rope)
             for layer in self.transformer_encoder.layers:
-                layer.self_attn_between_features.compute_attention_heads = partial(
-                    rope_compute_heads_wrapper, num_channels=num_channels
-                )
-        elif self.positional_encoding == "rope+channel":
-            # # Modify attention mechanism to include RoPE with channel-wise application
+                layer.self_attn_between_features.is_feature_attn = True
+                layer.self_attn_between_items.is_feature_attn = False
             # for layer in self.transformer_encoder.layers:
             #     layer.self_attn_between_features.compute_attention_heads = partial(
-            #         rope_compute_heads_wrapper, num_channels=num_channels
+            #         rope_compute_heads_wrapper, num_channels=self.num_channels
             #     )
-        # Définit le wrapper pour qu'il accepte 'self' si ce n'est pas une staticmethod
-            def rope_compute_heads_wrapper(q, k, v, kv, qkv, **kwargs):
-                # Ton code ici...
-                raise Exception("Wrapper enfin détecté !")
 
+        elif self.positional_encoding == "rope+channel":
+            # Modify attention mechanism to include RoPE with channel-wise application
+            original_static_compute = MultiHeadAttention.compute_attention_heads
+            patched_rope = partial(
+                rope_compute_heads_wrapper,
+                original_func=original_static_compute,
+                num_channels=self.num_channels,
+                seq_len=self.sequence_length,
+                time_points=self.time_points,
+            )
+            MultiHeadAttention.compute_attention_heads = staticmethod(patched_rope)
             for layer in self.transformer_encoder.layers:
-                # On remplace directement sur l'objet d'attention
-                # On utilise setattr pour être plus explicite
-                target_attn = layer.self_attn_between_features
-                
-                # On écrase la méthode de l'instance
-                target_attn.compute_attention_heads = partial(
-                    rope_compute_heads_wrapper, 
-                    num_channels=num_channels
-                )
-        self.embed_dim = embed_dim
+                layer.self_attn_between_features.is_feature_attn = True
+                layer.self_attn_between_items.is_feature_attn = False
+            # for layer in self.transformer_encoder.layers:
+            #     layer.self_attn_between_features.compute_attention_heads = partial(
+            #         rope_compute_heads_wrapper, num_channels=self.num_channels
+            #     )
+
 
         if random_init:  # random_init:
             self.model.apply(self._init_weights)
