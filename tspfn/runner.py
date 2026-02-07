@@ -149,7 +149,7 @@ class TSPFNRunner(ABC):
         trainer = pl.Trainer(
             devices=1,
             accelerator="gpu",
-            precison=32,
+            precision=32,
             max_epochs=100,
             profiler=profiler
         )
