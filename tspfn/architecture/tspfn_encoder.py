@@ -258,15 +258,10 @@ class TSPFNEncoder(nn.Module, ABC):
             raise ValueError(f"Unknown ts positional encoding option: {self.positional_encoding}")
 
         # (B, Seq, num_features, d_model) + (B, Seq, 1, d_model) -> (B, Seq, num_features + 1, d_model)
-        print("STARTING CONCATENATION OF EMBEDDINGS")
-        print(f"emb_x.shape: {emb_x.shape}, emb_y.shape: {emb_y.shape}")
         embedded_input = torch.cat((emb_x, emb_y.unsqueeze(2)), dim=2)
-        print("FINISHED CONCATENATION OF EMBEDDINGS")
-        print(f"embedded_input.shape after concatenation: {embedded_input.shape}")
         assert not torch.isnan(
             embedded_input
         ).any(), f"{torch.isnan(embedded_input).any()=}, Make sure to add nan handlers"
-        print("STARTING TRANSFORMER ENCODER")
         output = self.transformer_encoder(
             embedded_input,
             single_eval_pos=single_eval_pos,
