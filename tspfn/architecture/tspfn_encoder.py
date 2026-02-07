@@ -60,6 +60,8 @@ class TSPFNEncoder(nn.Module, ABC):
         self.features_per_group = features_per_group  # 1 for TabPFN v2, 3 for TabPFN v2.5
         self.recompute_layer = recompute_layer
         self.num_channels = num_channels
+        self.sequence_length = sequence_length
+        self.time_points = time_points
         self.positional_encoding = positional_encoding
         self.embed_dim = embed_dim
 
