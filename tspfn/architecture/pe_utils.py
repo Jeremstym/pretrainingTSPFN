@@ -264,7 +264,6 @@ def rope_compute_heads_wrapper(
     qkv,
     dropout_p=None,
     softmax_scale=None,
-    seq_len=100,
     time_points=50,
     num_channels=1,
     original_func=None,

@@ -26,7 +26,6 @@ class TSPFNEncoder(nn.Module, ABC):
         random_init: bool = False,
         recompute_layer: bool = True,
         num_channels: int = 1,
-        sequence_length: int = 1000,
         time_points: int = 500,
         positional_encoding: Literal["none", "sinusoidal", "rope", "learned"] = "none",
         **kwargs,
@@ -60,7 +59,6 @@ class TSPFNEncoder(nn.Module, ABC):
         self.features_per_group = features_per_group  # 1 for TabPFN v2, 3 for TabPFN v2.5
         self.recompute_layer = recompute_layer
         self.num_channels = num_channels
-        self.sequence_length = sequence_length
         self.time_points = time_points
         self.positional_encoding = positional_encoding
         self.embed_dim = embed_dim
@@ -75,7 +73,6 @@ class TSPFNEncoder(nn.Module, ABC):
                 rope_compute_heads_wrapper,
                 original_func=original_static_compute,
                 num_channels=self.num_channels,
-                seq_len=self.sequence_length,
                 time_points=self.time_points,
             )
             MultiHeadAttention.compute_attention_heads = staticmethod(patched_rope)
@@ -94,7 +91,6 @@ class TSPFNEncoder(nn.Module, ABC):
                 rope_compute_heads_wrapper,
                 original_func=original_static_compute,
                 num_channels=self.num_channels,
-                seq_len=self.sequence_length,
                 time_points=self.time_points,
             )
             MultiHeadAttention.compute_attention_heads = staticmethod(patched_rope)
