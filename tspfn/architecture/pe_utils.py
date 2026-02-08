@@ -238,6 +238,7 @@ def _compute_rope_embeddings(f_per_ch, d_k, device):
 def _apply_channel_rope(q_feat, k_feat, num_channels):
     """Applique le RoPE spécifiquement sur la structure multi-channel."""
     s, f, h, d_k = q_feat.shape
+    assert f % num_channels == 0, f"Feature length {f} must be divisible by num_channels {num_channels}"
     f_per_ch = f // num_channels
 
     # 1. Passage en mode multi-channel
