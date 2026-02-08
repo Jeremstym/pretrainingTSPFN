@@ -87,4 +87,5 @@ subsets:
 
 num_workers: 4
 num_channels: 1
+time_points: 500
 chunk_size: 1024

@@ -31,13 +31,13 @@ def load_csv(subset_path: Path, split_ratio: float) -> None:
     df_features = df.iloc[:, :-1]
 
     df_values = df_features.values
-    if df_values.shape[1] < 499:
+    if df_values.shape[1] < 500:
         # Pad with zeros to have consistent feature size
-        padding = np.zeros((df_values.shape[0], 499 - df_values.shape[1]))
+        padding = np.zeros((df_values.shape[0], 500 - df_values.shape[1]))
         df_values = np.hstack((df_values, padding))
-    elif df_values.shape[1] > 499:
-        # Truncate to 499 features
-        df_values = df_values[:, :499]
+    elif df_values.shape[1] > 500:
+        # Truncate to 500 features
+        df_values = df_values[:, :500]
     df_values = np.hstack((df_values, df_label.reshape(-1, 1)))
 
     # Split dataset
