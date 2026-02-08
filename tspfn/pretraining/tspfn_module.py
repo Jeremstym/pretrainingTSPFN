@@ -386,9 +386,14 @@ class TSPFNPretraining(TSPFNSystem):
             time_series_input, target_labels = batch  # (N, C*T), (N,)
             time_series_support = None
         else:
-            # batch_dict, _, _ = batch
-            time_series_input, target_labels = batch["query"]  # (N, C*T), (N,)
-            time_series_support, support_labels = batch["support"]  # (N, C*T), (N,)
+            if len(batch) == 3:
+                batch_dict, _, _ = batch
+                time_series_input, target_labels = batch_dict["query"]  # (N, C*T), (N,)
+                time_series_support, support_labels = batch_dict["support"]  # (N, C*T), (N,)
+            elif type(batch) == dict:
+                # batch_dict, _, _ = batch
+                time_series_input, target_labels = batch["query"]  # (N, C*T), (N,)
+                time_series_support, support_labels = batch["support"]  # (N, C*T), (N,)
 
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels
