@@ -135,7 +135,7 @@ def find_rpeaks_clean_ecgs_in_dataframe(data: pd.DataFrame, ref_channel_idx: int
 
 def segment_ecg_in_clean_dataframe(ROOT: str='.', data: pd.DataFrame=None) -> pd.DataFrame:
 
-    def get_heartbeats_indexes(indexes, size_before_index=100, size_after_index=150, signal_length=2500):
+    def get_heartbeats_indexes(indexes, size_before_index=200, size_after_index=300, signal_length=5000):
         if len(indexes) == 0:
             return []
         # Filter peaks that are too close to the start or end to extract a full window
