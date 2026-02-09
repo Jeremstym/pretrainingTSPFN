@@ -106,108 +106,108 @@ def count_occurrences(a):
 if __name__ == "__main__":
 
     path = "/data/stympopper/PTB/data/"
-    sampling_rate = 500
+    # sampling_rate = 500
 
-    # load and convert annotation data
-    Y = pd.read_csv(path + "ptbxl_database.csv", index_col="ecg_id")
-    Y.scp_codes = Y.scp_codes.apply(lambda x: ast.literal_eval(x))
+    # # load and convert annotation data
+    # Y = pd.read_csv(path + "ptbxl_database.csv", index_col="ecg_id")
+    # Y.scp_codes = Y.scp_codes.apply(lambda x: ast.literal_eval(x))
 
-    # Load raw signal data
-    X = load_raw_data(Y, sampling_rate, path)
+    # # Load raw signal data
+    # X = load_raw_data(Y, sampling_rate, path)
 
-    # Load scp_statements.csv for diagnostic aggregation
-    agg_df = pd.read_csv(path + "scp_statements.csv", index_col=0)
-    agg_df = agg_df[agg_df.diagnostic == 1]
+    # # Load scp_statements.csv for diagnostic aggregation
+    # agg_df = pd.read_csv(path + "scp_statements.csv", index_col=0)
+    # agg_df = agg_df[agg_df.diagnostic == 1]
 
-    def aggregate_diagnostic(y_dic):
-        tmp = []
-        for key in tqdm(y_dic.keys(), ncols=70):
-            if key in agg_df.index:
-                tmp.append(agg_df.loc[key].diagnostic_class)
-        return list(set(tmp))
+    # def aggregate_diagnostic(y_dic):
+    #     tmp = []
+    #     for key in tqdm(y_dic.keys(), ncols=70):
+    #         if key in agg_df.index:
+    #             tmp.append(agg_df.loc[key].diagnostic_class)
+    #     return list(set(tmp))
 
-    # Apply diagnostic superclass
-    Y["diagnostic_superclass"] = Y.scp_codes.apply(aggregate_diagnostic)
+    # # Apply diagnostic superclass
+    # Y["diagnostic_superclass"] = Y.scp_codes.apply(aggregate_diagnostic)
 
-    # Split data into train and test
-    test_fold = 10
-    # Train
-    X_train = X[np.where(Y.strat_fold != test_fold)]
-    y_train = Y[(Y.strat_fold != test_fold)].diagnostic_superclass
-    # Test
-    X_test = X[np.where(Y.strat_fold == test_fold)]
-    y_test = Y[Y.strat_fold == test_fold].diagnostic_superclass
+    # # Split data into train and test
+    # test_fold = 10
+    # # Train
+    # X_train = X[np.where(Y.strat_fold != test_fold)]
+    # y_train = Y[(Y.strat_fold != test_fold)].diagnostic_superclass
+    # # Test
+    # X_test = X[np.where(Y.strat_fold == test_fold)]
+    # y_test = Y[Y.strat_fold == test_fold].diagnostic_superclass
 
-    # Train
-    X_train = X[np.where(Y.strat_fold != test_fold)]
-    y_train = Y[(Y.strat_fold != test_fold)].diagnostic_superclass
-    # Test
-    X_test = X[np.where(Y.strat_fold == test_fold)]
-    y_test = Y[Y.strat_fold == test_fold].diagnostic_superclass
+    # # Train
+    # X_train = X[np.where(Y.strat_fold != test_fold)]
+    # y_train = Y[(Y.strat_fold != test_fold)].diagnostic_superclass
+    # # Test
+    # X_test = X[np.where(Y.strat_fold == test_fold)]
+    # y_test = Y[Y.strat_fold == test_fold].diagnostic_superclass
 
-    index_ok_test = y_test.str.len() == 1
-    index_ok_train = y_train.str.len() == 1
+    # index_ok_test = y_test.str.len() == 1
+    # index_ok_train = y_train.str.len() == 1
 
-    y_test = y_test[index_ok_test]
-    X_test = X_test[index_ok_test]
-    # # Subsample
-    # indices = np.arange(len(y_test))
-    # test_selected_indices = rng.choice(indices, size=500, replace=False)
-    # y_test = y_test.iloc[test_selected_indices]
-    # X_test = X_test[test_selected_indices]
-    y_test = y_test.apply(lambda x: x[0])
-    y_test = y_test.apply(lambda x: convert_labels(x))
-    print(X_test.shape, y_test.shape)
-    X_test = X_test[:, :, CHOSEN_CHANNELS]
+    # y_test = y_test[index_ok_test]
+    # X_test = X_test[index_ok_test]
+    # # # Subsample
+    # # indices = np.arange(len(y_test))
+    # # test_selected_indices = rng.choice(indices, size=500, replace=False)
+    # # y_test = y_test.iloc[test_selected_indices]
+    # # X_test = X_test[test_selected_indices]
+    # y_test = y_test.apply(lambda x: x[0])
+    # y_test = y_test.apply(lambda x: convert_labels(x))
+    # print(X_test.shape, y_test.shape)
+    # X_test = X_test[:, :, CHOSEN_CHANNELS]
 
-    y_train = y_train[index_ok_train]
-    X_train = X_train[index_ok_train]
-    # # Subsample
-    # indices = np.arange(len(y_train))
-    # train_selected_indices = rng.choice(indices, size=5000, replace=False)
-    # y_train = y_train.iloc[train_selected_indices]
-    # X_train = X_train[train_selected_indices]
-    y_train = y_train.apply(lambda x: x[0])
-    y_train = y_train.apply(lambda x: convert_labels(x))
-    print(X_train.shape, y_train.shape)
-    X_train = X_train[:, :, CHOSEN_CHANNELS]
+    # y_train = y_train[index_ok_train]
+    # X_train = X_train[index_ok_train]
+    # # # Subsample
+    # # indices = np.arange(len(y_train))
+    # # train_selected_indices = rng.choice(indices, size=5000, replace=False)
+    # # y_train = y_train.iloc[train_selected_indices]
+    # # X_train = X_train[train_selected_indices]
+    # y_train = y_train.apply(lambda x: x[0])
+    # y_train = y_train.apply(lambda x: convert_labels(x))
+    # print(X_train.shape, y_train.shape)
+    # X_train = X_train[:, :, CHOSEN_CHANNELS]
 
-    print(X_test.shape, y_test.shape)
-    print(y_test.value_counts(sort=False))
+    # print(X_test.shape, y_test.shape)
+    # print(y_test.value_counts(sort=False))
 
-    print(X_train.shape, y_train.shape)
-    print(y_train.value_counts(sort=False))
+    # print(X_train.shape, y_train.shape)
+    # print(y_train.value_counts(sort=False))
 
-    # Window data by heart beats and save
-    list_of_arrays_train = [row for row in X_train]
-    list_of_arrays_test = [row for row in X_test]
+    # # Window data by heart beats and save
+    # list_of_arrays_train = [row for row in X_train]
+    # list_of_arrays_test = [row for row in X_test]
 
-    df_train = pd.DataFrame(
-        {"ecg_signal_raw": list_of_arrays_train, "true_label": y_train, "partition": ["train"] * len(y_train)}
-    )
-    df_test = pd.DataFrame(
-        {"ecg_signal_raw": list_of_arrays_test, "true_label": y_test, "partition": ["test"] * len(y_test)}
-    )
+    # df_train = pd.DataFrame(
+    #     {"ecg_signal_raw": list_of_arrays_train, "true_label": y_train, "partition": ["train"] * len(y_train)}
+    # )
+    # df_test = pd.DataFrame(
+    #     {"ecg_signal_raw": list_of_arrays_test, "true_label": y_test, "partition": ["test"] * len(y_test)}
+    # )
 
-    df = pd.concat([df_train, df_test])
-    df.to_pickle(path + "ptbxl_dataframe.pkl")
+    # df = pd.concat([df_train, df_test])
+    # df.to_pickle(path + "ptbxl_dataframe.pkl")
 
-    # if os.path.exists(path+"ptbxl_dataframe_rp.pkl"):
-    #     df_rp = pd.read_pickle(path+"ptbxl_dataframe_rp.pkl")
-    # else:
-    print("Finding R-peaks in the ECG signals...")
-    df_rp = find_rpeaks_clean_ecgs_in_dataframe(data=df)
-    print("R-peaks found and added to the dataframe.")
-    df_rp.to_pickle(path + "ptbxl_dataframe_rp.pkl")
+    # # if os.path.exists(path+"ptbxl_dataframe_rp.pkl"):
+    # #     df_rp = pd.read_pickle(path+"ptbxl_dataframe_rp.pkl")
+    # # else:
+    # print("Finding R-peaks in the ECG signals...")
+    # df_rp = find_rpeaks_clean_ecgs_in_dataframe(data=df)
+    # print("R-peaks found and added to the dataframe.")
+    # df_rp.to_pickle(path + "ptbxl_dataframe_rp.pkl")
 
-    print("Segmenting ECG signals into heartbeats...")
-    df_final = segment_ecg_in_clean_dataframe(ROOT=path, data=df_rp)
-    print("ECG signals segmented into heartbeats and added to the dataframe.")
-    # print(df_final.columns)
-    df_final["heartbeat_indexes"]
+    # print("Segmenting ECG signals into heartbeats...")
+    # df_final = segment_ecg_in_clean_dataframe(ROOT=path, data=df_rp)
+    # print("ECG signals segmented into heartbeats and added to the dataframe.")
+    # # print(df_final.columns)
+    # df_final["heartbeat_indexes"]
 
-    # print(df_final)
-    df_final.to_pickle(path + "ptbxl_dataframe_final.pkl")
+    # # print(df_final)
+    # df_final.to_pickle(path + "ptbxl_dataframe_final.pkl")
 
     df_final = pd.read_pickle(path + "ptbxl_dataframe_final.pkl")
     # df_final.head()
@@ -219,7 +219,7 @@ if __name__ == "__main__":
     # df_final['ecg_standardize_signal_heartbeats'] = df_final.apply(standardize_hb, axis=1)
     # print("ECG signals standardized and added to the dataframe.")
 
-    df_final.to_pickle(path + "ptbxl_dataframe_final.pkl")
+    # df_final.to_pickle(path + "ptbxl_dataframe_final.pkl")
     # df_final.head()
 
     # features = get_values(df_final.ecg_standardize_signal.values[:])
@@ -248,23 +248,23 @@ if __name__ == "__main__":
     test = test_data
     # valid = df_updated[df_updated.partition == "valid"]
 
-    print("Extracting heartbeats and labels for train, validation, and test sets...")
+    print("Extracting heartbeats and labels for train and test sets...")
     X_train, y_train = extract_hb_from_dataframe(train)
     # X_val, y_val = extract_hb_from_dataframe(valid)
     X_test, y_test = extract_hb_from_dataframe(test)
-    print("Heartbeats and labels extracted for train, validation, and test sets.")
+    print("Heartbeats and labels extracted for train and test sets.")
 
-    print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Validation: {X_val.shape}, Test: {X_test.shape}")
+    print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
     X_train = resample_multichannel_batch(X_train, fs_in=500, fs_out=250)
     # X_val = resample_multichannel_batch(X_val, fs_in=500, fs_out=250)
     X_test = resample_multichannel_batch(X_test, fs_in=500, fs_out=250)
-    print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Validation: {X_val.shape}, Test: {X_test.shape}")
+    print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
 
-    print(f"Flatten on channel dimension - Train: {X_train.shape}, Validation: {X_val.shape}, Test: {X_test.shape}")
+    print(f"Flatten on channel dimension - Train: {X_train.shape}, Test: {X_test.shape}")
     X_train = X_train.reshape(X_train.shape[0], -1)
     # X_val = X_val.reshape(X_val.shape[0], -1)
     X_test = X_test.reshape(X_test.shape[0], -1)
-    print(f"Flattened heartbeats shape - Train: {X_train.shape}, Validation: {X_val.shape}, Test: {X_test.shape}")
+    print(f"Flattened heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
 
     print("TRAIN")
     print(X_train.shape, y_train.shape)
