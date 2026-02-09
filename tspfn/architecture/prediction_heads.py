@@ -48,6 +48,8 @@ class PFNPredictionHead(nn.Module):
             #         new_state_dict[k] = v
             if "pe" in state_dict:
                 state_dict.pop("pe")  # Remove pe if present
+            if "channel_positional_encoding" in state_dict:
+                state_dict.pop("channel_positional_encoding")  # Remove channel_positional_encoding if present
             model.load_state_dict(state_dict, strict=True)
 
         self.head = model.decoder_dict["standard"]
