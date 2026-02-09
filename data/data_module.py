@@ -71,7 +71,7 @@ class PretrainingTSPFNDataModule(pl.LightningDataModule):
         self,
         train_datasets: DictConfig,
         val_datasets: DictConfig,
-        test_datasets: DictConfig,
+        # test_datasets: DictConfig,
         meta_batch_size=1, 
         chunk_size=10000,
         num_workers: int = 0,
@@ -81,7 +81,7 @@ class PretrainingTSPFNDataModule(pl.LightningDataModule):
         super().__init__()
         self.train_datasets = train_datasets
         self.val_datasets = val_datasets
-        self.test_datasets = test_datasets
+        # self.test_datasets = test_datasets
         self.meta_batch_size = meta_batch_size
         self.chunk_size = chunk_size
         self.num_workers = num_workers
@@ -103,10 +103,10 @@ class PretrainingTSPFNDataModule(pl.LightningDataModule):
             self.val_ds = TSPFNValidationDataset(train_instances, val_instances, self.chunk_size)
             
         if stage == "test":
-            test_instances = {
-                name: instantiate(cfg) for name, cfg in self.test_datasets.items()
-            }
-            self.test_ds = TSPFNTestDataset(train_instances, test_instances, self.chunk_size)
+            # test_instances = {
+            #     name: instantiate(cfg) for name, cfg in self.test_datasets.items()
+            # }
+            self.test_ds = TSPFNValidationDataset(train_instances, val_instances, self.chunk_size)
 
     def train_dataloader(self):
         return DataLoader(
