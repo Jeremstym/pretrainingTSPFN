@@ -99,20 +99,14 @@ class TUEV2ChannelDataset(Dataset):
 class PTB2ChannelDataset(Dataset):
     def __init__(self, root, split):
         self.root = root
-        self.files = glob(os.path.join(root, f"{split}/*.pkl"))
+        # self.files = glob(os.path.join(root, f"{split}/*.pkl"))
 
-        all_x = []
-        all_y = []
 
-        print(f"Loading {len(self.files)} samples into RAM for PTB 2 channels...")
-        for f in tqdm(self.files):
-            with open(os.path.join(self.root, f), "rb") as rb:
-                sample = pickle.load(rb)
-                all_x.append(torch.from_numpy(sample["ecg_signal_raw"]).float())
-                all_y.append(sample["true_label"])
-
-        self.X = torch.stack(all_x)
-        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
+        self.X = np.load(os.path.join(root, f"{split}.npy"))
+        self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
+        self.X = torch.from_numpy(self.X).float()
+        self.X = self.X.reshape(self.X.shape[0], 2, -1)  # Reshape to [Batch, Channels, Signal_Length]
+        self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
 
         if self.X.shape[2] < 250:
             self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
@@ -123,7 +117,7 @@ class PTB2ChannelDataset(Dataset):
             )
 
     def __len__(self):
-        return len(self.files)
+        return len(self.X)
 
     def __getitem__(self, index):
         ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*250+1]

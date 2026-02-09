@@ -123,7 +123,7 @@ def split_and_dump(params):
             WINDOW_SIZE = 400  # 2 seconds
             LOW_VAR_LIMIT = 5.0   # Reject windows that are too "quiet"
             HIGH_VAR_LIMIT = 800.0 # Reject massive artifacts (clipping/physical movement)
-            SUBSAMPLE_SIZE = 248 
+            SUBSAMPLE_SIZE = 250 
 
             # 1. Skip first 60 seconds (noise)
             start_idx = 60 * FS
