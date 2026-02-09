@@ -155,6 +155,7 @@ def segment_ecg_in_clean_dataframe(ROOT: str='.', data: pd.DataFrame=None) -> pd
         for start, end in indexes_pairs:
             # Slicing a 2D array [start:end, :] keeps all channels for that window
             segment = ecg[:, start:end] 
+            print(f"Extracting segment: start={start}, end={end}, shape={segment.shape}")
             heart_beats.append(segment)
             
         # Stack into shape: (num_heartbeats, window_length, num_channels)
