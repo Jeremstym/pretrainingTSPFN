@@ -147,6 +147,8 @@ class TSPFNDataModule(pl.LightningDataModule):
         data_roots: str,
         subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
         num_workers: int = 0,
+        batch_size: int = 32,
+        test_batch_size: Optional[int] = None,
         meta_batch_size: int = 1,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
@@ -156,6 +158,8 @@ class TSPFNDataModule(pl.LightningDataModule):
         super().__init__()
         self.data_roots = data_roots
         self.subsets = subsets
+        self.batch_size = batch_size
+        self.test_batch_size = test_batch_size
         self.meta_batch_size = meta_batch_size
         self.num_workers = num_workers
         self.pin_memory = pin_memory
@@ -349,6 +353,7 @@ class ESRDataModule(TSPFNDataModule):
         subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
         num_workers: int = 0,
         batch_size: int = 32,
+        test_batch_size: Optional[int] = None,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
@@ -359,6 +364,7 @@ class ESRDataModule(TSPFNDataModule):
             subsets=subsets,
             num_workers=num_workers,
             batch_size=batch_size,
+            test_batch_size=test_batch_size,
             pin_memory=pin_memory,
             transform=transform,
             seed=seed,
