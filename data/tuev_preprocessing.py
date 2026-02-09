@@ -262,17 +262,18 @@ if __name__ == "__main__":
     test_files_path = os.listdir(os.path.join(root, "twochannels", "processed_eval"))
     train_sub = list(set([f.split("_")[0] for f in train_files_path]))
     print("train sub", len(train_sub))
-    target_train_dir = os.path.join(root, "twochannels", "train")
-    target_eval_dir = os.path.join(root, "twochannels", "val")
-    target_test_dir = os.path.join(root, "twochannels", "test")
+    target_train_dir = os.path.join(root, "twochannelsbis", "train")
+    # target_eval_dir = os.path.join(root, "twochannels", "val")
+    target_test_dir = os.path.join(root, "twochannelsbis", "val")
     if not os.path.exists(target_train_dir):
         os.makedirs(target_train_dir)
-    if not os.path.exists(target_eval_dir):
-        os.makedirs(target_eval_dir)
+    # if not os.path.exists(target_eval_dir):
+    #     os.makedirs(target_eval_dir)
     if not os.path.exists(target_test_dir):
         os.makedirs(target_test_dir)
 
-    val_sub = np.random.choice(train_sub, size=int(len(train_sub) * 0.2), replace=False)
+    # val_sub = np.random.choice(train_sub, size=int(len(train_sub) * 0.2), replace=False)
+    val_sub = []
     train_sub = list(set(train_sub) - set(val_sub))
     val_files = [f for f in train_files_path if f.split("_")[0] in val_sub]
     train_files = [f for f in train_files_path if f.split("_")[0] in train_sub]
@@ -281,10 +282,10 @@ if __name__ == "__main__":
         os.system(
             f"mv {os.path.join(root, 'twochannels', 'processed_train', file)} {target_train_dir}"
         )
-    for file in val_files:
-        os.system(
-            f"mv {os.path.join(root, 'twochannels', 'processed_train', file)} {target_eval_dir}"
-        )
+    # for file in val_files:
+    #     os.system(
+    #         f"mv {os.path.join(root, 'twochannels', 'processed_train', file)} {target_eval_dir}"
+    #     )
     for file in test_files_path:
         os.system(
             f"mv {os.path.join(root, 'twochannels', 'processed_eval', file)} {target_test_dir}"
