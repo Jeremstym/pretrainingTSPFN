@@ -75,12 +75,25 @@ def z_scoring(
     data_support: Tensor, data_query: Tensor, label_support: Tensor, label_query: Tensor
 ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
 
-    print(f"data_support shape: {data_support.shape}, data_query shape: {data_query.shape}")
-    mean = data_support.mean(dim=0, keepdim=True)
-    std = data_support.std(dim=0, keepdim=True) + 1e-8  # Avoid division by zero
+    if data_support.ndim == 3:
+        # data: [Batch, Samples, Features]
+        # We compute mean and std on the sample dimension (dim=1)
+        mean = data_support.mean(dim=1, keepdim=True)
+        std = data_support.std(dim=1, keepdim=True) + 1e-8  # Avoid division by zero
 
-    data_support_z = (data_support - mean) / std
-    data_query_z = (data_query - mean) / std
+        data_support_z = (data_support - mean) / std
+        data_query_z = (data_query - mean) / std
+    
+    elif data_support.ndim == 2:
+        # data: [Batch, Features]
+        mean = data_support.mean(dim=0, keepdim=True)
+        std = data_support.std(dim=0, keepdim=True) + 1e-8  # Avoid division by zero
+
+        data_support_z = (data_support - mean) / std
+        data_query_z = (data_query - mean) / std
+    
+    else:
+        raise ValueError("Data tensor must be 2D or 3D")
 
     return data_support_z, data_query_z, label_support, label_query
 
