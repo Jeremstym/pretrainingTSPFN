@@ -144,7 +144,8 @@ def BuildEvents(signals, times, EventData, keep_channels):
         segment = signals_padded[:, start_slice:end_slice]
         
         if segment.shape[1] < target_pre_resample_points:
-            continue # Skip if window goes out of bounds
+            raise ValueError(f"Segment too short: expected {target_pre_resample_points} points, got {segment.shape[1]} points.")
+            # continue # Skip if window goes out of bounds
 
         # 2. Select 2 channels (as per your logic)
         # if len(chans_present) >= 2:
@@ -165,8 +166,8 @@ def BuildEvents(signals, times, EventData, keep_channels):
         # 3. Reduce to (2, 400)
         reduced_segment = segment[indices, :] 
 
-        # 4. Resample from 400 points to 248 points -> Shape (2, 248)
-        resampled_segment = sgn.resample(reduced_segment, 248, axis=1)
+        # 4. Resample from 400 points to 250 points -> Shape (2, 250)
+        resampled_segment = sgn.resample(reduced_segment, 250, axis=1)
 
         all_segments.append(resampled_segment)
         final_labels.append(label)
