@@ -32,7 +32,7 @@ class TSPFNEncoder(nn.Module, ABC):
     ):
         super().__init__()
 
-        self.channel_positional_encoding = nn.Parameter(torch.zeros(1, 1, 5, embed_dim)) # Leave 5 hardcoded
+        self.channel_positional_encoding = nn.Parameter(torch.zeros(1, 5, 1, embed_dim)) # Leave 5 hardcoded
         if positional_encoding == "learned":
             self.pe = nn.Parameter(torch.zeros(1, 1, 500, embed_dim)) # Leave 500 hardcoded
             nn.init.xavier_uniform_(self.pe)
