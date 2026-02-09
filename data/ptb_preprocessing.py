@@ -23,22 +23,18 @@ rng = np.random.default_rng(seed=42)
 CHOSEN_CHANNELS = [1, 2]  # Fix channel
 
 
-def resample_multichannel_batch(original_signal, fs_in: float, fs_out: float):
+def resample_hb_batch(data, fs_in, fs_out):
     """
-    Optimized for (N, Channels, Length)
+    data shape: (N, 500, 2) -> (N, Time, Channels)
     """
-    if fs_out >= fs_in:
-        return original_signal, original_signal.shape[-1]
-
-    # Calculate target length
-    L = original_signal.shape[-1]
-    L_out = int(np.round(L * fs_out / fs_in))
-
-    # scipy.signal.resample uses the FFT method.
-    # By specifying axis=-1, it processes all channels and batch items in parallel.
-    y = resample(original_signal, L_out, axis=-1)
-
-    return y
+    L_original = data.shape[1]
+    L_out = int(np.round(L_original * fs_out / fs_in))
+    
+    # Resample along axis 1 (the 500-sample time dimension)
+    # This preserves axis 0 (Batch) and axis 2 (Channels)
+    resampled_data = resample(data, L_out, axis=1)
+    
+    return resampled_data
 
 
 def convert_labels(label):
