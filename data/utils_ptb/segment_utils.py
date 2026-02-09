@@ -86,8 +86,8 @@ def find_rpeaks_clean_ecgs_in_dataframe(data: pd.DataFrame, ref_channel_idx: int
     # Apply detection to the multi-channel signal
     df_clean['rpeaks_indexes'] = df_clean['ecg_signal_raw'].apply(find_rpeaks_multi)
     
-    # FILTER: Retrieve only patients who have at least TWO peaks
-    # df_clean = df_clean[df_clean['rpeaks_indexes'].apply(len) >= 2]
+    # FILTER: Retrieve only patients who have at least one peak
+    df_clean = df_clean[df_clean['rpeaks_indexes'].apply(len) >= 1]
     # if save: df_clean.to_pickle(filename + '_clean_with_rpeaks_indexes.pkl')
     return df_clean
 
