@@ -22,8 +22,9 @@ nvidia-smi
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_v2-LearnedPE' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 task.time_series_positional_encoding=learned ckpt="/data/stympopper/TSPFN_v2-LearnedPE/checkpoints/epoch\=499-step\=37500_FL.ckpt" trainer.max_epochs=1000
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zscoring' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-Real' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-csv task.time_series_positional_encoding=rope+channel
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_v2-RoPE' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 task.time_series_positional_encoding=rope task.optim.scheduler=null ckpt="/data/stympopper/TSPFN_v2-RoPE/checkpoints/epoch\=499-step\=37500_FL.ckpt" trainer.max_epochs=1000
 
