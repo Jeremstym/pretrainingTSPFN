@@ -161,13 +161,13 @@ def BuildEvents(signals, times, EventData, keep_channels):
         # indices = [chan_map[c] for c in chosen_chans_orig]
 
         # For now, arbitrary chosen channels:
-        indices = [chan_map[keep_channels[-1]], chan_map[keep_channels[-2]]] # Always pick the last two channels (O1 and O2) for consistency
+        indices = [chan_map[keep_channels[0]], chan_map[keep_channels[1]], chan_map[keep_channels[2]]]
         
-        # 3. Reduce to (2, 400)
+        # 3. Reduce to (3, 400)
         reduced_segment = segment[indices, :] 
 
-        # 4. Resample from 400 points to 250 points -> Shape (2, 250)
-        resampled_segment = sgn.resample(reduced_segment, 250, axis=1)
+        # 4. Resample from 400 points to 166 points -> Shape (3, 166)
+        resampled_segment = sgn.resample(reduced_segment, 166, axis=1)
 
         all_segments.append(resampled_segment)
         final_labels.append(label)
@@ -241,8 +241,8 @@ if __name__ == "__main__":
     """
 
     root = "/data/stympopper/TUEV/edf"
-    train_out_dir = os.path.join(root, "twochannels", "processed_train")
-    eval_out_dir = os.path.join(root, "twochannels", "processed_eval")
+    train_out_dir = os.path.join(root, "threechannels", "processed_train")
+    eval_out_dir = os.path.join(root, "threechannels", "processed_eval")
     if not os.path.exists(train_out_dir):
         os.makedirs(train_out_dir)
     if not os.path.exists(eval_out_dir):
@@ -259,13 +259,13 @@ if __name__ == "__main__":
     seed = 4523
     np.random.seed(seed)
 
-    train_files_path = os.listdir(os.path.join(root, "twochannels", "processed_train"))
-    test_files_path = os.listdir(os.path.join(root, "twochannels", "processed_eval"))
+    train_files_path = os.listdir(os.path.join(root, "threechannels", "processed_train"))
+    test_files_path = os.listdir(os.path.join(root, "threechannels", "processed_eval"))
     train_sub = list(set([f.split("_")[0] for f in train_files_path]))
     print("train sub", len(train_sub))
-    target_train_dir = os.path.join(root, "twochannelsbis", "train")
-    # target_eval_dir = os.path.join(root, "twochannels", "val")
-    target_test_dir = os.path.join(root, "twochannelsbis", "val")
+    target_train_dir = os.path.join(root, "threechannels", "train")
+    # target_eval_dir = os.path.join(root, "threechannels", "val")
+    target_test_dir = os.path.join(root, "threechannels", "val")
     if not os.path.exists(target_train_dir):
         os.makedirs(target_train_dir)
     # if not os.path.exists(target_eval_dir):
@@ -281,15 +281,15 @@ if __name__ == "__main__":
 
     for file in train_files:
         os.system(
-            f"mv {os.path.join(root, 'twochannels', 'processed_train', file)} {target_train_dir}"
+            f"mv {os.path.join(root, 'threechannels', 'processed_train', file)} {target_train_dir}"
         )
     # for file in val_files:
     #     os.system(
-    #         f"mv {os.path.join(root, 'twochannels', 'processed_train', file)} {target_eval_dir}"
+    #         f"mv {os.path.join(root, 'threechannels', 'processed_train', file)} {target_eval_dir}"
     #     )
     for file in test_files_path:
         os.system(
-            f"mv {os.path.join(root, 'twochannels', 'processed_eval', file)} {target_test_dir}"
+            f"mv {os.path.join(root, 'threechannels', 'processed_eval', file)} {target_test_dir}"
         )
 
     # root = "/data/stympopper/TUEV/edf/processed"
