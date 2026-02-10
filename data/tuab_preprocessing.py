@@ -237,10 +237,11 @@ if __name__ == "__main__":
         set([item.split("_")[0] for item in os.listdir(train_val_abnormal)])
     )
     np.random.shuffle(train_val_a_sub)
-    train_a_sub, val_a_sub = (
-        train_val_a_sub[: int(len(train_val_a_sub) * 0.8)],
-        train_val_a_sub[int(len(train_val_a_sub) * 0.8) :],
-    )
+    # train_a_sub, val_a_sub = (
+    #     train_val_a_sub[: int(len(train_val_a_sub) * 0.8)],
+    #     train_val_a_sub[int(len(train_val_a_sub) * 0.8) :],
+    # )
+    train_a_sub = train_val_a_sub
 
     # train, val normal subjects
     train_val_normal = os.path.join(root, "train", "normal", channel_std)
@@ -248,10 +249,11 @@ if __name__ == "__main__":
         set([item.split("_")[0] for item in os.listdir(train_val_normal)])
     )
     np.random.shuffle(train_val_n_sub)
-    train_n_sub, val_n_sub = (
-        train_val_n_sub[: int(len(train_val_n_sub) * 0.8)],
-        train_val_n_sub[int(len(train_val_n_sub) * 0.8) :],
-    )
+    # train_n_sub, val_n_sub = (
+    #     train_val_n_sub[: int(len(train_val_n_sub) * 0.8)],
+    #     train_val_n_sub[int(len(train_val_n_sub) * 0.8) :],
+    # )
+    train_n_sub = train_val_n_sub
 
     # test abnormal subjects
     test_abnormal = os.path.join(root, "eval", "abnormal", channel_std)
@@ -262,20 +264,20 @@ if __name__ == "__main__":
     test_n_sub = list(set([item.split("_")[0] for item in os.listdir(test_normal)]))
 
     # create the train, val, test sample folder
-    if not os.path.exists(os.path.join(root, "twochannels")):
-        os.makedirs(os.path.join(root, "twochannels"))
+    if not os.path.exists(os.path.join(root, "twochannelsbis")):
+        os.makedirs(os.path.join(root, "twochannelsbis"))
 
-    if not os.path.exists(os.path.join(root, "twochannels", "train")):
-        os.makedirs(os.path.join(root, "twochannels", "train"))
-    train_dump_folder = os.path.join(root, "twochannels", "train")
+    if not os.path.exists(os.path.join(root, "twochannelsbis", "train")):
+        os.makedirs(os.path.join(root, "twochannelsbis", "train"))
+    train_dump_folder = os.path.join(root, "twochannelsbis", "train")
 
-    if not os.path.exists(os.path.join(root, "twochannels", "val")):
-        os.makedirs(os.path.join(root, "twochannels", "val"))
-    val_dump_folder = os.path.join(root, "twochannels", "val")
+    # if not os.path.exists(os.path.join(root, "twochannels", "val")):
+    #     os.makedirs(os.path.join(root, "twochannels", "val"))
+    # val_dump_folder = os.path.join(root, "twochannels", "val")
 
-    if not os.path.exists(os.path.join(root, "twochannels", "test")):
-        os.makedirs(os.path.join(root, "twochannels", "test"))
-    test_dump_folder = os.path.join(root, "twochannels", "test")
+    if not os.path.exists(os.path.join(root, "twochannelsbis", "val")):
+        os.makedirs(os.path.join(root, "twochannelsbis", "val"))
+    test_dump_folder = os.path.join(root, "twochannelsbis", "val")
 
     # fetch_folder, sub, dump_folder, labels
     parameters = []
@@ -291,18 +293,18 @@ if __name__ == "__main__":
         counter += 1
         if counter >= 200:  # Limit to 200 subjects for normal class in training
             break
-    counter = 0
-    for val_sub in val_a_sub:
-        parameters.append([train_val_abnormal, val_sub, val_dump_folder, 1])
-        counter += 1
-        if counter >= 50:  # Limit to 50 subjects for abnormal class in validation
-            break
-    counter = 0
-    for val_sub in val_n_sub:
-        parameters.append([train_val_normal, val_sub, val_dump_folder, 0])
-        counter += 1
-        if counter >= 50:  # Limit to 50 subjects for normal class in validation
-            break
+    # counter = 0
+    # for val_sub in val_a_sub:
+    #     parameters.append([train_val_abnormal, val_sub, val_dump_folder, 1])
+    #     counter += 1
+    #     if counter >= 50:  # Limit to 50 subjects for abnormal class in validation
+    #         break
+    # counter = 0
+    # for val_sub in val_n_sub:
+    #     parameters.append([train_val_normal, val_sub, val_dump_folder, 0])
+    #     counter += 1
+    #     if counter >= 50:  # Limit to 50 subjects for normal class in validation
+    #         break
     counter = 0
     for test_sub in test_a_sub:
         parameters.append([test_abnormal, test_sub, test_dump_folder, 1])
