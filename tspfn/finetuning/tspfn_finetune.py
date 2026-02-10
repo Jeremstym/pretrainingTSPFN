@@ -138,9 +138,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 "train_metrics": nn.ModuleDict(
                     {t: binary_metrics_template.clone(prefix="train/") for t in predict_losses}
                 ),
-                "val_metrics": nn.ModuleDict(
-                    {t: binary_metrics_template.clone(prefix="val/") for t in predict_losses}
-                ),
+                "val_metrics": nn.ModuleDict({t: binary_metrics_template.clone(prefix="val/") for t in predict_losses}),
                 "test_metrics": nn.ModuleDict(
                     {t: binary_metrics_template.clone(prefix="test/") for t in predict_losses}
                 ),
@@ -424,6 +422,9 @@ class TSPFNFineTuning(TSPFNSystem):
                 time_series_attrs=time_series_support, labels=support_labels
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
+            ts_train_support, ts_query, y_inference_support, y_query = z_scoring(
+                ts_train_support, ts_query, y_inference_support, y_batch_query
+            )
         else:
             y_inference_support = None
             ts_train_support = None
