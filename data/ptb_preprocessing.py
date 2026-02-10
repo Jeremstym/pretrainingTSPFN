@@ -20,7 +20,7 @@ from data.utils_ptb.segment_utils import values_from_dataframe_ny_list
 sys.path.insert(0, os.path.abspath(".."))
 rng = np.random.default_rng(seed=42)
 
-CHOSEN_CHANNELS = [1, 2]  # Fix channel
+CHOSEN_CHANNELS = [1, 2, 3]  # Fix channel
 
 
 def resample_hb_batch(data, fs_in, fs_out):
@@ -251,9 +251,9 @@ if __name__ == "__main__":
     print("Heartbeats and labels extracted for train and test sets.")
 
     print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
-    X_train = resample_hb_batch(X_train, fs_in=500, fs_out=250)
-    # X_val = resample_hb_batch(X_val, fs_in=500, fs_out=250)
-    X_test = resample_hb_batch(X_test, fs_in=500, fs_out=250)
+    X_train = resample_hb_batch(X_train, fs_in=500, fs_out=166)
+    # X_val = resample_hb_batch(X_val, fs_in=500, fs_out=166)
+    X_test = resample_hb_batch(X_test, fs_in=500, fs_out=166)
     print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
 
     print(f"Flatten on channel dimension - Train: {X_train.shape}, Test: {X_test.shape}")
@@ -274,7 +274,7 @@ if __name__ == "__main__":
     print(X_test.shape, y_test.shape)
     print(count_occurrences(y_test))
 
-    target_path = path + "twochannels/"
+    target_path = path + "threechannels/"
     os.makedirs(target_path, exist_ok=True)
     np.save(target_path + "train.npy", X_train)
     # np.save(target_path + "heldout.npy", X_val)
