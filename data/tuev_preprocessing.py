@@ -161,7 +161,7 @@ def BuildEvents(signals, times, EventData, keep_channels):
         # indices = [chan_map[c] for c in chosen_chans_orig]
 
         # For now, arbitrary chosen channels:
-        indices = [chan_map[keep_channels[15]], chan_map[keep_channels[19]], chan_map[keep_channels[2]]]
+        indices = [chan_map[15], chan_map[19], chan_map[2]]  # C3, C4, P3 as an example
         
         # 3. Reduce to (3, 400)
         reduced_segment = segment[indices, :] 
