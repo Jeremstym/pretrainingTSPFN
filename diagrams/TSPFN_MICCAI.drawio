@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36" version="29.3.8">
   <diagram name="Page-1" id="EAGKJIMGhSCunlDe3jg0">
-    <mxGraphModel dx="3566" dy="1417" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
+    <mxGraphModel dx="4545" dy="2053" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -1586,7 +1586,7 @@
         <mxCell id="BUwpRX7v7OJ_haRYivT7-180" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;b&gt;&lt;font style=&quot;font-size: 27px;&quot;&gt;Query&lt;/font&gt;&lt;/b&gt;" vertex="1">
           <mxGeometry height="68" width="128" x="3562" y="4554.5" as="geometry" />
         </mxCell>
-        <mxCell id="BUwpRX7v7OJ_haRYivT7-182" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;b&gt;&lt;font style=&quot;font-size: 27px;&quot;&gt;1000 random samples from training set&lt;/font&gt;&lt;/b&gt;" vertex="1">
+        <mxCell id="BUwpRX7v7OJ_haRYivT7-182" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;b&gt;&lt;font style=&quot;font-size: 27px;&quot;&gt;4000 random samples from training set&lt;/font&gt;&lt;/b&gt;" vertex="1">
           <mxGeometry height="119.5" width="264" x="3224" y="4020" as="geometry" />
         </mxCell>
         <mxCell id="BUwpRX7v7OJ_haRYivT7-184" edge="1" parent="1" source="BUwpRX7v7OJ_haRYivT7-131" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;strokeWidth=3;" target="BUwpRX7v7OJ_haRYivT7-165" value="">
