@@ -218,7 +218,7 @@ class ABIDEDataset(Dataset):
     def __init__(self, root, split: str):
         self.root = root
         self.split = split
-        self.file_dir = os.path.join(self.root, f"{split}_pca")
+        self.file_dir = os.path.join(self.root, f"{split}")
         self.label_file = os.path.join(self.root, "labels.csv")
         
         self.all_files = sorted(glob(os.path.join(self.file_dir, "*.npy")))
@@ -249,6 +249,7 @@ class ABIDEDataset(Dataset):
         # Convert list of arrays into a single float32 tensor
         # Shape: (N, Time, PCA_Components)
         self.data = torch.from_numpy(np.array(self.data)).float()
+        print(f"Data shape after loading: {self.data.shape}")
         self.labels = torch.tensor(self.labels, dtype=torch.long)
 
     def __len__(self):
