@@ -9,10 +9,14 @@ from torchmetrics.classification import (
     MulticlassAUROC, 
     MulticlassF1Score, 
     MulticlassAveragePrecision,
+    MulticlassCohenKappa,
+    MulticlassRecall,
     BinaryAveragePrecision,
     BinaryF1Score,
     BinaryAUROC,
-    BinaryAccuracy
+    BinaryAccuracy,
+    BinaryCohenKappa,
+    BinaryRecall,
 )
 
 class XGBoostStaticBaseline(pl.LightningModule):
@@ -39,7 +43,9 @@ class XGBoostStaticBaseline(pl.LightningModule):
                 "acc": BinaryAccuracy(),
                 "auroc": BinaryAUROC(),
                 "f1": BinaryF1Score(),
-                "auprc": BinaryAveragePrecision()
+                "auprc": BinaryAveragePrecision(),
+                "cohen_kappa": BinaryCohenKappa(),
+                "recall": BinaryRecall()
             })
         else:
             # Multiclass classification metrics
@@ -47,7 +53,9 @@ class XGBoostStaticBaseline(pl.LightningModule):
                 "acc": MulticlassAccuracy(num_classes=num_classes),
                 "auroc": MulticlassAUROC(num_classes=num_classes),
                 "f1": MulticlassF1Score(num_classes=num_classes, average="macro"),
-                "auprc": MulticlassAveragePrecision(num_classes=num_classes)
+                "auprc": MulticlassAveragePrecision(num_classes=num_classes),
+                "cohen_kappa": MulticlassCohenKappa(num_classes=num_classes),
+                "recall": MulticlassRecall(num_classes=num_classes, average="macro")
             })
         
         self.test_metrics = metrics.clone(prefix="test")
