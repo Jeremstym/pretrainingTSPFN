@@ -46,6 +46,8 @@ class TUAB2ChannelDataset(Dataset):
         if self.X.shape[2] < 250:
             self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
             self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
+        elif self.X.shape[2] == 250:
+            self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
         else:
             raise ValueError(
                 f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
@@ -82,6 +84,8 @@ class TUEV2ChannelDataset(Dataset):
         if self.X.shape[2] < 250:
             self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
             self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
+        elif self.X.shape[2] == 250:
+            self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
         else:
             raise ValueError(
                 f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
