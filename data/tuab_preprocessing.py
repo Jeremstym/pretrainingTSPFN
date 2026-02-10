@@ -103,7 +103,7 @@ def split_and_dump(params):
                             useless_chs.append(ch)
                     raw.drop_channels(useless_chs)
                 for ch in raw.ch_names:
-                    if ch not in relevant_channels:
+                    if ch not in relevant_3channels:
                         raw.drop_channels(ch)                
 
                 print(f"Keeping channels: {raw.ch_names}")
@@ -121,16 +121,16 @@ def split_and_dump(params):
                 continue
 
             FS = 200
-            WINDOW_SIZE = 400  # 2 seconds
+            WINDOW_SIZE = 300  # 1.5 seconds
             LOW_VAR_LIMIT = 5.0   # Reject windows that are too "quiet"
             HIGH_VAR_LIMIT = 800.0 # Reject massive artifacts (clipping/physical movement)
-            SUBSAMPLE_SIZE = 250 
+            SUBSAMPLE_SIZE = 166 
 
             # 1. Skip first 60 seconds (noise)
             start_idx = 60 * FS
             
             for i in range(start_idx, channeled_data.shape[1] - WINDOW_SIZE, WINDOW_SIZE):
-                signal_data = channeled_data[:, i : i + WINDOW_SIZE] # Shape: (23, 400)
+                signal_data = channeled_data[:, i : i + WINDOW_SIZE] # Shape: (3, 300)
                 
                 # 2. Calculate Variance across the time dimension (axis 1)
                 # We take the mean variance across all channels
@@ -147,7 +147,7 @@ def split_and_dump(params):
 
                 # 4. Subsample and Save
                 # decimate_data = sgn.decimate(signal_data, 2, axis=1)
-                subsampled_data = sgn.resample(signal_data, SUBSAMPLE_SIZE, axis=1) # Shape: (23, SUBSAMPLE_SIZE)
+                subsampled_data = sgn.resample(signal_data, SUBSAMPLE_SIZE, axis=1) # Shape: (3, SUBSAMPLE_SIZE)
                 
                 dump_path = os.path.join(dump_folder, f"{file.split('.')[0]}_{i}.pkl")
                 pickle.dump({"X": subsampled_data, "y": label}, open(dump_path, "wb"))
@@ -156,12 +156,12 @@ def split_and_dump(params):
                     print(f"Reached 80 files for subject {sub}, moving to next subject.")
                     break
 
-            # for i in range(channeled_data.shape[1] // 400):
+            # for i in range(channeled_data.shape[1] // 300):
             #     dump_path = os.path.join(
             #         dump_folder, file.split(".")[0] + "_" + str(i) + ".pkl"
             #     )
 
-            #     signal_data = channeled_data[:, i * 400 : (i + 1) * 400]
+            #     signal_data = channeled_data[:, i * 300 : (i + 1) * 300] # Shape: (3, 300)
             #     decimate_data = sgn.decimate(signal_data, 2, axis=1) # Shape: (num_channels, 200)
 
             #     pickle.dump(
@@ -264,20 +264,20 @@ if __name__ == "__main__":
     test_n_sub = list(set([item.split("_")[0] for item in os.listdir(test_normal)]))
 
     # create the train, val, test sample folder
-    if not os.path.exists(os.path.join(root, "twochannelsbis")):
-        os.makedirs(os.path.join(root, "twochannelsbis"))
+    if not os.path.exists(os.path.join(root, "threechannels")):
+        os.makedirs(os.path.join(root, "threechannels"))
 
-    if not os.path.exists(os.path.join(root, "twochannelsbis", "train")):
-        os.makedirs(os.path.join(root, "twochannelsbis", "train"))
-    train_dump_folder = os.path.join(root, "twochannelsbis", "train")
+    if not os.path.exists(os.path.join(root, "threechannels", "train")):
+        os.makedirs(os.path.join(root, "threechannels", "train"))
+    train_dump_folder = os.path.join(root, "threechannels", "train")
 
     # if not os.path.exists(os.path.join(root, "twochannels", "val")):
     #     os.makedirs(os.path.join(root, "twochannels", "val"))
     # val_dump_folder = os.path.join(root, "twochannels", "val")
 
-    if not os.path.exists(os.path.join(root, "twochannelsbis", "val")):
-        os.makedirs(os.path.join(root, "twochannelsbis", "val"))
-    test_dump_folder = os.path.join(root, "twochannelsbis", "val")
+    if not os.path.exists(os.path.join(root, "threechannels", "val")):
+        os.makedirs(os.path.join(root, "threechannels", "val"))
+    test_dump_folder = os.path.join(root, "threechannels", "val")
 
     # fetch_folder, sub, dump_folder, labels
     parameters = []
