@@ -4,6 +4,7 @@ defaults:
 _target_: data.data_module.ABIDEDataModule
 data_roots: ${oc.env:ABIDE_DATA_PATH}
 time_series_length: 196
+time_points: 196
 num_channels: 200
 num_classes: 2
 
