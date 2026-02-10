@@ -202,12 +202,13 @@ class TSPFNPretraining(TSPFNSystem):
             y_batch_query = labels  # (Query, 1)
 
         # Apply z-scoring normalization to the time-series data using the support set statistics
-        ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = z_scoring(
-            data_support=ts_batch_support,
-            data_query=ts_batch_query,
-            label_support=y_batch_support,
-            label_query=y_batch_query,
-        )
+        if self.training:
+            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = z_scoring(
+                data_support=ts_batch_support,
+                data_query=ts_batch_query,
+                label_support=y_batch_support,
+                label_query=y_batch_query,
+            )
 
         # Unsqueeze to comply with expected input shape for TabPFN encoder
         if ts_batch_support.ndim == 2:
@@ -407,6 +408,13 @@ class TSPFNPretraining(TSPFNSystem):
                 time_series_attrs=time_series_support, labels=support_labels
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
+            # Zscoring
+            ts_train_support, ts_query, y_inference_support, y_batch_query = z_scoring(
+                data_support=ts_train_support,
+                data_query=ts_query,
+                label_support=y_inference_support,
+                label_query=y_batch_query,
+            )
         else:
             y_inference_support = None
             ts_train_support = None
