@@ -248,7 +248,7 @@ class ABIDEDataset(Dataset):
 
         # Convert list of arrays into a single float32 tensor
         # Shape: (N, Time, PCA_Components)
-        self.data = torch.from_numpy(np.array(self.data)).float()
+        self.data = torch.from_numpy(np.array(self.data)[:,0,:]).float()
         print(f"Data shape after loading: {self.data.shape}")
         self.labels = torch.tensor(self.labels, dtype=torch.long)
 
