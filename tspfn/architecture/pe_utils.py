@@ -282,7 +282,7 @@ def rope_compute_heads_wrapper(
 
     current_num_channels = getattr(caller_self, "num_channels")
     current_time_points = getattr(caller_self, "time_points")
-
+    print(f"Applying RoPE wrapper: num_channels={current_num_channels}, time_points={current_time_points}")
     # B. Extraction des tenseurs (Unpack)
     if qkv is not None:
         q, k, v = qkv.unbind(dim=-3)
