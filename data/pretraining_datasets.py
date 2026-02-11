@@ -270,7 +270,10 @@ class TSPFNMetaDataset(Dataset):
         self.chunk_size = chunk_size
         self.chunks = []
 
-        for X, y in datasets.values():
+        for X in datasets.values():
+            print(f'Processing dataset with shape {X.shape} for meta-dataset chunking...')
+            print(f"Data are {X}")
+            raise Exception("Stop after checking dataset shapes")
             n = len(X)
             if n < chunk_size:
                 # Optionnel : On peut ignorer ou padder les datasets trop petits
