@@ -122,6 +122,8 @@ class PTB2ChannelDataset(Dataset):
         self.X = self.X.reshape(self.X.shape[0], 2, -1)  # Reshape to [Batch, Channels, Signal_Length]
         self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
 
+        print(f"Loaded PTB 2 channels dataset with {len(self.X)} samples")
+
         assert (
             self.X.shape[1] == 2
         ), f"Expected 2 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
@@ -234,13 +236,14 @@ class TUEV3ChannelDataset(Dataset):
 class PTB3ChannelDataset(Dataset):
     def __init__(self, root, split):
         self.root = root
-
+        
         self.X = np.load(os.path.join(root, f"{split}.npy"))
         self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
         self.X = torch.from_numpy(self.X).float()
         self.X = self.X.reshape(self.X.shape[0], 3, -1)  # Reshape to [Batch, Channels, Signal_Length]
         self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
 
+        print(f"Loaded PTB 3 channels dataset with {len(self.X)} samples")
         assert (
             self.X.shape[1] == 3
         ), f"Expected 3 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
