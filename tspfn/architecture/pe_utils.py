@@ -266,7 +266,7 @@ def rope_compute_heads_wrapper(
     dropout_p=None,
     softmax_scale=None,
     time_points=50,
-    num_channels=1,
+    num_channels=None,
     original_func=None,
     **kwargs
 ):
@@ -280,6 +280,7 @@ def rope_compute_heads_wrapper(
     if not getattr(caller_self, "is_feature_attn", False):
         return original_func(q, k, v, kv, qkv, dropout_p, softmax_scale, **kwargs)
 
+    current_num_channels = getattr(caller_self, "num_channels")
 
     # B. Extraction des tenseurs (Unpack)
     if qkv is not None:
@@ -293,7 +294,7 @@ def rope_compute_heads_wrapper(
     k_feat, k_label = k[:, :time_points], k[:, time_points:]
 
     # D. Application RoPE
-    q_feat, k_feat = _apply_channel_rope(q_feat, k_feat, num_channels)
+    q_feat, k_feat = _apply_channel_rope(q_feat, k_feat, current_num_channels)
 
     # E. Re-assemblage final
     q_final = torch.cat([q_feat, q_label], dim=1)
