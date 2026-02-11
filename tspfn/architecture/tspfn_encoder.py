@@ -197,6 +197,7 @@ class TSPFNEncoder(nn.Module, ABC):
     ) -> Tuple[torch.torch.Tensor, torch.torch.Tensor]:
 
         seq_len, batch_size, num_channels, num_features = X_full.shape
+        print(f"Input shape: {X_full.shape}, y_train shape: {y_train.shape}")
         if self.positional_encoding == "rope" or self.positional_encoding == "rope+channel":
             for layer in self.transformer_encoder.layers:
                 layer.self_attn_between_features.time_points = num_features * num_channels
@@ -204,6 +205,7 @@ class TSPFNEncoder(nn.Module, ABC):
         
         # Flatten on channels
         X_full = X_full.view(seq_len, batch_size, num_channels * num_features)  # (Seq, B, C*F)
+        print(f"Flattened input shape: {X_full.shape}")
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
 
         if self.positional_encoding == "none" or self.positional_encoding == "rope":
