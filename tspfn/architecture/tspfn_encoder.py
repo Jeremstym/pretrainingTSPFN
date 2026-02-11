@@ -25,8 +25,8 @@ class TSPFNEncoder(nn.Module, ABC):
         updated_pfn_path: Union[Path, None] = None,
         random_init: bool = False,
         recompute_layer: bool = True,
-        num_channels: int = 1,
-        time_points: int = 500,
+        num_channels: int = None,
+        time_points: int = None,
         positional_encoding: Literal["none", "sinusoidal", "rope", "learned"] = "none",
         **kwargs,
     ):

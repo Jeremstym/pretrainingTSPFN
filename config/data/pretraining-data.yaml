@@ -68,6 +68,6 @@ val_datasets:
 meta_batch_size: 1
 chunk_size: 5000
 num_workers: 4
-num_channels: 2
+num_channels: null
 sequence_length: ${data.chunk_size} # For the TSPFN encoder, the sequence length is determined by the chunk size (number of time points per chunk)
-time_points: 500 # Number of time points in the input time series data (excluding the class token)
+time_points: null # Number of time points in the input time series data (excluding the class token)
