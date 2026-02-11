@@ -3,51 +3,51 @@ defaults:
 
 _target_: data.data_module.PretrainingTSPFNDataModule
 train_datasets:
-  # 2ChannelTUAB:
-  #   _target_: data.pretraining_datasets.TUAB2ChannelDataset
-  #   root: ${oc.env:TWOCHANS_TUAB_DATA_PATH}
-  #   split: train
-  # 2ChannelTUEV:
-  #   _target_: data.pretraining_datasets.TUEV2ChannelDataset
-  #   root: ${oc.env:TWOCHANS_TUEV_DATA_PATH}
-  #   split: train
+  2ChannelTUAB:
+    _target_: data.pretraining_datasets.TUAB2ChannelDataset
+    root: ${oc.env:TWOCHANS_TUAB_DATA_PATH}
+    split: train
+  2ChannelTUEV:
+    _target_: data.pretraining_datasets.TUEV2ChannelDataset
+    root: ${oc.env:TWOCHANS_TUEV_DATA_PATH}
+    split: train
   2ChannelPTB:
     _target_: data.pretraining_datasets.PTB2ChannelDataset
     root: ${oc.env:TWOCHANS_PTB_DATA_PATH}
     split: train
-  # 3ChannelTUAB:
-  #   _target_: data.pretraining_datasets.TUAB3ChannelDataset
-  #   root: ${oc.env:THREECHANS_TUAB_DATA_PATH}
-  #   split: train
-  # 3ChannelTUEV:
-  #   _target_: data.pretraining_datasets.TUEV3ChannelDataset
-  #   root: ${oc.env:THREECHANS_TUEV_DATA_PATH}
-  #   split: train
+  3ChannelTUAB:
+    _target_: data.pretraining_datasets.TUAB3ChannelDataset
+    root: ${oc.env:THREECHANS_TUAB_DATA_PATH}
+    split: train
+  3ChannelTUEV:
+    _target_: data.pretraining_datasets.TUEV3ChannelDataset
+    root: ${oc.env:THREECHANS_TUEV_DATA_PATH}
+    split: train
   3ChannelPTB:
     _target_: data.pretraining_datasets.PTB3ChannelDataset
     root: ${oc.env:THREECHANS_PTB_DATA_PATH}
     split: train
 val_datasets:
-  # 2ChannelTUAB:
-  #   _target_: data.pretraining_datasets.TUAB2ChannelDataset
-  #   root: ${oc.env:TWOCHANS_TUAB_DATA_PATH}
-  #   split: val
-  # 2ChannelTUEV:
-  #   _target_: data.pretraining_datasets.TUEV2ChannelDataset
-  #   root: ${oc.env:TWOCHANS_TUEV_DATA_PATH}
-  #   split: val
+  2ChannelTUAB:
+    _target_: data.pretraining_datasets.TUAB2ChannelDataset
+    root: ${oc.env:TWOCHANS_TUAB_DATA_PATH}
+    split: val
+  2ChannelTUEV:
+    _target_: data.pretraining_datasets.TUEV2ChannelDataset
+    root: ${oc.env:TWOCHANS_TUEV_DATA_PATH}
+    split: val
   2ChannelPTB:
     _target_: data.pretraining_datasets.PTB2ChannelDataset
     root: ${oc.env:TWOCHANS_PTB_DATA_PATH}
     split: val
-  # 3ChannelTUAB:
-  #   _target_: data.pretraining_datasets.TUAB3ChannelDataset
-  #   root: ${oc.env:THREECHANS_TUAB_DATA_PATH}
-  #   split: val
-  # 3ChannelTUEV:
-  #   _target_: data.pretraining_datasets.TUEV3ChannelDataset
-  #   root: ${oc.env:THREECHANS_TUEV_DATA_PATH}
-  #   split: val
+  3ChannelTUAB:
+    _target_: data.pretraining_datasets.TUAB3ChannelDataset
+    root: ${oc.env:THREECHANS_TUAB_DATA_PATH}
+    split: val
+  3ChannelTUEV:
+    _target_: data.pretraining_datasets.TUEV3ChannelDataset
+    root: ${oc.env:THREECHANS_TUEV_DATA_PATH}
+    split: val
   3ChannelPTB:
     _target_: data.pretraining_datasets.PTB3ChannelDataset
     root: ${oc.env:THREECHANS_PTB_DATA_PATH}
