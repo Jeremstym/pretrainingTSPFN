@@ -437,9 +437,13 @@ class TSPFNFineTuning(TSPFNSystem):
                 time_series_attrs=time_series_support, labels=support_labels
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
+            print(f"Inference support time series shape: {ts_train_support.shape}, inference support labels shape: {y_inference_support.shape}")
+            print(f"Applying z-scoring per channel to support and query time series for inference.")
             ts_train_support, ts_query, y_inference_support, y_query = z_scoring_per_channel(
                 ts_train_support, ts_query, y_inference_support, y_batch_query
             )
+            print(f"After z-scoring: inference support time series shape: {ts_train_support.shape}, query time series shape: {ts_query.shape}")
+            print(f"After z-scoring: inference support labels shape: {y_inference_support.shape}, query labels shape: {y_query.shape}")
         else:
             y_inference_support = None
             ts_train_support = None
