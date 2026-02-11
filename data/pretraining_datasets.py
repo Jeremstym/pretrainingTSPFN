@@ -42,12 +42,14 @@ class TUAB2ChannelDataset(Dataset):
 
         self.X = torch.stack(all_x)
         self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
+        
+        assert self.X.shape[1] == 2, f"Expected 2 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
         if self.X.shape[2] < 250:
             self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
-            self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
-        elif self.X.shape[2] == 250:
-            self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
+        # elif self.X.shape[2] == 250:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
         else:
             raise ValueError(
                 f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
@@ -58,8 +60,8 @@ class TUAB2ChannelDataset(Dataset):
 
     def __getitem__(self, index):
         # print(f"Index: {index}, X shape: {self.X[index].shape}, Y shape: {self.Y[index].shape}")
-        ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*250+1]
-        return ds
+        # ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels, 250+1]
+        return self.X[index], self.Y[index]
 
 
 class TUEV2ChannelDataset(Dataset):
@@ -81,11 +83,13 @@ class TUEV2ChannelDataset(Dataset):
         self.Y = torch.tensor(all_y, dtype=torch.long) - 1  # Convert labels from 1-6 to 0-5
         self.Y = self.Y.unsqueeze(1)  # Shape [Batch, 1]
 
+        assert self.X.shape[1] == 2, f"Expected 2 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+
         if self.X.shape[2] < 250:
             self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
-            self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
-        elif self.X.shape[2] == 250:
-            self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
+        # elif self.X.shape[2] == 250:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
         else:
             raise ValueError(
                 f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
@@ -96,8 +100,7 @@ class TUEV2ChannelDataset(Dataset):
 
     def __getitem__(self, index):
         # print(f"Index: {index}, X shape: {self.X[index].shape}, Y shape: {self.Y[index].shape}")
-        ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*250+1]
-        return ds
+        return self.X[index], self.Y[index]
 
 
 class PTB2ChannelDataset(Dataset):
@@ -112,11 +115,13 @@ class PTB2ChannelDataset(Dataset):
         self.X = self.X.reshape(self.X.shape[0], 2, -1)  # Reshape to [Batch, Channels, Signal_Length]
         self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
 
+        assert self.X.shape[1] == 2, f"Expected 2 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+        
         if self.X.shape[2] < 250:
             self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
-            self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
-        elif self.X.shape[2] == 250:
-            self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
+        # elif self.X.shape[2] == 250:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
         else:
             raise ValueError(
                 f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
@@ -126,8 +131,8 @@ class PTB2ChannelDataset(Dataset):
         return len(self.X)
 
     def __getitem__(self, index):
-        ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*250+1]
-        return ds
+        # ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*250+1]
+        return self.X[index], self.Y[index]
 
 
 class TSPFNMetaDataset(Dataset):
@@ -135,8 +140,8 @@ class TSPFNMetaDataset(Dataset):
         self.chunk_size = chunk_size
         self.chunks = []
 
-        for ds in datasets.values():
-            n = len(ds)
+        for X, y in datasets.values():
+            n = len(X)
             if n < chunk_size:
                 # Optionnel : On peut ignorer ou padder les datasets trop petits
                 raise ValueError(
@@ -144,11 +149,11 @@ class TSPFNMetaDataset(Dataset):
                 )
 
             for i in range(0, n - chunk_size + 1, chunk_size):
-                self.chunks.append(ds[i : i + chunk_size])
+                self.chunks.append((X[i : i + chunk_size], y[i : i + chunk_size]))
 
             # (Overlapping last chunk)
             if n % chunk_size != 0:
-                self.chunks.append(ds[-chunk_size:])
+                self.chunks.append((X[-chunk_size:], y[-chunk_size:]))
 
     def __len__(self):
         return len(self.chunks)
@@ -156,9 +161,7 @@ class TSPFNMetaDataset(Dataset):
     def __getitem__(self, idx):
         # On retourne le bloc de 10k (X et y)
         # Supposons que y est la dernière colonne
-        batch = self.chunks[idx]
-        x = batch[:, :-1]
-        y = batch[:, -1]
+        x, y = self.chunks[idx]
         return x, y
 
 
@@ -171,33 +174,34 @@ class TSPFNValidationDataset(Dataset):
         self.n_support = int(chunk_size * 0.8)  # 80% for support
         self.n_query = chunk_size - self.n_support  # 20% for query
 
-        for d_train, d_val in zip(train_datasets_list.values(), val_datasets_list.values()):
+        for (X_train, y_train), (X_val, y_val) in zip(train_datasets_list.values(), val_datasets_list.values()):
             # 1. On découpe le Val en chunks de 2000 (les Query)
-            n_v = len(d_val)
+            n_v = len(X_val)
             # On utilise le sliding window pour ne rien perdre du Val
             indices = range(0, n_v - self.n_query + 1, self.n_query)
 
             for i in indices:
-                query_chunk = d_val[i : i + self.n_query]
+                query_chunk = X_val[i : i + self.n_query]
+                label_chunk = y_val[i : i + self.n_query]
                 # On stocke le chunk de val ET une référence au train complet associé
-                self.pairs.append({"full_train": d_train, "query_chunk": query_chunk})
+                self.pairs.append({"full_train": (X_train, y_train), "query_chunk": (query_chunk, label_chunk)})
 
             # (Overlapping last chunk for Val)
             if n_v % self.n_query != 0:
-                self.pairs.append({"full_train": d_train, "query_chunk": d_val[-self.n_query:]})
+                self.pairs.append({"full_train": (X_train, y_train), "query_chunk": (X_val[-self.n_query:], y_val[-self.n_query:])})
 
     def __len__(self):
         return len(self.pairs)
 
     def __getitem__(self, idx):
         item = self.pairs[idx]
-        train_data = item["full_train"]
-        query_chunk, query_labels = item["query_chunk"][:, :-1], item["query_chunk"][:, -1]
+        train_data, train_labels = item["full_train"]
+        query_chunk, query_labels = item["query_chunk"]
 
-        # 2. Tirage aléatoire de 8000 points dans le train correspondant
+        # Random selection of support set from the full train data
         indices_sup = torch.randperm(len(train_data))[: self.n_support]
-        support_chunk = train_data[indices_sup][:, :-1]
-        support_labels = train_data[indices_sup][:, -1]
+        support_chunk = train_data[indices_sup]
+        support_labels = train_labels[indices_sup]
 
         output = {"support": (support_chunk, support_labels), "query": (query_chunk, query_labels)}
 
@@ -210,32 +214,33 @@ class TSPFNTestDataset(Dataset):
         self.n_query = chunk_size - self.n_support  # 20% for query
         self.pairs = []
 
-        for d_train, d_test in zip(train_datasets_list.values(), test_datasets_list.values()):
+        for (X_train, y_train), (X_test, y_test) in zip(train_datasets_list.values(), test_datasets_list.values()):
             # 1. On découpe le Val en chunks de 2000 (les Query)
-            n_v = len(d_test)
+            n_v = len(X_test)
             # On utilise le sliding window pour ne rien perdre du Val
             indices = range(0, n_v - self.n_query + 1, self.n_query)
             for i in indices:
-                query_chunk = d_test[i : i + self.n_query]
+                query_chunk = X_test[i : i + self.n_query]
+                label_chunk = y_test[i : i + self.n_query]
                 # On stocke le chunk de val ET une référence au train complet associé
-                self.pairs.append({"full_train": d_train, "query_chunk": query_chunk})
+                self.pairs.append({"full_train": (X_train, y_train), "query_chunk": (query_chunk, label_chunk)})
 
             # (Overlapping last chunk for Val)
             if n_v % self.n_query != 0:
-                self.pairs.append({"full_train": d_train, "query_chunk": d_test[-self.n_query:]})
+                self.pairs.append({"full_train": (X_train, y_train), "query_chunk": (X_test[-self.n_query:], y_test[-self.n_query:])})
 
     def __len__(self):
         return len(self.pairs)
 
     def __getitem__(self, idx):
         item = self.pairs[idx]
-        train_data = item["full_train"]
-        query_chunk, query_labels = item["query_chunk"][:, :-1], item["query_chunk"][:, -1]
+        train_data, train_labels = item["full_train"]
+        query_chunk, query_labels = item["query_chunk"]
 
-        # 2. Tirage aléatoire de 8000 points dans le train correspondant
+        # Random selection of support set from the full train data
         indices_sup = torch.randperm(len(train_data))[: self.n_support]
-        support_chunk = train_data[indices_sup][:, :-1]
-        support_labels = train_data[indices_sup][:, -1]
+        support_chunk = train_data[indices_sup]
+        support_labels = train_labels[indices_sup]
 
         output = {"support": (support_chunk, support_labels), "query": (query_chunk, query_labels)}
 
