@@ -83,7 +83,7 @@ def z_scoring(
 
         data_support_z = (data_support - mean) / std
         data_query_z = (data_query - mean) / std
-    
+
     elif data_support.ndim == 2:
         # data: [Batch, Features]
         mean = data_support.mean(dim=0, keepdim=True)
@@ -91,9 +91,36 @@ def z_scoring(
 
         data_support_z = (data_support - mean) / std
         data_query_z = (data_query - mean) / std
-    
+
     else:
         raise ValueError("Data tensor must be 2D or 3D")
+
+    return data_support_z, data_query_z, label_support, label_query
+
+
+def z_scoring_per_channel(
+    data_support: Tensor, data_query: Tensor, label_support: Tensor, label_query: Tensor
+) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+
+    if data_support.ndim == 4:
+        # data: [Batch=1, Samples, Channels, Time]
+        # We compute mean and std on the sample dimension (dim=1)
+        mean = data_support.mean(dim=1, keepdim=True)
+        std = data_support.std(dim=1, keepdim=True) + 1e-8  # Avoid division by zero
+
+        data_support_z = (data_support - mean) / std
+        data_query_z = (data_query - mean) / std
+
+    elif data_support.ndim == 3:
+        # data: [Samples, Channels, Time]
+        mean = data_support.mean(dim=0, keepdim=True)
+        std = data_support.std(dim=0, keepdim=True) + 1e-8  # Avoid division by zero
+
+        data_support_z = (data_support - mean) / std
+        data_query_z = (data_query - mean) / std
+
+    else:
+        raise ValueError("Data tensor must be 4D or 3D (with Batch=1)")
 
     return data_support_z, data_query_z, label_support, label_query
 
@@ -108,7 +135,7 @@ def get_stratified_batch_split(data, labels, n_total=10000):
     n_support = int(np.exp(np.random.uniform(log_min, log_max)))
 
     # query_ratio = (n_total - n_support) / n_total
-    query_ratio = 0.5 # We keep a fixed query ratio to ensure a meaningful evaluation
+    query_ratio = 0.5  # We keep a fixed query ratio to ensure a meaningful evaluation
 
     data_np = data.squeeze().cpu().numpy()
     labels_np = labels.squeeze().cpu().numpy()

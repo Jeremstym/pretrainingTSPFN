@@ -30,7 +30,7 @@ from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
-from tspfn.utils import half_batch_split, stratified_batch_split, z_scoring, get_stratified_batch_split
+from tspfn.utils import half_batch_split, stratified_batch_split, z_scoring, z_scoring_per_channel, get_stratified_batch_split
 
 logger = logging.getLogger(__name__)
 
@@ -131,10 +131,10 @@ class TSPFNPretraining(TSPFNSystem):
         # labels = torch.cat([torch.randperm(5)]*2)
         labels = torch.arange(10) % num_classes
         labels = labels.unsqueeze(0)
-        time_series_attrs = torch.randn(1, 10, 500)  # (B, S, T)
+        time_series_attrs = torch.randn(1, 10, 2, 500)  # (B, S, C, T)
         # ts_example_input = torch.cat([time_series_attrs, labels.unsqueeze(-1)], dim=2)  # (B, S, T+1)
         # num_classes = len(torch.unique(labels))
-        return time_series_attrs, labels  # (B, S, T), (B, S, 1)
+        return time_series_attrs, labels  # (B, S, C, T), (B, S, 1)
 
     def configure_model(
         self,
@@ -173,12 +173,12 @@ class TSPFNPretraining(TSPFNSystem):
         """Tokenizes the input time-series attributes, providing a mask of non-missing attributes.
 
         Args:
-            time_series_attrs: (B, S, T), Batch of time-series datasets, where the last feature for each sample is the label.
+            time_series_attrs: (B, S, C, T), Batch of time-series datasets, where the last feature for each sample is the label.
 
         Returns:
             - (B, Support, 1), Support set labels.
             - (B, Query, 1), Query set labels.
-            - (B, S (=Support+Query), T), Time series input for .
+            - (B, S (=Support+Query), C, T), Time series input for .
         """
 
         # Tokenize the attributes
@@ -203,7 +203,7 @@ class TSPFNPretraining(TSPFNSystem):
 
         # Apply z-scoring normalization to the time-series data using the support set statistics
         if self.training:
-            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = z_scoring(
+            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = z_scoring_per_channel(
                 data_support=ts_batch_support,
                 data_query=ts_batch_query,
                 label_support=y_batch_support,
