@@ -138,7 +138,8 @@ class ECG5000Dataset(Dataset):
         #         raise ValueError("A fitted scaler must be provided for the test/val split!")
         #     self.scaler = scaler
         #     self.X = self.scaler.transform(self.X)
-        
+        if self.X.ndim == 2:
+            self.X = self.X.reshape(self.X.shape[0], 1, -1)  # Add unichannel dimension if missing, shape becomes (N, 1, Time)
 
     def __len__(self):
         return len(self.data)
@@ -163,6 +164,10 @@ class ESRDataset(Dataset):
 
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
+
+        if self.X.ndim == 2:
+            self.X = self.X.reshape(self.X.shape[0], 1, -1)  # Add unichannel dimension if missing, shape becomes (N, 1, Time)
+
         self.scaler = None
         
         print(f"Loaded {len(self.X)} samples for {split} split of ESR dataset.")
