@@ -410,7 +410,7 @@ class TSPFNPretraining(TSPFNSystem):
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
             # Zscoring
-            ts_train_support, ts_query, y_inference_support, y_batch_query = z_scoring(
+            ts_train_support, ts_query, y_inference_support, y_batch_query = z_scoring_per_channel(
                 data_support=ts_train_support,
                 data_query=ts_query,
                 label_support=y_inference_support,
