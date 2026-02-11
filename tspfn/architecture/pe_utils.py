@@ -282,7 +282,6 @@ def rope_compute_heads_wrapper(
 
     current_num_channels = getattr(caller_self, "num_channels")
     current_time_points = getattr(caller_self, "time_points")
-    print(f"Applying RoPE wrapper: num_channels={current_num_channels}, time_points={current_time_points}")
     # B. Extraction des tenseurs (Unpack)
     if qkv is not None:
         q, k, v = qkv.unbind(dim=-3)
@@ -296,6 +295,9 @@ def rope_compute_heads_wrapper(
 
     # D. Application RoPE
     q_feat, k_feat = _apply_channel_rope(q_feat, k_feat, current_num_channels)
+
+    print(f"Applied RoPE to features with shape {q_feat.shape} and {k_feat.shape}, num_channels={current_num_channels}, time_points={current_time_points}")
+    print(f"Label shapes (should be unchanged): q_label {q_label.shape}, k_label {k_label.shape}")
 
     # E. Re-assemblage final
     q_final = torch.cat([q_feat, q_label], dim=1)
