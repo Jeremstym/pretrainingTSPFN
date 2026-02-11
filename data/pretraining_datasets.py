@@ -50,6 +50,8 @@ class TUAB2ChannelDataset(Dataset):
         if self.X.shape[2] < 250:
             self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
         #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
+        elif self.X.shape[2] == 250:
+            pass
         # elif self.X.shape[2] == 250:
         #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
         else:
@@ -92,6 +94,8 @@ class TUEV2ChannelDataset(Dataset):
         if self.X.shape[2] < 250:
             self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
         #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
+        elif self.X.shape[2] == 250:
+            pass
         # elif self.X.shape[2] == 250:
         #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
         else:
@@ -125,6 +129,8 @@ class PTB2ChannelDataset(Dataset):
         if self.X.shape[2] < 250:
             self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
         #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
+        elif self.X.shape[2] == 250:
+            pass
         # elif self.X.shape[2] == 250:
         #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
         else:
@@ -167,6 +173,8 @@ class TUAB3ChannelDataset(Dataset):
         #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*166]
         # elif self.X.shape[2] == 166:
         #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*166]
+        elif self.X.shape[2] == 166:
+            pass
         else:
             raise ValueError(
                 f"Expected signal length of 166, but got {self.X.shape[2]}. Please check the data preprocessing."
@@ -206,6 +214,8 @@ class TUEV3ChannelDataset(Dataset):
         if self.X.shape[2] < 166:
             self.X = F.pad(self.X, (0, 166 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 166]
         #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*166]
+        elif self.X.shape[2] == 166:
+            pass
         # elif self.X.shape[2] == 166:
         #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*166]
         else:
@@ -238,6 +248,8 @@ class PTB3ChannelDataset(Dataset):
         if self.X.shape[2] < 166:
             self.X = F.pad(self.X, (0, 166 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 166]
         #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*166]
+        elif self.X.shape[2] == 166:
+            pass
         # elif self.X.shape[2] == 166:
         #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*166]
         else:
