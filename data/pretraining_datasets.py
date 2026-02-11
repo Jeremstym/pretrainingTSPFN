@@ -270,11 +270,8 @@ class TSPFNMetaDataset(Dataset):
         self.chunk_size = chunk_size
         self.chunks = []
 
-        for X in datasets.values():
-            print(f'Processing dataset with shape {X.shape} for meta-dataset chunking...')
-            print(f"Data are {X}")
-            raise Exception("Stop after checking dataset shapes")
-            n = len(X)
+        for dataset in datasets.values():
+            n = len(dataset.X)
             if n < chunk_size:
                 # Optionnel : On peut ignorer ou padder les datasets trop petits
                 raise ValueError(
@@ -282,11 +279,13 @@ class TSPFNMetaDataset(Dataset):
                 )
 
             for i in range(0, n - chunk_size + 1, chunk_size):
-                self.chunks.append((X[i : i + chunk_size], y[i : i + chunk_size]))
+                # self.chunks.append((X[i : i + chunk_size], y[i : i + chunk_size]))
+                self.chunks.append((dataset[i : i + chunk_size]))
 
             # (Overlapping last chunk)
             if n % chunk_size != 0:
-                self.chunks.append((X[-chunk_size:], y[-chunk_size:]))
+                # self.chunks.append((X[-chunk_size:], y[-chunk_size:]))
+                self.chunks.append((dataset[-chunk_size:]))
 
     def __len__(self):
         return len(self.chunks)
@@ -307,22 +306,21 @@ class TSPFNValidationDataset(Dataset):
         self.n_support = int(chunk_size * 0.8)  # 80% for support
         self.n_query = chunk_size - self.n_support  # 20% for query
 
-        for (X_train, y_train), (X_val, y_val) in zip(train_datasets_list.values(), val_datasets_list.values()):
+        for (train_dataset), (val_dataset) in zip(train_datasets_list.values(), val_datasets_list.values()):
             # 1. On découpe le Val en chunks de 2000 (les Query)
-            n_v = len(X_val)
+            n_v = len(val_dataset.X)
             # On utilise le sliding window pour ne rien perdre du Val
             indices = range(0, n_v - self.n_query + 1, self.n_query)
 
             for i in indices:
-                query_chunk = X_val[i : i + self.n_query]
-                label_chunk = y_val[i : i + self.n_query]
+                query_chunk, label_chunk = val_dataset[i : i + self.n_query]
                 # On stocke le chunk de val ET une référence au train complet associé
-                self.pairs.append({"full_train": (X_train, y_train), "query_chunk": (query_chunk, label_chunk)})
+                self.pairs.append({"full_train": (train_dataset.X, train_dataset.Y), "query_chunk": (query_chunk, label_chunk)})
 
             # (Overlapping last chunk for Val)
             if n_v % self.n_query != 0:
                 self.pairs.append(
-                    {"full_train": (X_train, y_train), "query_chunk": (X_val[-self.n_query :], y_val[-self.n_query :])}
+                    {"full_train": (train_dataset.X, train_dataset.Y), "query_chunk": (val_dataset.X[-self.n_query :], val_dataset.Y[-self.n_query :])}
                 )
 
     def __len__(self):
@@ -349,23 +347,22 @@ class TSPFNTestDataset(Dataset):
         self.n_query = chunk_size - self.n_support  # 20% for query
         self.pairs = []
 
-        for (X_train, y_train), (X_test, y_test) in zip(train_datasets_list.values(), test_datasets_list.values()):
+        for (train_dataset), (test_dataset) in zip(train_datasets_list.values(), test_datasets_list.values()):
             # 1. On découpe le Val en chunks de 2000 (les Query)
-            n_v = len(X_test)
+            n_v = len(test_dataset.X)
             # On utilise le sliding window pour ne rien perdre du Val
             indices = range(0, n_v - self.n_query + 1, self.n_query)
             for i in indices:
-                query_chunk = X_test[i : i + self.n_query]
-                label_chunk = y_test[i : i + self.n_query]
+                query_chunk, label_chunk = test_dataset[i : i + self.n_query]
                 # On stocke le chunk de val ET une référence au train complet associé
-                self.pairs.append({"full_train": (X_train, y_train), "query_chunk": (query_chunk, label_chunk)})
+                self.pairs.append({"full_train": (train_dataset.X, train_dataset.Y), "query_chunk": (query_chunk, label_chunk)})
 
             # (Overlapping last chunk for Val)
             if n_v % self.n_query != 0:
                 self.pairs.append(
                     {
-                        "full_train": (X_train, y_train),
-                        "query_chunk": (X_test[-self.n_query :], y_test[-self.n_query :]),
+                        "full_train": (train_dataset.X, train_dataset.Y),
+                        "query_chunk": (test_dataset.X[-self.n_query :], test_dataset.Y[-self.n_query :]),
                     }
                 )
 
