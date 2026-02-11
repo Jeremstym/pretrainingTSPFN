@@ -34,7 +34,7 @@ from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
 from tspfn.foundationals.labram import TimeSeriesLabramEncoder
 from tspfn.foundationals.convolution import TimeSeriesConvolutionTokenizer
-from tspfn.utils import get_sizes_per_class, stratified_batch_split, half_batch_split, z_scoring
+from tspfn.utils import get_sizes_per_class, stratified_batch_split, half_batch_split, z_scoring, z_scoring_per_channel
 
 logger = logging.getLogger(__name__)
 
@@ -244,15 +244,27 @@ class TSPFNFineTuning(TSPFNSystem):
                 input_chans=list(range(self.ts_num_channels)),
             )  # (Query, num_tokens)
 
-        # Unsqueeze to comply with expected input shape for TabPFN encoder
-        if ts_batch_support.ndim == 2:
-            ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C*T)
-        if ts_batch_query.ndim == 2:
-            ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C*T)
-        if y_batch_support.ndim == 1:
-            y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
-        if y_batch_query.ndim == 1:
-            y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
+            # Unsqueeze to comply with expected input shape for TabPFN encoder
+            if ts_batch_support.ndim == 2:
+                ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C*T)
+            if ts_batch_query.ndim == 2:
+                ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C*T)
+            if y_batch_support.ndim == 1:
+                y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
+            if y_batch_query.ndim == 1:
+                y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
+        
+        elif self.ts_tokenizer is None:
+            
+            # Unsqueeze to comply with expected input shape for TabPFN encoder
+            if ts_batch_support.ndim == 3:
+                ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C, T)
+            if ts_batch_query.ndim == 3:
+                ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C, T)
+            if y_batch_support.ndim == 1:
+                y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
+            if y_batch_query.ndim == 1:
+                y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
 
         return (
             y_batch_support,
@@ -274,11 +286,11 @@ class TSPFNFineTuning(TSPFNSystem):
 
         Args:
             y_batch_support: (S, 1), Support set labels.
-            ts: (B, S (=Support+Query), T), Tokens to feed to the encoder.
+            ts: (B, S (=Support+Query), C, T), Tokens to feed to the encoder.
         Returns: (B, Query, E), Embeddings of the input sequences.
         """
         if self.training or y_inference_support is None:
-            ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
+            ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, C, T)
             out_features = self.encoder(
                 ts.transpose(0, 1),
                 y_batch_support.transpose(0, 1),
@@ -309,7 +321,7 @@ class TSPFNFineTuning(TSPFNSystem):
         """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the prediction head.
 
         Args:
-            time_series_attrs: (B, S, T): time series inputs.
+            time_series_attrs: (B, S, C, T): time series inputs.
             task: Flag indicating which type of inference task to perform.
 
         Returns:
@@ -334,7 +346,7 @@ class TSPFNFineTuning(TSPFNSystem):
             time_series_attrs=time_series_attrs,
             labels=labels,
             summary_mode=summary_mode,
-        )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+        )  # (B, Support, 1), (B, Query, 1), (B, S, C, T)
 
         out_features = self.encode(y_batch_support, ts_support, ts_query)  # (B, S, E) -> (B, E)
 
@@ -422,7 +434,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 time_series_attrs=time_series_support, labels=support_labels
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
-            ts_train_support, ts_query, y_inference_support, y_query = z_scoring(
+            ts_train_support, ts_query, y_inference_support, y_query = z_scoring_per_channel(
                 ts_train_support, ts_query, y_inference_support, y_batch_query
             )
         else:
