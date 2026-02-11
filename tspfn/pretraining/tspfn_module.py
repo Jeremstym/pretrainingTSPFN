@@ -211,10 +211,10 @@ class TSPFNPretraining(TSPFNSystem):
             )
 
         # Unsqueeze to comply with expected input shape for TabPFN encoder
-        if ts_batch_support.ndim == 2:
-            ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C*T)
-        if ts_batch_query.ndim == 2:
-            ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C*T)
+        if ts_batch_support.ndim == 3:
+            ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C, T)
+        if ts_batch_query.ndim == 3:
+            ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C, T)
         if y_batch_support.ndim == 1:
             y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
         if y_batch_query.ndim == 1:
@@ -240,7 +240,7 @@ class TSPFNPretraining(TSPFNSystem):
 
         Args:
             y_batch_support: (S, 1), Support set labels.
-            ts: (B, S (=Support+Query), T), Tokens to feed to the encoder.
+            ts: (B, S (=Support+Query), C, T), Tokens to feed to the encoder.
         Returns: (B, Query, E), Embeddings of the input sequences.
         """
 
@@ -257,7 +257,7 @@ class TSPFNPretraining(TSPFNSystem):
         #     )[:, :, -1, :]
 
         if self.training or y_inference_support is None:
-            ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, T)
+            ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, C, T)
             out_features = self.encoder(
                 ts.transpose(0, 1),
                 y_batch_support.transpose(0, 1),
@@ -317,9 +317,9 @@ class TSPFNPretraining(TSPFNSystem):
             time_series_attrs=time_series_attrs,
             labels=labels,
             summary_mode=summary_mode,
-        )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+        )  # (B, Support, 1), (B, Query, 1), (B, S, C, T)
 
-        out_features = self.encode(y_batch_support, ts_support, ts_query)  # (B, S, E) -> (B, E)
+        out_features = self.encode(y_batch_support, ts_support, ts_query)  # (B, S, C, T) -> (B, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
@@ -350,7 +350,7 @@ class TSPFNPretraining(TSPFNSystem):
         batch_idx: int,
     ) -> Tensor:
         """Extracts the latent vectors from the encoder for the given batch."""
-        time_series_input = batch  # (B, S, T)
+        time_series_input = batch  # (B, S, C, T)
 
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input
