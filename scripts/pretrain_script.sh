@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=heavy
-#SBATCH --nodelist=ac
+#SBATCH --nodelist=dc
 #SBATCH --job-name=TSPFN-pretraining
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
