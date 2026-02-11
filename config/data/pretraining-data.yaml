@@ -19,7 +19,7 @@ train_datasets:
   #   _target_: data.pretraining_datasets.TUAB3ChannelDataset
   #   root: ${oc.env:THREECHANS_TUAB_DATA_PATH}
   #   split: train
-  3ChannelTUEV:
+  # 3ChannelTUEV:
     # _target_: data.pretraining_datasets.TUEV3ChannelDataset
     # root: ${oc.env:THREECHANS_TUEV_DATA_PATH}
     # split: train
