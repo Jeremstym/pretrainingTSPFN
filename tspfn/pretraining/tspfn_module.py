@@ -396,8 +396,6 @@ class TSPFNPretraining(TSPFNSystem):
                 time_series_input, target_labels = batch["query"]  # (N, C, T), (N,)
                 time_series_support, support_labels = batch["support"]  # (N, C, T), (N,)
 
-        print(f"time_series_input shape: {time_series_input.shape}, target_labels shape: {target_labels.shape}")
-        raise Exception("Stop after checking batch shapes")
 
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels
