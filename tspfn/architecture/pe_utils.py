@@ -265,7 +265,7 @@ def rope_compute_heads_wrapper(
     qkv,
     dropout_p=None,
     softmax_scale=None,
-    time_points=50,
+    time_points=None,
     num_channels=None,
     original_func=None,
     **kwargs
@@ -281,6 +281,7 @@ def rope_compute_heads_wrapper(
         return original_func(q, k, v, kv, qkv, dropout_p, softmax_scale, **kwargs)
 
     current_num_channels = getattr(caller_self, "num_channels")
+    current_time_points = getattr(caller_self, "time_points")
 
     # B. Extraction des tenseurs (Unpack)
     if qkv is not None:
@@ -290,8 +291,8 @@ def rope_compute_heads_wrapper(
 
     # C. Découpage Features / Label
     # q shape: [Seq, Features, Heads, D_k]
-    q_feat, q_label = q[:, :time_points], q[:, time_points:]
-    k_feat, k_label = k[:, :time_points], k[:, time_points:]
+    q_feat, q_label = q[:, :current_time_points], q[:, current_time_points:]
+    k_feat, k_label = k[:, :current_time_points], k[:, current_time_points:]
 
     # D. Application RoPE
     q_feat, k_feat = _apply_channel_rope(q_feat, k_feat, current_num_channels)
