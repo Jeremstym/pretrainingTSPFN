@@ -204,7 +204,6 @@ class TSPFNEncoder(nn.Module, ABC):
         
         # Flatten on channels
         X_full = X_full.view(seq_len, batch_size, num_channels * num_features)  # (Seq, B, C*F)
-        print(f"Input shape after flattening channels: {X_full.shape}")
         emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
 
         if self.positional_encoding == "none" or self.positional_encoding == "rope":

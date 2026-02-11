@@ -296,9 +296,6 @@ def rope_compute_heads_wrapper(
     # D. Application RoPE
     q_feat, k_feat = _apply_channel_rope(q_feat, k_feat, current_num_channels)
 
-    print(f"Applied RoPE to features with shape {q_feat.shape} and {k_feat.shape}, num_channels={current_num_channels}, time_points={current_time_points}")
-    print(f"Label shapes (should be unchanged): q_label {q_label.shape}, k_label {k_label.shape}")
-
     # E. Re-assemblage final
     q_final = torch.cat([q_feat, q_label], dim=1)
     k_final = torch.cat([k_feat, k_label], dim=1)
