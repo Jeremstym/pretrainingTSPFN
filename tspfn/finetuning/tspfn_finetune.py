@@ -422,12 +422,9 @@ class TSPFNFineTuning(TSPFNSystem):
             time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
             time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
 
-        print(f"Input time series shape: {time_series_input.shape}, target labels shape: {target_labels.shape}")
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
-        print(f"Processed support time series shape: {ts_support.shape}, query time series shape: {ts_query.shape}")
-        print(f"Processed support labels shape: {y_batch_support.shape}, query labels shape: {y_batch_query.shape}")
         # B not equal to N (dataset batch size = 1 here)
 
         if time_series_support is not None:
@@ -437,13 +434,9 @@ class TSPFNFineTuning(TSPFNSystem):
                 time_series_attrs=time_series_support, labels=support_labels
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
-            print(f"Inference support time series shape: {ts_train_support.shape}, inference support labels shape: {y_inference_support.shape}")
-            print(f"Applying z-scoring per channel to support and query time series for inference.")
             ts_train_support, ts_query, y_inference_support, y_query = z_scoring_per_channel(
                 ts_train_support, ts_query, y_inference_support, y_batch_query
             )
-            print(f"After z-scoring: inference support time series shape: {ts_train_support.shape}, query time series shape: {ts_query.shape}")
-            print(f"After z-scoring: inference support labels shape: {y_inference_support.shape}, query labels shape: {y_query.shape}")
         else:
             y_inference_support = None
             ts_train_support = None
