@@ -199,7 +199,7 @@ class TSPFNEncoder(nn.Module, ABC):
         seq_len, batch_size, num_channels, num_features = X_full.shape
         if self.positional_encoding == "rope" or self.positional_encoding == "rope+channel":
             for layer in self.transformer_encoder.layers:
-                layer.self_attn_between_features.time_points = num_features * num_channels + 1
+                layer.self_attn_between_features.time_points = num_features * num_channels
                 layer.self_attn_between_features.num_channels = num_channels
         
         # Flatten on channels
