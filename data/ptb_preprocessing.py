@@ -20,7 +20,7 @@ from data.utils_ptb.segment_utils import values_from_dataframe_ny_list
 sys.path.insert(0, os.path.abspath(".."))
 rng = np.random.default_rng(seed=42)
 
-CHOSEN_CHANNELS = [1, 2, 3, 4]  # Fix channel
+CHOSEN_CHANNELS = [0, 1, 2, 3, 4]  # Fix channel
 
 
 def resample_hb_batch(data, fs_in, fs_out):
@@ -251,9 +251,9 @@ if __name__ == "__main__":
     print("Heartbeats and labels extracted for train and test sets.")
 
     print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
-    X_train = resample_hb_batch(X_train, fs_in=500, fs_out=125)
-    # X_val = resample_hb_batch(X_val, fs_in=500, fs_out=125)
-    X_test = resample_hb_batch(X_test, fs_in=500, fs_out=125)
+    X_train = resample_hb_batch(X_train, fs_in=500, fs_out=100)
+    # X_val = resample_hb_batch(X_val, fs_in=500, fs_out=100)
+    X_test = resample_hb_batch(X_test, fs_in=500, fs_out=100)
     print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
 
     print(f"Flatten on channel dimension - Train: {X_train.shape}, Test: {X_test.shape}")
