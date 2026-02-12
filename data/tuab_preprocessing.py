@@ -266,20 +266,20 @@ if __name__ == "__main__":
     test_n_sub = list(set([item.split("_")[0] for item in os.listdir(test_normal)]))
 
     # create the train, val, test sample folder
-    if not os.path.exists(os.path.join(root, "fourchannels")):
-        os.makedirs(os.path.join(root, "fourchannels"))
+    if not os.path.exists(os.path.join(root, "fivechannels")):
+        os.makedirs(os.path.join(root, "fivechannels"))
 
-    if not os.path.exists(os.path.join(root, "fourchannels", "train")):
-        os.makedirs(os.path.join(root, "fourchannels", "train"))
-    train_dump_folder = os.path.join(root, "fourchannels", "train")
+    if not os.path.exists(os.path.join(root, "fivechannels", "train")):
+        os.makedirs(os.path.join(root, "fivechannels", "train"))
+    train_dump_folder = os.path.join(root, "fivechannels", "train")
 
     # if not os.path.exists(os.path.join(root, "twochannels", "val")):
     #     os.makedirs(os.path.join(root, "twochannels", "val"))
     # val_dump_folder = os.path.join(root, "twochannels", "val")
 
-    if not os.path.exists(os.path.join(root, "fourchannels", "val")):
-        os.makedirs(os.path.join(root, "fourchannels", "val"))
-    test_dump_folder = os.path.join(root, "fourchannels", "val")
+    if not os.path.exists(os.path.join(root, "fivechannels", "val")):
+        os.makedirs(os.path.join(root, "fivechannels", "val"))
+    test_dump_folder = os.path.join(root, "fivechannels", "val")
 
     # fetch_folder, sub, dump_folder, labels
     parameters = []
