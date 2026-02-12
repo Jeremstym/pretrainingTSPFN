@@ -25,6 +25,160 @@ from scipy.signal import resample
 from torch.utils.data import Dataset, DataLoader
 
 
+class PTB2ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+        # self.files = glob(os.path.join(root, f"{split}/*.pkl"))
+
+        self.X = np.load(os.path.join(root, f"{split}.npy"))
+        # Subsample time series
+        indices = range(len(self.X))
+        sub_indices = np.random.choice(indices, size=int(len(self.X) * 0.3), replace=False)
+        self.X = self.X[sub_indices]
+        self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
+        # self.Y = self.Y[sub_indices]
+        self.X = torch.from_numpy(self.X).float()
+        self.X = self.X.reshape(self.X.shape[0], 2, -1)  # Reshape to [Batch, Channels, Signal_Length]
+        self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
+
+        print(f"Loaded PTB 2 channels dataset with {len(self.X)} samples")
+
+        assert (
+            self.X.shape[1] == 2
+        ), f"Expected 2 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+
+        if self.X.shape[2] < 250:
+            self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
+        elif self.X.shape[2] == 250:
+            pass
+        # elif self.X.shape[2] == 250:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
+        else:
+            raise ValueError(
+                f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
+            )
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        # ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*250+1]
+        return self.X[index], self.Y[index]
+
+
+class PTB3ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+
+        self.X = np.load(os.path.join(root, f"{split}.npy"))
+        # Subsample time series
+        indices = range(len(self.X))
+        sub_indices = np.random.choice(indices, size=int(len(self.X) * 0.3), replace=False)
+        self.X = self.X[sub_indices]
+        self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
+        self.Y = self.Y[sub_indices]
+        self.X = torch.from_numpy(self.X).float()
+        self.X = self.X.reshape(self.X.shape[0], 3, -1)  # Reshape to [Batch, Channels, Signal_Length]
+        self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
+
+        print(f"Loaded PTB 3 channels dataset with {len(self.X)} samples")
+        assert (
+            self.X.shape[1] == 3
+        ), f"Expected 3 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+
+        if self.X.shape[2] < 166:
+            self.X = F.pad(self.X, (0, 166 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 166]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*166]
+        elif self.X.shape[2] == 166:
+            pass
+        # elif self.X.shape[2] == 166:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*166]
+        else:
+            raise ValueError(
+                f"Expected signal length of 166, but got {self.X.shape[2]}. Please check the data preprocessing."
+            )
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        # ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*166+1]
+        return self.X[index], self.Y[index]
+
+
+class PTB4ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+
+        self.X = np.load(os.path.join(root, f"{split}.npy"))
+        # Subsample time series
+        indices = range(len(self.X))
+        sub_indices = np.random.choice(indices, size=int(len(self.X) * 0.3), replace=False)
+        self.X = self.X[sub_indices]
+        self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
+        self.Y = self.Y[sub_indices]
+        self.X = torch.from_numpy(self.X).float()
+        self.X = self.X.reshape(self.X.shape[0], 4, -1)  # Reshape to [Batch, Channels, Signal_Length]
+        self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
+
+        print(f"Loaded PTB 4 channels dataset with {len(self.X)} samples")
+        assert (
+            self.X.shape[1] == 4
+        ), f"Expected 4 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+
+        if self.X.shape[2] < 125:
+            self.X = F.pad(self.X, (0, 125 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 125]
+        elif self.X.shape[2] == 125:
+            pass
+        else:
+            raise ValueError(
+                f"Expected signal length of 125, but got {self.X.shape[2]}. Please check the data preprocessing."
+            )
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        return self.X[index], self.Y[index]
+
+
+class PTB5ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+
+        self.X = np.load(os.path.join(root, f"{split}.npy"))
+        # Subsample time series
+        indices = range(len(self.X))
+        sub_indices = np.random.choice(indices, size=int(len(self.X) * 0.3), replace=False)
+        self.X = self.X[sub_indices]
+        self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
+        self.Y = self.Y[sub_indices]
+        self.X = torch.from_numpy(self.X).float()
+        self.X = self.X.reshape(self.X.shape[0], 5, -1)  # Reshape to [Batch, Channels, Signal_Length]
+        self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
+
+        print(f"Loaded PTB 5 channels dataset with {len(self.X)} samples")
+        assert (
+            self.X.shape[1] == 5
+        ), f"Expected 5 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+
+        if self.X.shape[2] < 100:
+            self.X = F.pad(self.X, (0, 100 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 100]
+        elif self.X.shape[2] == 100:
+            pass
+        else:
+            raise ValueError(
+                f"Expected signal length of 100, but got {self.X.shape[2]}. Please check the data preprocessing."
+            )
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        return self.X[index], self.Y[index]
+
+
 class TUAB2ChannelDataset(Dataset):
     def __init__(self, root, split):
         self.root = root
@@ -68,6 +222,132 @@ class TUAB2ChannelDataset(Dataset):
         return self.X[index], self.Y[index]
 
 
+class TUAB3ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+        self.files = glob(os.path.join(root, f"{split}/*.pkl"))
+
+        all_x = []
+        all_y = []
+
+        print(f"Loading {len(self.files)} samples into RAM for TUAB 3 channels...")
+        for f in tqdm(self.files):
+            with open(os.path.join(self.root, f), "rb") as rb:
+                sample = pickle.load(rb)
+                all_x.append(torch.from_numpy(sample["X"]).float())
+                all_y.append(sample["y"])
+
+        self.X = torch.stack(all_x)
+        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
+
+        assert (
+            self.X.shape[1] == 3
+        ), f"Expected 3 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+
+        if self.X.shape[2] < 166:
+            self.X = F.pad(self.X, (0, 166 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 166]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*166]
+        # elif self.X.shape[2] == 166:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*166]
+        elif self.X.shape[2] == 166:
+            pass
+        else:
+            raise ValueError(
+                f"Expected signal length of 166, but got {self.X.shape[2]}. Please check the data preprocessing."
+            )
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        # print(f"Index: {index}, X shape: {self.X[index].shape}, Y shape: {self.Y[index].shape}")
+        return self.X[index], self.Y[index]
+
+
+class TUAB4ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+        self.files = glob(os.path.join(root, f"{split}/*.pkl"))
+
+        all_x = []
+        all_y = []
+
+        print(f"Loading {len(self.files)} samples into RAM for TUAB 4 channels...")
+        for f in tqdm(self.files):
+            with open(os.path.join(self.root, f), "rb") as rb:
+                sample = pickle.load(rb)
+                all_x.append(torch.from_numpy(sample["X"]).float())
+                all_y.append(sample["y"])
+
+        self.X = torch.stack(all_x)
+        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
+
+        assert (
+            self.X.shape[1] == 4
+        ), f"Expected 4 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+
+        if self.X.shape[2] < 125:
+            self.X = F.pad(self.X, (0, 125 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 125]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*125]
+        # elif self.X.shape[2] == 125:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*125]
+        elif self.X.shape[2] == 125:
+            pass
+        else:
+            raise ValueError(
+                f"Expected signal length of 125, but got {self.X.shape[2]}. Please check the data preprocessing."
+            )
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        # print(f"Index: {index}, X shape: {self.X[index].shape}, Y shape: {self.Y[index].shape}")
+        return self.X[index], self.Y[index]
+
+
+class TUAB5ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+        self.files = glob(os.path.join(root, f"{split}/*.pkl"))
+
+        all_x = []
+        all_y = []
+
+        print(f"Loading {len(self.files)} samples into RAM for TUAB 5 channels...")
+        for f in tqdm(self.files):
+            with open(os.path.join(self.root, f), "rb") as rb:
+                sample = pickle.load(rb)
+                all_x.append(torch.from_numpy(sample["X"]).float())
+                all_y.append(sample["y"])
+
+        self.X = torch.stack(all_x)
+        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
+
+        assert (
+            self.X.shape[1] == 5
+        ), f"Expected 5 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+
+        if self.X.shape[2] < 100:
+            self.X = F.pad(self.X, (0, 100 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 100]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*100]
+        # elif self.X.shape[2] == 100:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*100]
+        elif self.X.shape[2] == 100:
+            pass
+        else:
+            raise ValueError(
+                f"Expected signal length of 100, but got {self.X.shape[2]}. Please check the data preprocessing."
+            )
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        # print(f"Index: {index}, X shape: {self.X[index].shape}, Y shape: {self.Y[index].shape}")
+        return self.X[index], self.Y[index]
+
+
 class TUEV2ChannelDataset(Dataset):
     def __init__(self, root, split):
         self.root = root
@@ -101,90 +381,6 @@ class TUEV2ChannelDataset(Dataset):
         else:
             raise ValueError(
                 f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
-            )
-
-    def __len__(self):
-        return len(self.files)
-
-    def __getitem__(self, index):
-        # print(f"Index: {index}, X shape: {self.X[index].shape}, Y shape: {self.Y[index].shape}")
-        return self.X[index], self.Y[index]
-
-
-class PTB2ChannelDataset(Dataset):
-    def __init__(self, root, split):
-        self.root = root
-        # self.files = glob(os.path.join(root, f"{split}/*.pkl"))
-
-        self.X = np.load(os.path.join(root, f"{split}.npy"))
-        # Subsample time series
-        # indices = range(len(self.X))
-        # sub_indices = np.random.choice(indices, size=int(len(self.X) * 0.5), replace=False)
-        # self.X = self.X[sub_indices]
-        self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
-        # self.Y = self.Y[sub_indices]
-        self.X = torch.from_numpy(self.X).float()
-        self.X = self.X.reshape(self.X.shape[0], 2, -1)  # Reshape to [Batch, Channels, Signal_Length]
-        self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
-
-        print(f"Loaded PTB 2 channels dataset with {len(self.X)} samples")
-
-        assert (
-            self.X.shape[1] == 2
-        ), f"Expected 2 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
-
-        if self.X.shape[2] < 250:
-            self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
-        elif self.X.shape[2] == 250:
-            pass
-        # elif self.X.shape[2] == 250:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
-        else:
-            raise ValueError(
-                f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
-            )
-
-    def __len__(self):
-        return len(self.X)
-
-    def __getitem__(self, index):
-        # ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*250+1]
-        return self.X[index], self.Y[index]
-
-
-class TUAB3ChannelDataset(Dataset):
-    def __init__(self, root, split):
-        self.root = root
-        self.files = glob(os.path.join(root, f"{split}/*.pkl"))
-
-        all_x = []
-        all_y = []
-
-        print(f"Loading {len(self.files)} samples into RAM for TUAB 3 channels...")
-        for f in tqdm(self.files):
-            with open(os.path.join(self.root, f), "rb") as rb:
-                sample = pickle.load(rb)
-                all_x.append(torch.from_numpy(sample["X"]).float())
-                all_y.append(sample["y"])
-
-        self.X = torch.stack(all_x)
-        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
-
-        assert (
-            self.X.shape[1] == 3
-        ), f"Expected 3 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
-
-        if self.X.shape[2] < 166:
-            self.X = F.pad(self.X, (0, 166 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 166]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*166]
-        # elif self.X.shape[2] == 166:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*166]
-        elif self.X.shape[2] == 166:
-            pass
-        else:
-            raise ValueError(
-                f"Expected signal length of 166, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -238,43 +434,89 @@ class TUEV3ChannelDataset(Dataset):
         return self.X[index], self.Y[index]
 
 
-class PTB3ChannelDataset(Dataset):
+class TUEV4ChannelDataset(Dataset):
     def __init__(self, root, split):
         self.root = root
-        
-        self.X = np.load(os.path.join(root, f"{split}.npy"))
-        # Subsample time series
-        indices = range(len(self.X))
-        sub_indices = np.random.choice(indices, size=int(len(self.X) * 0.5), replace=False)
-        self.X = self.X[sub_indices]
-        self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
-        self.Y = self.Y[sub_indices]
-        self.X = torch.from_numpy(self.X).float()
-        self.X = self.X.reshape(self.X.shape[0], 3, -1)  # Reshape to [Batch, Channels, Signal_Length]
-        self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
+        self.files = glob(os.path.join(root, f"{split}/*.pkl"))
 
-        print(f"Loaded PTB 3 channels dataset with {len(self.X)} samples")
+        all_x = []
+        all_y = []
+
+        print(f"Loading {len(self.files)} samples into RAM for TUEV 4 channels...")
+        for f in tqdm(self.files):
+            with open(os.path.join(self.root, f), "rb") as rb:
+                sample = pickle.load(rb)
+                all_x.append(torch.from_numpy(sample["signal"]).float())
+                all_y.append(sample["label"])
+
+        self.X = torch.stack(all_x)
+        self.Y = torch.tensor(all_y, dtype=torch.long) - 1  # Convert labels from 1-6 to 0-5
+        self.Y = self.Y.unsqueeze(1)  # Shape [Batch, 1]
+
         assert (
-            self.X.shape[1] == 3
-        ), f"Expected 3 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+            self.X.shape[1] == 4
+        ), f"Expected 4 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 166:
-            self.X = F.pad(self.X, (0, 166 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 166]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*166]
-        elif self.X.shape[2] == 166:
+        if self.X.shape[2] < 125:
+            self.X = F.pad(self.X, (0, 125 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 125]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*125]
+        elif self.X.shape[2] == 125:
             pass
-        # elif self.X.shape[2] == 166:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*166]
+        # elif self.X.shape[2] == 125:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*125]
         else:
             raise ValueError(
-                f"Expected signal length of 166, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of 125, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
-        return len(self.X)
+        return len(self.files)
 
     def __getitem__(self, index):
-        # ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*166+1]
+        # print(f"Index: {index}, X shape: {self.X[index].shape}, Y shape: {self.Y[index].shape}")
+        return self.X[index], self.Y[index]
+
+
+class TUEV5ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+        self.files = glob(os.path.join(root, f"{split}/*.pkl"))
+
+        all_x = []
+        all_y = []
+
+        print(f"Loading {len(self.files)} samples into RAM for TUEV 5 channels...")
+        for f in tqdm(self.files):
+            with open(os.path.join(self.root, f), "rb") as rb:
+                sample = pickle.load(rb)
+                all_x.append(torch.from_numpy(sample["signal"]).float())
+                all_y.append(sample["label"])
+
+        self.X = torch.stack(all_x)
+        self.Y = torch.tensor(all_y, dtype=torch.long) - 1  # Convert labels from 1-6 to 0-5
+        self.Y = self.Y.unsqueeze(1)  # Shape [Batch, 1]
+
+        assert (
+            self.X.shape[1] == 5
+        ), f"Expected 5 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
+
+        if self.X.shape[2] < 100:
+            self.X = F.pad(self.X, (0, 100 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 100]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*100]
+        elif self.X.shape[2] == 100:
+            pass
+        # elif self.X.shape[2] == 100:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*100]
+        else:
+            raise ValueError(
+                f"Expected signal length of 100, but got {self.X.shape[2]}. Please check the data preprocessing."
+            )
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        # print(f"Index: {index}, X shape: {self.X[index].shape}, Y shape: {self.Y[index].shape}")
         return self.X[index], self.Y[index]
 
 
@@ -328,12 +570,17 @@ class TSPFNValidationDataset(Dataset):
             for i in indices:
                 query_chunk, label_chunk = val_dataset[i : i + self.n_query]
                 # On stocke le chunk de val ET une référence au train complet associé
-                self.pairs.append({"full_train": (train_dataset.X, train_dataset.Y), "query_chunk": (query_chunk, label_chunk)})
+                self.pairs.append(
+                    {"full_train": (train_dataset.X, train_dataset.Y), "query_chunk": (query_chunk, label_chunk)}
+                )
 
             # (Overlapping last chunk for Val)
             if n_v % self.n_query != 0:
                 self.pairs.append(
-                    {"full_train": (train_dataset.X, train_dataset.Y), "query_chunk": (val_dataset.X[-self.n_query :], val_dataset.Y[-self.n_query :])}
+                    {
+                        "full_train": (train_dataset.X, train_dataset.Y),
+                        "query_chunk": (val_dataset.X[-self.n_query :], val_dataset.Y[-self.n_query :]),
+                    }
                 )
 
     def __len__(self):
@@ -368,7 +615,9 @@ class TSPFNTestDataset(Dataset):
             for i in indices:
                 query_chunk, label_chunk = test_dataset[i : i + self.n_query]
                 # On stocke le chunk de val ET une référence au train complet associé
-                self.pairs.append({"full_train": (train_dataset.X, train_dataset.Y), "query_chunk": (query_chunk, label_chunk)})
+                self.pairs.append(
+                    {"full_train": (train_dataset.X, train_dataset.Y), "query_chunk": (query_chunk, label_chunk)}
+                )
 
             # (Overlapping last chunk for Val)
             if n_v % self.n_query != 0:
