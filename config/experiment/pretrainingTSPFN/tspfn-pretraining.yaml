@@ -53,6 +53,15 @@ task:
     # scheduler:
     #   _target_: transformers.get_cosine_schedule_with_warmup
     #   num_warmup_steps: 100 # Warmup should be step-based, not epoch-based
+  optim:
+    optimizer:
+      _target_: torch.optim.AdamW
+      lr: 1e-4  # Plus agressif pour compenser le RoPE
+    scheduler:
+      _target_: transformers.get_cosine_schedule_with_warmup
+      num_warmup_steps: 84 # Exactement 2 époques de warmup
+      num_training_steps: 6300 # Pour 150 époques totales
+    interval: step
   # optim:
   #   optimizer:
   #     _target_: torch.optim.AdamW
@@ -67,15 +76,6 @@ task:
   #     num_training_steps: 20000
 
   #   scheduler_interval: "step"
-optim:
-  optimizer:
-    _target_: torch.optim.AdamW
-    lr: 1e-4  # Plus agressif pour compenser le RoPE
-  scheduler:
-    _target_: transformers.get_cosine_schedule_with_warmup
-    num_warmup_steps: 84 # Exactement 2 époques de warmup
-    num_training_steps: 6300 # Pour 150 époques totales
-  interval: step
 
 # Change checkpoint loading defaults to:
 ckpt: ??? # Make it mandatory to provide a checkpoint
