@@ -20,8 +20,10 @@ drop_channels.extend([f'EEG {i}-REF' for i in range(20, 129)])
 chOrder_standard = ['EEG FP1-REF', 'EEG FP2-REF', 'EEG F3-REF', 'EEG F4-REF', 'EEG C3-REF', 'EEG C4-REF', 'EEG P3-REF', 'EEG P4-REF', 'EEG O1-REF', 'EEG O2-REF', 'EEG F7-REF', \
                     'EEG F8-REF', 'EEG T3-REF', 'EEG T4-REF', 'EEG T5-REF', 'EEG T6-REF', 'EEG A1-REF', 'EEG A2-REF', 'EEG FZ-REF', 'EEG CZ-REF', 'EEG PZ-REF', 'EEG T1-REF', 'EEG T2-REF']
 
-relevant_channels = ['EEG O1-REF', 'EEG T5-REF']
-relevant_3channels = ["EEG F7-REF", "EEG T4-REF", "EEG CZ-REF"]
+relevant_2channels = ['EEG O1-REF', 'EEG T5-REF']
+relevant_3channels = ['EEG O1-REF', 'EEG T5-REF', 'EEG F7-REF']
+relevant_4channels = ['EEG O1-REF', 'EEG T5-REF', 'EEG F7-REF', 'EEG T4-REF']
+relevant_5channels = ['EEG O1-REF', 'EEG T5-REF', 'EEG F7-REF', 'EEG T4-REF', 'EEG CZ-REF']
 
 standard_channels = [
     "EEG FP1-REF",
