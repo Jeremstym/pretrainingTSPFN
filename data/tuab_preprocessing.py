@@ -105,7 +105,7 @@ def split_and_dump(params):
                             useless_chs.append(ch)
                     raw.drop_channels(useless_chs)
                 for ch in raw.ch_names:
-                    if ch not in relevant_3channels:
+                    if ch not in relevant_4channels:
                         raw.drop_channels(ch)                
 
                 print(f"Keeping channels: {raw.ch_names}")
@@ -126,13 +126,13 @@ def split_and_dump(params):
             WINDOW_SIZE = 300  # 1.5 seconds
             LOW_VAR_LIMIT = 5.0   # Reject windows that are too "quiet"
             HIGH_VAR_LIMIT = 800.0 # Reject massive artifacts (clipping/physical movement)
-            SUBSAMPLE_SIZE = 166 
+            SUBSAMPLE_SIZE = 125 
 
             # 1. Skip first 60 seconds (noise)
             start_idx = 60 * FS
             
             for i in range(start_idx, channeled_data.shape[1] - WINDOW_SIZE, WINDOW_SIZE):
-                signal_data = channeled_data[:, i : i + WINDOW_SIZE] # Shape: (3, 300)
+                signal_data = channeled_data[:, i : i + WINDOW_SIZE] # Shape: (4, 300)
                 
                 # 2. Calculate Variance across the time dimension (axis 1)
                 # We take the mean variance across all channels
@@ -149,7 +149,7 @@ def split_and_dump(params):
 
                 # 4. Subsample and Save
                 # decimate_data = sgn.decimate(signal_data, 2, axis=1)
-                subsampled_data = sgn.resample(signal_data, SUBSAMPLE_SIZE, axis=1) # Shape: (3, SUBSAMPLE_SIZE)
+                subsampled_data = sgn.resample(signal_data, SUBSAMPLE_SIZE, axis=1) # Shape: (4, SUBSAMPLE_SIZE)
                 
                 dump_path = os.path.join(dump_folder, f"{file.split('.')[0]}_{i}.pkl")
                 pickle.dump({"X": subsampled_data, "y": label}, open(dump_path, "wb"))
@@ -266,20 +266,20 @@ if __name__ == "__main__":
     test_n_sub = list(set([item.split("_")[0] for item in os.listdir(test_normal)]))
 
     # create the train, val, test sample folder
-    if not os.path.exists(os.path.join(root, "threechannels")):
-        os.makedirs(os.path.join(root, "threechannels"))
+    if not os.path.exists(os.path.join(root, "fourchannels")):
+        os.makedirs(os.path.join(root, "fourchannels"))
 
-    if not os.path.exists(os.path.join(root, "threechannels", "train")):
-        os.makedirs(os.path.join(root, "threechannels", "train"))
-    train_dump_folder = os.path.join(root, "threechannels", "train")
+    if not os.path.exists(os.path.join(root, "fourchannels", "train")):
+        os.makedirs(os.path.join(root, "fourchannels", "train"))
+    train_dump_folder = os.path.join(root, "fourchannels", "train")
 
     # if not os.path.exists(os.path.join(root, "twochannels", "val")):
     #     os.makedirs(os.path.join(root, "twochannels", "val"))
     # val_dump_folder = os.path.join(root, "twochannels", "val")
 
-    if not os.path.exists(os.path.join(root, "threechannels", "val")):
-        os.makedirs(os.path.join(root, "threechannels", "val"))
-    test_dump_folder = os.path.join(root, "threechannels", "val")
+    if not os.path.exists(os.path.join(root, "fourchannels", "val")):
+        os.makedirs(os.path.join(root, "fourchannels", "val"))
+    test_dump_folder = os.path.join(root, "fourchannels", "val")
 
     # fetch_folder, sub, dump_folder, labels
     parameters = []
