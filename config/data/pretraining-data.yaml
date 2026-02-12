@@ -27,6 +27,30 @@ train_datasets:
   #   _target_: data.pretraining_datasets.PTB3ChannelDataset
   #   root: ${oc.env:THREECHANS_PTB_DATA_PATH}
   #   split: train
+  # 4ChannelTUAB:
+  #   _target_: data.pretraining_datasets.TUAB4ChannelDataset 
+  #   root: ${oc.env:FOURCHANS_TUAB_DATA_PATH}
+  #   split: train
+  # 4ChannelTUEV:
+  #   _target_: data.pretraining_datasets.TUEV4ChannelDataset
+  #   root: ${oc.env:FOURCHANS_TUEV_DATA_PATH}
+  #   split: train
+  # 4ChannelPTB:
+  #   _target_: data.pretraining_datasets.PTB4ChannelDataset
+  #   root: ${oc.env:FOURCHANS_PTB_DATA_PATH}
+  #   split: train
+  # 5ChannelTUAB:
+  #   _target_: data.pretraining_datasets.TUAB5ChannelDataset 
+  #   root: ${oc.env:FIVECHANS_TUAB_DATA_PATH}
+  #   split: train
+  # 5ChannelTUEV:
+  #   _target_: data.pretraining_datasets.TUEV5ChannelDataset
+  #   root: ${oc.env:FIVECHANS_TUEV_DATA_PATH}
+  #   split: train
+  # 5ChannelPTB:
+  #   _target_: data.pretraining_datasets.PTB5ChannelDataset
+  #   root: ${oc.env:FIVECHANS_PTB_DATA_PATH}
+  #   split: train
 val_datasets:
   2ChannelTUAB:
     _target_: data.pretraining_datasets.TUAB2ChannelDataset
@@ -51,6 +75,30 @@ val_datasets:
   # 3ChannelPTB:
   #   _target_: data.pretraining_datasets.PTB3ChannelDataset
   #   root: ${oc.env:THREECHANS_PTB_DATA_PATH}
+  #   split: val
+  # 4ChannelTUAB:
+  #   _target_: data.pretraining_datasets.TUAB4ChannelDataset 
+  #   root: ${oc.env:FOURCHANS_TUAB_DATA_PATH}
+  #   split: val
+  # 4ChannelTUEV:
+  #   _target_: data.pretraining_datasets.TUEV4ChannelDataset
+  #   root: ${oc.env:FOURCHANS_TUEV_DATA_PATH}
+  #   split: val
+  # 4ChannelPTB:
+  #   _target_: data.pretraining_datasets.PTB4ChannelDataset
+  #   root: ${oc.env:FOURCHANS_PTB_DATA_PATH}
+  #   split: val
+  # 5ChannelTUAB:
+  #   _target_: data.pretraining_datasets.TUAB5ChannelDataset 
+  #   root: ${oc.env:FIVECHANS_TUAB_DATA_PATH}
+  #   split: val
+  # 5ChannelTUEV:
+  #   _target_: data.pretraining_datasets.TUEV5ChannelDataset
+  #   root: ${oc.env:FIVECHANS_TUEV_DATA_PATH}
+  #   split: val
+  # 5ChannelPTB:
+  #   _target_: data.pretraining_datasets.PTB5ChannelDataset
+  #   root: ${oc.env:FIVECHANS_PTB_DATA_PATH}
   #   split: val
 # test_datasets:
 #   2ChannelTUAB:
