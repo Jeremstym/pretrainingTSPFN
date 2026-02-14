@@ -466,6 +466,7 @@ class TSPFNFineTuning(TSPFNSystem):
                     target = target.long()
                 else:
                     target = target.float()
+                    y_prob = torch.softmax(y_hat, dim=-1)[:, 1]  # (N=Query,) Take positive class probabilities for binary classification
                     y_hat = y_hat[:, 1]  # (N=Query,) Take positive class logits for binary classification
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                     y_hat,
@@ -477,7 +478,6 @@ class TSPFNFineTuning(TSPFNSystem):
                     self.metrics[stage][target_task].update(y_hat, target)
                 else:
                     target = target.long()
-                    y_prob = torch.softmax(y_hat, dim=-1)[:, 1] 
                     self.metrics_binary[stage][target_task].update(y_prob, target)
                     # self.metrics_binary[stage][target_task].update(y_hat, target)
             else:
