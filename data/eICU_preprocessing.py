@@ -515,8 +515,8 @@ def extract_multi_channel_vitals(min_valid_points=100):
     }
     CHANNEL_NAMES = ['heart_rate', 'respiration', 'spo2', 'blood_pressure', 'temperature']
     
-    if not os.listdir(DESTINATION_FOLDER): # Only create if empty/missing
-        os.makedirs(DESTINATION_FOLDER, exist_ok=True)
+    # if not os.listdir(DESTINATION_FOLDER): # Only create if empty/missing
+    os.makedirs(DESTINATION_FOLDER, exist_ok=True)
 
     def save_patient_bundle(pid, records):
         if not pid or not records:
