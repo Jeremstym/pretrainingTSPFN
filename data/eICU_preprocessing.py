@@ -491,13 +491,21 @@ import numpy as np
 import os
 from tqdm import tqdm
 
-def extract_multi_channel_vitals():
-    # --- CONFIGURATION ---
+import pandas as pd
+import csv
+import gzip
+import numpy as np
+import os
+from tqdm import tqdm
+
+def extract_multi_channel_vitals(min_valid_points=100):
+    """
+    Processes vitalPeriodic once, aligns 5 channels, and skips low-quality stays.
+    min_valid_points: Minimum non-NaN values required PER CHANNEL to save the patient.
+    """
     PATH_VITAL_PERIODIC = '/data/stympopper/BenchmarkTSPFN/EICU-CRD/vitalPeriodic.csv.gz'
     DESTINATION_FOLDER = '/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/multi_channel_ts'
     
-    # Define the columns we want to extract
-    # Mapping: CSV_COLUMN_NAME -> TARGET_CHANNEL_INDEX
     CHANNELS = {
         'heartrate': 0,
         'respiration': 1,
@@ -507,53 +515,50 @@ def extract_multi_channel_vitals():
     }
     CHANNEL_NAMES = ['heart_rate', 'respiration', 'spo2', 'blood_pressure', 'temperature']
     
-    if not os.path.exists(DESTINATION_FOLDER):
-        os.makedirs(DESTINATION_FOLDER)
+    if not os.listdir(DESTINATION_FOLDER): # Only create if empty/missing
+        os.makedirs(DESTINATION_FOLDER, exist_ok=True)
 
     def save_patient_bundle(pid, records):
-        """
-        records: list of dicts for one patient
-        Converts list of records into a synchronized numpy array
-        """
         if not pid or not records:
             return
         
-        # Sort records by offset to ensure chronological order
         records.sort(key=lambda x: x['offset'])
-        
         offsets = np.array([r['offset'] for r in records], dtype=np.float32)
-        # Initialize 2D array: [Timepoints, Channels] with NaNs
         values = np.full((len(records), len(CHANNELS)), np.nan, dtype=np.float32)
         
         for i, rec in enumerate(records):
             for col_name, ch_idx in CHANNELS.items():
                 values[i, ch_idx] = rec[col_name]
         
+        # --- QUALITY CONTROL CHECK ---
+        # Count non-NaN values for each channel
+        valid_counts = np.count_nonzero(~np.isnan(values), axis=0)
+        
+        # If ANY channel has fewer than min_valid_points, we skip this patient
+        if np.any(valid_counts < min_valid_points):
+            # Optimization: could log skipped IDs to a file if needed
+            return 
+
         file_path = os.path.join(DESTINATION_FOLDER, f"{pid}.npz")
         np.savez_compressed(
             file_path, 
-            data=values,           # Shape: (N, 5)
-            offsets=offsets,       # Shape: (N,)
-            columns=CHANNEL_NAMES  # Metadata
+            data=values, 
+            offsets=offsets, 
+            columns=CHANNEL_NAMES
         )
 
-    print("Starting Single-Pass Multi-Channel Extraction...")
+    print(f"Starting Extraction (Threshold: {min_valid_points} points per channel)...")
 
     with gzip.open(PATH_VITAL_PERIODIC, 'rt') as f:
         reader = csv.DictReader(f)
-        
         current_pid = None
         current_records = []
         
-        # Using a simple counter for logging since tqdm on gzip is tricky
-        row_count = 0
-        
+        # Use a status bar that updates based on line count if possible, 
+        # or just a periodic print
         for row in reader:
             pid = row['patientunitstayid']
-            
-            # Extract values
             try:
-                # Basic cleaning: convert empty strings to NaN
                 record = {
                     'offset': float(row['observationoffset']),
                     'heartrate': float(row['heartrate']) if row['heartrate'] else np.nan,
@@ -563,22 +568,16 @@ def extract_multi_channel_vitals():
                     'temperature': float(row['temperature']) if row['temperature'] else np.nan
                 }
             except ValueError:
-                continue # Skip rows with corrupted timestamps
+                continue
 
             if pid != current_pid:
                 if current_pid is not None:
                     save_patient_bundle(current_pid, current_records)
-                
                 current_pid = pid
                 current_records = [record]
-                if row_count % 100000 == 0:
-                    print(f"Processing Patient: {pid} (Row {row_count})")
             else:
                 current_records.append(record)
-            
-            row_count += 1
                 
-        # Save the final patient
         save_patient_bundle(current_pid, current_records)
 
     print(f"Done! Multi-channel files saved in {DESTINATION_FOLDER}")
