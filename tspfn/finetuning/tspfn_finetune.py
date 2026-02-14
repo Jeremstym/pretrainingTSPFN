@@ -465,12 +465,10 @@ class TSPFNFineTuning(TSPFNSystem):
                 if num_classes > 2:
                     target = target.long()
                 else:
-                    print(f"Sample Preds (Logits): {y_hat[:5]}")
-                    print(f"Sample Targets: {target[:5]}")
-                    # Check if a simple sigmoid > 0.5 matches the target
-                    preds_bool = (torch.sigmoid(y_hat) > 0.5).long()
-                    print(f"Hard Predictions: {preds_bool[:5]}")
-                    target = target.float()
+                    # target = target.float()
+                    y_prob = torch.softmax(y_hat, dim=-1)[:, 1] 
+                    target = target.long()
+                    self.metrics_binary[stage][target_task].update(y_prob, target)
                     y_hat = y_hat[:, 1]  # (N=Query,) Take positive class logits for binary classification
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                     y_hat,
