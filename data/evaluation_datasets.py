@@ -205,7 +205,7 @@ class ORCHIDDataset(Dataset):
         self.file_dir = os.path.join(self.root, f"data/{split}")
         self.label_file = os.path.join(self.root, "labels.csv")
         self.selected_channels = [
-            "gls",
+            # "gls",
             "ls_left",
             # "ls_right",
             "lv_area",
