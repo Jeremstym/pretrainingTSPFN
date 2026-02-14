@@ -307,7 +307,7 @@ class ABIDEDataset(Dataset):
     def __init__(self, root, split: str):
         self.root = root
         self.split = split
-        self.file_dir = os.path.join(self.root, f"{split}")
+        self.file_dir = os.path.join(self.root, f"{split}_pca")
         self.label_file = os.path.join(self.root, "labels.csv")
 
         self.all_files = sorted(glob(os.path.join(self.file_dir, "*.npy")))
