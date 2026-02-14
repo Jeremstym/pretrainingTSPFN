@@ -231,7 +231,7 @@ class ORCHIDDataset(Dataset):
         file_path = self.all_patients[index]
         file_name = Path(file_path).stem
         x_sample = self.patient_dict[file_name]
-        y_sample = self.df_labels.loc[file_name, "diagnosis"]  # Labels are indexed by file name
+        y_sample = self.df_labels.loc[file_name[:4], "diagnosis"]  # Labels are indexed by file name
 
         x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
         y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
