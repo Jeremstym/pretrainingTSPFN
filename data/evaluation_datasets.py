@@ -208,7 +208,7 @@ class ORCHIDDataset(Dataset):
             "gls",
             "ls_left",
             # "ls_right",
-            # "lv_area",
+            "lv_area",
             # "lv_length",
             "myo_thickness_left",
             "myo_thickness_right",
