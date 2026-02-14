@@ -623,11 +623,47 @@ def filter_imputed_blocks(source_folder, target_folder, window_size=100, max_nan
         if imputed_block is not None:
             np.savez_compressed(os.path.join(target_folder, file), data=imputed_block)
 
+
+def create_final_labels(ts_folder, patient_csv_path, output_path):
+    """
+    Links extracted time series files to their mortality status.
+    """
+    print("Generating Master Label CSV...")
+
+    # 1. Load the ground truth from the patient table
+    # hospitaldischargestatus: 'Expired' = 1, anything else = 0
+    df_patient = pd.read_csv(
+        patient_csv_path, usecols=["patientunitstayid", "hospitaldischargestatus"], compression="gzip"
+    )
+    df_patient["mortality_label"] = (df_patient["hospitaldischargestatus"] == "Expired").astype(int)
+
+    # Create a mapping for quick lookup
+    label_map = dict(zip(df_patient["patientunitstayid"], df_patient["mortality_label"]))
+
+    # 2. Get the list of patients who actually have saved time series data
+    # We only want to label patients we can actually train on
+    extracted_pids = [int(f.split(".")[0]) for f in os.listdir(ts_folder) if f.endswith(".npz")]
+
+    final_data = []
+    for pid in tqdm(extracted_pids, desc="Linking IDs to labels"):
+        if pid in label_map:
+            final_data.append({"patientunitstayid": pid, "mortality_label": label_map[pid]})
+
+    # 3. Save to CSV
+    df_labels = pd.DataFrame(final_data)
+    df_labels.to_csv(output_path, index=False)
+
+    print(f"Success! Created labels for {len(df_labels)} patients.")
+    print(f"Mortality Rate in this subset: {round(df_labels['mortality_label'].mean() * 100, 2)}%")
+
+
 if __name__ == "__main__":
     # extract_multi_channel_vitals()
-    filter_imputed_blocks(
-        source_folder=FILTERED_FOLDER,
-        target_folder=IMPUTED_FOLDER,
-        window_size=100,
-        max_nan_ratio=0.3
+    # filter_imputed_blocks(
+    #     source_folder=FILTERED_FOLDER, target_folder=IMPUTED_FOLDER, window_size=100, max_nan_ratio=0.3
+    # )
+    create_final_labels(
+        ts_folder=IMPUTED_FOLDER,
+        patient_csv_path="/data/stympopper/BenchmarkTSPFN/EICU-CRD/patient.csv.gz",
+        output_path="/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/final_labels.csv",
     )
