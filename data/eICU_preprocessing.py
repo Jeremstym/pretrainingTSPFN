@@ -36,7 +36,7 @@
 # def status_maker():
 #     path = "/data/stympopper/BenchmarkTSPFN/EICU-CRD"
 #     path_dest = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed"
-#     # 1. Load the patient table 
+#     # 1. Load the patient table
 #     # We need patientunitstayid (the unique stay) and hospitaldischargestatus (the outcome)
 #     df_patient = pd.read_csv(f'{path}/patient.csv.gz', usecols=['patientunitstayid', 'hospitaldischargestatus'], compression='gzip')
 
@@ -61,7 +61,7 @@
 # def respiratory_makers():
 #     path = "/data/stympopper/BenchmarkTSPFN/EICU-CRD"
 #     path_dest = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed"
-    
+
 #     # 1. Load the full list of patient IDs (The "Universe" of patients)
 #     # We only need the ID column to keep memory low
 #     df_patient = pd.read_csv(f'{path}/patient.csv.gz', usecols=['patientunitstayid'], compression='gzip')
@@ -100,12 +100,12 @@
 #         """Helper to save the accumulated list as a numpy file."""
 #         if not pid or not data_list:
 #             return
-        
+
 #         # Convert list to numpy array (handling potential empty strings/missing values)
 #         # We use float32 to save space
 #         arr = np.array(data_list, dtype=np.float32)
 #         obs = np.array(obs_offset_list, dtype=np.float32)
-        
+
 #         file_path = os.path.join(DESTINATION_FOLDER, f"{pid}.npz")
 #         np.savez_compressed(file_path, heart_rate=arr, observation_offset=obs)
 
@@ -113,16 +113,16 @@
 
 #     with gzip.open(PATH_VITAL_PERIODIC, 'rt') as f:
 #         reader = csv.DictReader(f)
-        
+
 #         current_patient_id = None
 #         current_patient_data = []
-        
+
 #         for row in reader:
 #             row_id = row['patientunitstayid']
 #             observation_offset = row['observationoffset']
 #             assert observation_offset.isdigit(), f"observationoffset is not a digit: {observation_offset}"
 #             hr_value = row['heartrate']
-            
+
 #             # Clean the data: handle empty strings or nulls
 #             try:
 #                 val = float(hr_value) if hr_value else np.nan
@@ -133,7 +133,7 @@
 #             if row_id != current_patient_id:
 #                 if current_patient_id is not None:
 #                     save_patient_data(current_patient_id, current_patient_data, current_patient_obs_offsets)
-                
+
 #                 print(f"Processing patient ID: {row_id}")
 #                 # Reset for the new patient
 #                 current_patient_id = row_id
@@ -143,7 +143,7 @@
 #                 # Same patient, just append
 #                 current_patient_data.append(val)
 #                 current_patient_obs_offsets.append(float(observation_offset))
-                
+
 #         # Save the very last patient in the file
 #         save_patient_data(current_patient_id, current_patient_data, current_patient_obs_offsets)
 
@@ -163,12 +163,12 @@
 #         """Helper to save the accumulated list as a numpy file."""
 #         if not pid or not data_list:
 #             return
-        
+
 #         # Convert list to numpy array (handling potential empty strings/missing values)
 #         # We use float32 to save space
 #         arr = np.array(data_list, dtype=np.float32)
 #         obs = np.array(obs_offset_list, dtype=np.float32)
-        
+
 #         file_path = os.path.join(DESTINATION_FOLDER, f"{pid}.npz")
 #         np.savez_compressed(file_path, heart_rate=arr, observation_offset=obs)
 
@@ -176,17 +176,17 @@
 
 #     with gzip.open(PATH_VITAL_PERIODIC, 'rt') as f:
 #         reader = csv.DictReader(f)
-        
+
 #         current_patient_id = None
 #         current_patient_data = []
 #         current_patient_obs_offsets = []
-        
+
 #         for row in reader:
 #             row_id = row['patientunitstayid']
 #             observation_offset = row['observationoffset']
 #             assert observation_offset.isdigit(), f"observationoffset is not a digit: {observation_offset}"
 #             sao2_value = row['sao2']
-            
+
 #             # Clean the data: handle empty strings or nulls
 #             try:
 #                 val = float(sao2_value) if sao2_value else np.nan
@@ -197,7 +197,7 @@
 #             if row_id != current_patient_id:
 #                 if current_patient_id is not None:
 #                     save_patient_data(current_patient_id, current_patient_data, current_patient_obs_offsets)
-                
+
 #                 print(f"Processing patient ID: {row_id}")
 #                 # Reset for the new patient
 #                 current_patient_id = row_id
@@ -207,7 +207,7 @@
 #                 # Same patient, just append
 #                 current_patient_data.append(val)
 #                 current_patient_obs_offsets.append(float(observation_offset))
-                
+
 #         # Save the very last patient in the file
 #         save_patient_data(current_patient_id, current_patient_data, current_patient_obs_offsets)
 
@@ -227,12 +227,12 @@
 #         """Helper to save the accumulated list as a numpy file."""
 #         if not pid or not data_list:
 #             return
-        
+
 #         # Convert list to numpy array (handling potential empty strings/missing values)
 #         # We use float32 to save space
 #         arr = np.array(data_list, dtype=np.float32)
 #         obs = np.array(obs_offset_list, dtype=np.float32)
-        
+
 #         file_path = os.path.join(DESTINATION_FOLDER, f"{pid}.npz")
 #         np.savez_compressed(file_path, heart_rate=arr, observation_offset=obs)
 
@@ -240,16 +240,16 @@
 
 #     with gzip.open(PATH_VITAL_PERIODIC, 'rt') as f:
 #         reader = csv.DictReader(f)
-        
+
 #         current_patient_id = None
 #         current_patient_data = []
 #         current_patient_obs_offsets = []
-        
+
 #         for row in reader:
 #             row_id = row['patientunitstayid']
 #             respiration_value = row['respiration']
 #             observation_offset = row['observationoffset']
-            
+
 #             assert observation_offset.isdigit(), f"observationoffset is not a digit: {observation_offset}"
 #             current_patient_obs_offsets.append(float(observation_offset))
 #             # Clean the data: handle empty strings or nulls
@@ -262,7 +262,7 @@
 #             if row_id != current_patient_id:
 #                 if current_patient_id is not None:
 #                     save_patient_data(current_patient_id, current_patient_data, current_patient_obs_offsets)
-                
+
 #                 print(f"Processing patient ID: {row_id}")
 #                 # Reset for the new patient
 #                 current_patient_id = row_id
@@ -272,7 +272,7 @@
 #                 # Same patient, just append
 #                 current_patient_data.append(val)
 #                 current_patient_obs_offsets.append(float(observation_offset))
-                
+
 #         # Save the very last patient in the file
 #         save_patient_data(current_patient_id, current_patient_data, current_patient_obs_offsets)
 
@@ -292,12 +292,12 @@
 #         """Helper to save the accumulated list as a numpy file."""
 #         if not pid or not data_list:
 #             return
-        
+
 #         # Convert list to numpy array (handling potential empty strings/missing values)
 #         # We use float32 to save space
 #         arr = np.array(data_list, dtype=np.float32)
 #         obs = np.array(obs_offset_list, dtype=np.float32)
-        
+
 #         file_path = os.path.join(DESTINATION_FOLDER, f"{pid}.npz")
 #         np.savez_compressed(file_path, heart_rate=arr, observation_offset=obs)
 
@@ -305,18 +305,18 @@
 
 #     with gzip.open(PATH_VITAL_PERIODIC, 'rt') as f:
 #         reader = csv.DictReader(f)
-        
+
 #         current_patient_id = None
 #         current_patient_data = []
 #         current_patient_obs_offsets = []
-        
+
 #         for row in reader:
 #             row_id = row['patientunitstayid']
 #             observation_offset = row['observationoffset']
 #             assert observation_offset.isdigit(), f"observationoffset is not a digit: {observation_offset}"
 #             current_patient_obs_offsets.append(float(observation_offset))
 #             bp_value = row['systemicmean']
-            
+
 #             # Clean the data: handle empty strings or nulls
 #             try:
 #                 val = float(bp_value) if bp_value else np.nan
@@ -327,7 +327,7 @@
 #             if row_id != current_patient_id:
 #                 if current_patient_id is not None:
 #                     save_patient_data(current_patient_id, current_patient_data, current_patient_obs_offsets)
-                
+
 #                 print(f"Processing patient ID: {row_id}")
 #                 # Reset for the new patient
 #                 current_patient_id = row_id
@@ -337,7 +337,7 @@
 #                 # Same patient, just append
 #                 current_patient_data.append(val)
 #                 current_patient_obs_offsets.append(float(observation_offset))
-                
+
 #         # Save the very last patient in the file
 #         save_patient_data(current_patient_id, current_patient_data, current_patient_obs_offsets)
 
@@ -357,12 +357,12 @@
 #         """Helper to save the accumulated list as a numpy file."""
 #         if not pid or not data_list:
 #             return
-        
+
 #         # Convert list to numpy array (handling potential empty strings/missing values)
 #         # We use float32 to save space
 #         arr = np.array(data_list, dtype=np.float32)
 #         obs = np.array(obs_offset_list, dtype=np.float32)
-        
+
 #         file_path = os.path.join(DESTINATION_FOLDER, f"{pid}.npz")
 #         np.savez_compressed(file_path, temperature=arr, observation_offset=obs)
 
@@ -370,16 +370,16 @@
 
 #     with gzip.open(PATH_VITAL_PERIODIC, 'rt') as f:
 #         reader = csv.DictReader(f)
-        
+
 #         current_patient_id = None
 #         current_patient_data = []
 #         current_patient_obs_offsets = []
-        
+
 #         for row in reader:
 #             row_id = row['patientunitstayid']
 #             temperature_value = row['temperature']
 #             observation_offset = row['observationoffset']
-            
+
 #             # Clean the data: handle empty strings or nulls
 #             try:
 #                 val = float(temperature_value) if temperature_value else np.nan
@@ -390,7 +390,7 @@
 #             if row_id != current_patient_id:
 #                 if current_patient_id is not None:
 #                     save_patient_data(current_patient_id, current_patient_data, current_patient_obs_offsets)
-                
+
 #                 print(f"Processing patient ID: {row_id}")
 #                 # Reset for the new patient
 #                 current_patient_id = row_id
@@ -400,7 +400,7 @@
 #                 # Same patient, just append
 #                 current_patient_data.append(val)
 #                 current_patient_obs_offsets.append(float(observation_offset))
-                
+
 #         # Save the very last patient in the file
 #         save_patient_data(current_patient_id, current_patient_data, current_patient_obs_offsets)
 
@@ -432,29 +432,29 @@
 #     print("Scanning .npz files for non-NaN data...")
 #     for pid in tqdm(patient_list):
 #         is_patient_valid = True
-        
+
 #         # Check every vital folder for this patient
 #         for var_name, folder_path in folders_dict.items():
 #             file_path = os.path.join(folder_path, f"{pid}.npz")
-            
+
 #             # 1. Check if file exists
 #             if not os.path.exists(file_path):
 #                 is_patient_valid = False
 #                 break
-            
+
 #             # 2. Load the file (Lazy loading)
 #             try:
 #                 with np.load(file_path) as data:
 #                     # Replace 'data.files[0]' with your actual key if it's constant, e.g., 'heart_rate'
 #                     # np.all(np.isnan(...)) returns True if the whole array is NaN
-#                     array_key = data.files[0] 
+#                     array_key = data.files[0]
 #                     if np.all(np.isnan(data[array_key])) or data[array_key].size == 0:
 #                         is_patient_valid = False
 #                         break
 #             except Exception:
 #                 is_patient_valid = False
 #                 break
-        
+
 #         if is_patient_valid:
 #             valid_ids.append(pid)
 
@@ -498,74 +498,67 @@ import numpy as np
 import os
 from tqdm import tqdm
 
+FILTERED_FOLDER = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/filtered_multi_channel_ts"
+IMPUTED_FOLDER = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/imputed_multi_channel_ts"
+
+
 def extract_multi_channel_vitals(min_valid_points=100):
     """
     Processes vitalPeriodic once, aligns 5 channels, and skips low-quality stays.
     min_valid_points: Minimum non-NaN values required PER CHANNEL to save the patient.
     """
-    PATH_VITAL_PERIODIC = '/data/stympopper/BenchmarkTSPFN/EICU-CRD/vitalPeriodic.csv.gz'
-    DESTINATION_FOLDER = '/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/filtered_multi_channel_ts'
-    
-    CHANNELS = {
-        'heartrate': 0,
-        'respiration': 1,
-        'sao2': 2,
-        'systemicmean': 3,
-        'temperature': 4
-    }
-    CHANNEL_NAMES = ['heart_rate', 'respiration', 'spo2', 'blood_pressure', 'temperature']
-    
+    PATH_VITAL_PERIODIC = "/data/stympopper/BenchmarkTSPFN/EICU-CRD/vitalPeriodic.csv.gz"
+    DESTINATION_FOLDER = FILTERED_FOLDER
+
+    CHANNELS = {"heartrate": 0, "respiration": 1, "sao2": 2, "systemicmean": 3, "temperature": 4}
+    CHANNEL_NAMES = ["heart_rate", "respiration", "spo2", "blood_pressure", "temperature"]
+
     # if not os.listdir(DESTINATION_FOLDER): # Only create if empty/missing
     os.makedirs(DESTINATION_FOLDER, exist_ok=True)
 
     def save_patient_bundle(pid, records):
         if not pid or not records:
             return
-        
-        records.sort(key=lambda x: x['offset'])
-        offsets = np.array([r['offset'] for r in records], dtype=np.float32)
+
+        records.sort(key=lambda x: x["offset"])
+        offsets = np.array([r["offset"] for r in records], dtype=np.float32)
         values = np.full((len(records), len(CHANNELS)), np.nan, dtype=np.float32)
-        
+
         for i, rec in enumerate(records):
             for col_name, ch_idx in CHANNELS.items():
                 values[i, ch_idx] = rec[col_name]
-        
+
         # --- QUALITY CONTROL CHECK ---
         # Count non-NaN values for each channel
         valid_counts = np.count_nonzero(~np.isnan(values), axis=0)
-        
+
         # If ANY channel has fewer than min_valid_points, we skip this patient
         if np.any(valid_counts < min_valid_points):
             # Optimization: could log skipped IDs to a file if needed
-            return 
+            return
 
         file_path = os.path.join(DESTINATION_FOLDER, f"{pid}.npz")
-        np.savez_compressed(
-            file_path, 
-            data=values, 
-            offsets=offsets, 
-            columns=CHANNEL_NAMES
-        )
+        np.savez_compressed(file_path, data=values, offsets=offsets, columns=CHANNEL_NAMES)
 
     print(f"Starting Extraction (Threshold: {min_valid_points} points per channel)...")
 
-    with gzip.open(PATH_VITAL_PERIODIC, 'rt') as f:
+    with gzip.open(PATH_VITAL_PERIODIC, "rt") as f:
         reader = csv.DictReader(f)
         current_pid = None
         current_records = []
-        
-        # Use a status bar that updates based on line count if possible, 
+
+        # Use a status bar that updates based on line count if possible,
         # or just a periodic print
         for row in reader:
-            pid = row['patientunitstayid']
+            pid = row["patientunitstayid"]
             try:
                 record = {
-                    'offset': float(row['observationoffset']),
-                    'heartrate': float(row['heartrate']) if row['heartrate'] else np.nan,
-                    'respiration': float(row['respiration']) if row['respiration'] else np.nan,
-                    'sao2': float(row['sao2']) if row['sao2'] else np.nan,
-                    'systemicmean': float(row['systemicmean']) if row['systemicmean'] else np.nan,
-                    'temperature': float(row['temperature']) if row['temperature'] else np.nan
+                    "offset": float(row["observationoffset"]),
+                    "heartrate": float(row["heartrate"]) if row["heartrate"] else np.nan,
+                    "respiration": float(row["respiration"]) if row["respiration"] else np.nan,
+                    "sao2": float(row["sao2"]) if row["sao2"] else np.nan,
+                    "systemicmean": float(row["systemicmean"]) if row["systemicmean"] else np.nan,
+                    "temperature": float(row["temperature"]) if row["temperature"] else np.nan,
                 }
             except ValueError:
                 continue
@@ -577,10 +570,64 @@ def extract_multi_channel_vitals(min_valid_points=100):
                 current_records = [record]
             else:
                 current_records.append(record)
-                
+
         save_patient_bundle(current_pid, current_records)
 
     print(f"Done! Multi-channel files saved in {DESTINATION_FOLDER}")
 
+
+def get_imputed_block(ts, window_size=100, max_nan_ratio=0.3):
+    """
+    Finds a window of 100 rows where NaNs are below a threshold,
+    then imputes the values.
+    """
+    # 1. Calculate how many NaNs are in every possible window
+    # We sum the NaNs across all 5 channels for each row
+    nans_per_row = np.isnan(ts).any(axis=1).astype(int)
+
+    if len(ts) < window_size:
+        raise ValueError("Time series is shorter than the window size.")
+
+    # Sliding window sum of NaN-containing rows
+    kernel = np.ones(window_size)
+    nan_counts = np.convolve(nans_per_row, kernel, mode="valid")
+
+    # 2. Find windows that meet our tolerance (e.g., < 30% rows have NaNs)
+    valid_starts = np.where(nan_counts <= (window_size * max_nan_ratio))[0]
+
+    if valid_starts.size == 0:
+        return None
+
+    # Take the window with the absolute minimum number of NaNs
+    best_start = valid_starts[np.argmin(nan_counts[valid_starts])]
+    block = ts[best_start : best_start + window_size].copy()
+
+    # 3. Impute using Pandas (the most efficient way for FFilling)
+    df_block = pd.DataFrame(block)
+
+    # Step-wise imputation:
+    df_block = df_block.interpolate(method="linear", limit_direction="both")  # Interpolate
+    df_block = df_block.ffill()  # Forward fill
+    df_block = df_block.bfill()  # Backward fill (for gaps at the very start)
+
+    return df_block.values
+
+
+def filter_imputed_blocks(source_folder, target_folder, window_size=100, max_nan_ratio=0.3):
+    os.makedirs(target_folder, exist_ok=True)
+    for file in tqdm(os.listdir(source_folder)):
+        if not file.endswith(".npz"):
+            raise ValueError(f"Unexpected file format: {file}. Expected .npz files.")
+        data = np.load(os.path.join(source_folder, file))["data"]
+        imputed_block = get_imputed_block(data, window_size, max_nan_ratio)
+        if imputed_block is not None:
+            np.savez_compressed(os.path.join(target_folder, file), data=imputed_block)
+
 if __name__ == "__main__":
-    extract_multi_channel_vitals()
+    # extract_multi_channel_vitals()
+    filter_imputed_blocks(
+        source_folder=FILTERED_FOLDER,
+        target_folder=IMPUTED_FOLDER,
+        window_size=100,
+        max_nan_ratio=0.3
+    )
