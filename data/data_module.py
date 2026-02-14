@@ -28,6 +28,7 @@ from lightning.pytorch.utilities.combined_loader import CombinedLoader
 from data.evaluation_datasets import (
     ECG5000Dataset,
     ESRDataset,
+    ORCHIDDataset,
     ABIDEDataset,
 )
 from data.pretraining_datasets import (
@@ -72,7 +73,7 @@ class PretrainingTSPFNDataModule(pl.LightningDataModule):
         train_datasets: DictConfig,
         val_datasets: DictConfig,
         # test_datasets: DictConfig,
-        meta_batch_size=1, 
+        meta_batch_size=1,
         chunk_size=10000,
         num_workers: int = 0,
         seed: int = 42,
@@ -91,17 +92,13 @@ class PretrainingTSPFNDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
             # On instancie les datasets de train un par un
-            train_instances = {
-                name: instantiate(cfg) for name, cfg in self.train_datasets.items()
-            }
+            train_instances = {name: instantiate(cfg) for name, cfg in self.train_datasets.items()}
             # On instancie les datasets de val
-            val_instances = {
-                name: instantiate(cfg) for name, cfg in self.val_datasets.items()
-            }
-            
+            val_instances = {name: instantiate(cfg) for name, cfg in self.val_datasets.items()}
+
             self.train_ds = TSPFNMetaDataset(train_instances, self.chunk_size)
             self.val_ds = TSPFNValidationDataset(train_instances, val_instances, self.chunk_size)
-            
+
         if stage == "test":
             # test_instances = {
             #     name: instantiate(cfg) for name, cfg in self.test_datasets.items()
@@ -110,24 +107,24 @@ class PretrainingTSPFNDataModule(pl.LightningDataModule):
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_ds, 
-            batch_size=self.meta_batch_size, 
+            self.train_ds,
+            batch_size=self.meta_batch_size,
             num_workers=self.num_workers,
             pin_memory=self.num_workers > 0,
         )
 
     def val_dataloader(self):
         return DataLoader(
-            self.val_ds, 
-            batch_size=self.meta_batch_size, 
+            self.val_ds,
+            batch_size=self.meta_batch_size,
             num_workers=self.num_workers,
             pin_memory=self.num_workers > 0,
         )
 
     def test_dataloader(self):
         return DataLoader(
-            self.test_ds, 
-            batch_size=self.meta_batch_size, 
+            self.test_ds,
+            batch_size=self.meta_batch_size,
             num_workers=self.num_workers,
             pin_memory=self.num_workers > 0,
         )
@@ -398,6 +395,69 @@ class ESRDataModule(TSPFNDataModule):
     def test_dataloader(self):
         # This is identical to val_dataloader for the final evaluation
         return self.val_dataloader()
+
+
+class ORCHIDDataModule(TSPFNDataModule):
+    """LightningDataModule for ORCHID dataset.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        test_batch_size: Optional[int] = None,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            subsets=subsets,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            test_batch_size=test_batch_size,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+        print(f"num workers: {self.num_workers}")
+
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Create datasets. Called on every process in distributed settings."""
+        self.train_dataset = ORCHIDDataset(
+            root=self.data_roots,
+            split="train",
+        )
+        # scaler = self.train_dataset.scaler
+        self.val_dataset = ORCHIDDataset(root=self.data_roots, split="val")
+
+        return
+
+    def train_dataloader(self):
+        return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
+
+    def val_dataloader(self):
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.val_dataset)
+        loaders = {
+            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
+            "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
+        }
+        return CombinedLoader(loaders, mode="max_size_cycle")
+
+    def test_dataloader(self):
+        # This is identical to val_dataloader for the final evaluation
+        return self.val_dataloader()
+
 
 
 class ESRFineTuneDataModule(TSPFNDataModule):

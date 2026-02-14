@@ -117,7 +117,7 @@ class FilteredTUEVDataset(Dataset):
 
 
 class ECG5000Dataset(Dataset):
-    def __init__(self, root, split: str, scaler=None): # Added scaler argument
+    def __init__(self, root, split: str, scaler=None):  # Added scaler argument
         self.root = root
         self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
 
@@ -139,7 +139,9 @@ class ECG5000Dataset(Dataset):
         #     self.scaler = scaler
         #     self.X = self.scaler.transform(self.X)
         if self.X.ndim == 2:
-            self.X = self.X.reshape(self.X.shape[0], 1, -1)  # Add unichannel dimension if missing, shape becomes (N, 1, Time)
+            self.X = self.X.reshape(
+                self.X.shape[0], 1, -1
+            )  # Add unichannel dimension if missing, shape becomes (N, 1, Time)
 
     def __len__(self):
         return len(self.data)
@@ -166,10 +168,12 @@ class ESRDataset(Dataset):
         self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
 
         if self.X.ndim == 2:
-            self.X = self.X.reshape(self.X.shape[0], 1, -1)  # Add unichannel dimension if missing, shape becomes (N, 1, Time)
+            self.X = self.X.reshape(
+                self.X.shape[0], 1, -1
+            )  # Add unichannel dimension if missing, shape becomes (N, 1, Time)
 
         self.scaler = None
-        
+
         print(f"Loaded {len(self.X)} samples for {split} split of ESR dataset.")
 
         # if split == "train":
@@ -188,6 +192,46 @@ class ESRDataset(Dataset):
     def __getitem__(self, index):
         x_sample = self.X[index]
         y_sample = self.Y[index]
+
+        x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
+        y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+
+        return x_tensor, y_tensor
+
+
+class ORCHIDDataset(Dataset):
+    def __init__(self, root, split: str):
+        self.root = root
+        self.file_dir = os.path.join(self.root, f"data/{split}")
+        self.label_file = os.path.join(self.root, "labels.csv")
+        self.selected_channels = [
+            "gls",
+            "ls_left",
+            "ls_right",
+            "lv_area",
+            "lv_length",
+            "myo_thickness_left",
+            "myo_thickness_right",
+        ]
+
+        self.all_patients = sorted(glob(os.path.join(self.file_dir, "*.npz")))
+        print(f"Found {len(self.all_patients)} files in {self.file_dir}")
+        patient_dict = {}
+        for patient in self.all_patients:
+            data = np.load(patient)
+            patient_stacked = np.stack([data[channel] for channel in self.selected_channels], axis=0)
+            patient_dict[Path(patient).stem] = patient_stacked
+        self.patient_dict = patient_dict
+        self.df_labels = pd.read_csv(self.label_file, index_col=0)
+
+    def __len__(self):
+        return len(self.all_patients)
+
+    def __getitem__(self, index):
+        file_path = self.all_patients[index]
+        file_name = Path(file_path).stem
+        x_sample = self.patient_dict[file_name]
+        y_sample = self.df_labels.loc[file_name, "diagnosis"]  # Labels are indexed by file name
 
         x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
         y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
@@ -216,8 +260,9 @@ class ESRDataset(Dataset):
 
 #         x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
 #         y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
-        
+
 #         return x_tensor, y_tensor
+
 
 class ABIDEDataset(Dataset):
     def __init__(self, root, split: str):
@@ -225,10 +270,10 @@ class ABIDEDataset(Dataset):
         self.split = split
         self.file_dir = os.path.join(self.root, f"{split}")
         self.label_file = os.path.join(self.root, "labels.csv")
-        
+
         self.all_files = sorted(glob(os.path.join(self.file_dir, "*.npy")))
         self.df_labels = pd.read_csv(self.label_file, index_col=0)
-        
+
         # Lists to hold the actual data
         self.data = []
         self.labels = []
@@ -242,18 +287,18 @@ class ABIDEDataset(Dataset):
         for f_path in tqdm(self.all_files, desc=f"Loading {self.split}"):
             file_name = Path(f_path).stem
             sub_id = int(file_name)
-            
+
             # Load and convert
             x_sample = np.load(f_path)
             y_sample = self.df_labels.loc[sub_id, "target"]
-            
+
             self.data.append(x_sample)
             self.labels.append(y_sample)
             self.ids.append(sub_id)
 
         # Convert list of arrays into a single float32 tensor
         # Shape: (N, Time, PCA_Components)
-        self.data = torch.from_numpy(np.array(self.data)[:,[0,1],:]).float()
+        self.data = torch.from_numpy(np.array(self.data)[:, [0, 1], :]).float()
         self.data = self.data.reshape(self.data.size(0), -1)  # Flatten to (N, Time * PCA_Components)
         print(f"Data shape after loading: {self.data.shape}")
         self.labels = torch.tensor(self.labels, dtype=torch.long)
