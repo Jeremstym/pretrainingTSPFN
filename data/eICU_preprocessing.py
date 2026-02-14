@@ -178,7 +178,7 @@ def split_train_val(label_csv, train_ratio=0.8):
 
     for _, row in df_train.iterrows():
         pid = row["patientunitstayid"]
-        src_file = os.path.join(FILTERED_FOLDER, f"{pid}.npz")
+        src_file = os.path.join(IMPUTED_FOLDER, f"{pid}.npz")
         dst_file = os.path.join(target_dir_train, f"{pid}.npz")
         if os.path.exists(src_file):
             os.rename(src_file, dst_file)
@@ -187,7 +187,7 @@ def split_train_val(label_csv, train_ratio=0.8):
 
     for _, row in df_val.iterrows():
         pid = row["patientunitstayid"]
-        src_file = os.path.join(FILTERED_FOLDER, f"{pid}.npz")
+        src_file = os.path.join(IMPUTED_FOLDER, f"{pid}.npz")
         dst_file = os.path.join(target_dir_val, f"{pid}.npz")
         if os.path.exists(src_file):
             os.rename(src_file, dst_file)
