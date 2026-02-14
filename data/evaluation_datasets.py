@@ -275,8 +275,6 @@ class EICUCRDDataset(Dataset):
         x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
         y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
 
-        print(f"Loaded sample {file_name}: x shape {x_tensor.shape}, y {y_tensor.item()}")
-
         return x_tensor, y_tensor
 
 
