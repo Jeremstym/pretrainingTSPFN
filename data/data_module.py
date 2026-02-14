@@ -460,7 +460,7 @@ class ORCHIDDataModule(TSPFNDataModule):
         return self.val_dataloader()
 
 
-class EICUCRDDatamodule(TSPFNDataModule):
+class EICUDatamodule(TSPFNDataModule):
     """LightningDataModule for EICU-CRD dataset.
 
     Parameters
