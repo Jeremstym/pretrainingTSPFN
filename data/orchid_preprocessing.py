@@ -83,5 +83,5 @@ def split_train_val(path, label_csv, train_ratio=0.8):
     print(f"Data split into train and val sets. Train samples: {len(df_train)}, Val samples: {len(df_val)}")
 
 if __name__ == "__main__":
-    # resample_signals(origin_path, target_dir)
+    resample_signals(origin_path, target_dir, label_dir, target_sample=64)
     split_train_val(target_dir, os.path.join(label_dir, "labels.csv"))
