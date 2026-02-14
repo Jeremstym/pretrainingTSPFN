@@ -211,7 +211,7 @@ class ORCHIDDataset(Dataset):
             "lv_area",
             # "lv_length",
             "myo_thickness_left",
-            # "myo_thickness_right",
+            "myo_thickness_right",
         ]
 
         self.all_patients = sorted(glob(os.path.join(self.file_dir, "*.npz")))
