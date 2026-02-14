@@ -412,6 +412,7 @@ class TSPFNFineTuning(TSPFNSystem):
             time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
             time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
 
+        print(f"time_series_input shape: {time_series_input.shape}, target_labels shape: {target_labels.shape}")
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
