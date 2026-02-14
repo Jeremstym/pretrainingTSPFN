@@ -73,9 +73,9 @@ def resample_signals(path, target_dir, label_dir, target_sample=64):
         patient_ts = {}
         for feature in data.files:
             signal = data[feature]
-            # resampled_signal = sgn.resample(signal, target_sample)
+            resampled_signal = sgn.resample(signal, target_sample)
             # resampled_signal = process_gls(signal, target_len=target_sample)
-            resampled_signal = clean_and_resample(signal, target_len=target_sample)
+            # resampled_signal = clean_and_resample(signal, target_len=target_sample)
             patient_ts[feature] = resampled_signal
         np.savez(os.path.join(target_dir, f"{patient_id}_A4C_mask.npz"), **patient_ts)
 
