@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 import scipy.signal as sgn
+from scipy.interpolate import CubicSpline
 import pandas as pd
 from glob import glob
 from tqdm import tqdm
@@ -17,8 +18,19 @@ label_map = {label: idx for idx, label in enumerate(label_list)}
 
 label_dict = {}
 
+def process_gls(strain_data, target_len=64):
+    # Create the original time index (0 to 1)
+    x = np.linspace(0, 1, len(strain_data))
+    # Create the new 64-point time index
+    x_new = np.linspace(0, 1, target_len)
+    
+    # Use 'periodic' bc_type if your cycle starts and ends at End-Diastole
+    # This ensures a smooth transition if you were to loop the signal
+    cs = CubicSpline(x, strain_data, bc_type='periodic')
+    
+    return cs(x_new)
 
-def resample_signals(path, target_dir, target_sample=64):
+def resample_signals(path, target_dir, label_dir, target_sample=64):
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
     list_A4C = glob(path + "/[0-9]*/[0-9]*_A4C_mask.npz")
@@ -33,7 +45,8 @@ def resample_signals(path, target_dir, target_sample=64):
         patient_ts = {}
         for feature in data.files:
             signal = data[feature]
-            resampled_signal = sgn.resample(signal, target_sample)
+            # resampled_signal = sgn.resample(signal, target_sample)
+            resampled_signal = process_gls(signal, target_len=target_sample)
             patient_ts[feature] = resampled_signal
         np.savez(os.path.join(target_dir, f"{patient_id}_A4C_mask.npz"), **patient_ts)
 
@@ -42,7 +55,7 @@ def resample_signals(path, target_dir, target_sample=64):
         .reset_index()
         .rename(columns={"index": "patient_id"})
     )
-    df_label.to_csv(os.path.join(target_dir, "labels.csv"), index=False)
+    df_label.to_csv(os.path.join(label_dir, "labels.csv"), index=False)
 
     print(f"Resampled signals saved to {target_dir}")
 
