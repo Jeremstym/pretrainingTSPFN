@@ -504,7 +504,7 @@ def extract_multi_channel_vitals(min_valid_points=100):
     min_valid_points: Minimum non-NaN values required PER CHANNEL to save the patient.
     """
     PATH_VITAL_PERIODIC = '/data/stympopper/BenchmarkTSPFN/EICU-CRD/vitalPeriodic.csv.gz'
-    DESTINATION_FOLDER = '/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/multi_channel_ts'
+    DESTINATION_FOLDER = '/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/filtered_multi_channel_ts'
     
     CHANNELS = {
         'heartrate': 0,
