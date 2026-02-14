@@ -2,7 +2,7 @@ import os
 import sys
 import numpy as np
 import scipy.signal as sgn
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, PchipInterpolator
 import pandas as pd
 from glob import glob
 from tqdm import tqdm
@@ -32,23 +32,50 @@ def process_gls(strain_data, target_len=64):
     
     return cs(x_new)
 
+def clean_and_resample(data, target_len=64):
+    # Basic quality check: if signal is too short to be a cycle, return None
+    # if len(data) < 20: 
+    #     return None 
+    
+    x_old = np.linspace(0, 1, len(data))
+    x_new = np.linspace(0, 1, target_len)
+    
+    # PCHIP is excellent for biological 'valleys' and 'peaks'
+    interp_func = PchipInterpolator(x_old, data)
+    resampled_signal = interp_func(x_new)
+    
+    return resampled_signal
+
 def resample_signals(path, target_dir, label_dir, target_sample=64):
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
     list_A4C = glob(path + "/[0-9]*/[0-9]*_A4C_mask.npz")
     for file in tqdm(list_A4C):
+        data = np.load(file)
+        valid_patient = True
+    
+        # First pass: Check if ALL required features meet the length requirement
+        for feature in data.files:
+            if len(data[feature]) < 20:
+                print(f"Skipping FULL PATIENT {file}: {feature} too short ({len(data[feature])})")
+                valid_patient = False
+                break
+                
+        if not valid_patient:
+            continue
+            
         patient_id = file.split("/")[-1].split("_")[0]
         with open(file.replace("_A4C_mask.npz", ".yaml"), "r") as f:
             yaml_data = yaml.safe_load(f)
         label = label_map[yaml_data["diagnosis"]]
         label_dict[patient_id] = label
 
-        data = np.load(file)
         patient_ts = {}
         for feature in data.files:
             signal = data[feature]
             # resampled_signal = sgn.resample(signal, target_sample)
-            resampled_signal = process_gls(signal, target_len=target_sample)
+            # resampled_signal = process_gls(signal, target_len=target_sample)
+            resampled_signal = clean_and_resample(signal, target_len=target_sample)
             patient_ts[feature] = resampled_signal
         np.savez(os.path.join(target_dir, f"{patient_id}_A4C_mask.npz"), **patient_ts)
 
