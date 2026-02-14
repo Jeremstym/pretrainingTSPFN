@@ -75,14 +75,6 @@ class TSPFNFineTuning(TSPFNSystem):
         # Configure losses/metrics to compute at each train/val/test step
         self.metrics = nn.ModuleDict()
 
-        # if self.hparams["model"].get("loc_head", None) is not None:
-        #     loc_head_cfg = self.hparams["model"].pop("loc_head")
-        #     self.loc_head = hydra.utils.instantiate(
-        #         loc_head_cfg,
-        #     )
-        # else:
-        #     self.loc_head = None
-
         # Supervised losses and metrics
         self.predict_losses = {}
         if predict_losses:
@@ -92,8 +84,6 @@ class TSPFNFineTuning(TSPFNSystem):
                 )
                 for target_task, target_loss in predict_losses.items()
             }
-        # if self.loc_head is None:
-        #     self.predict_losses.pop("location", None)
 
         # Initialize transformer encoder and self-supervised + prediction heads
         self.encoder, self.prediction_heads = self.configure_model()
@@ -487,18 +477,6 @@ class TSPFNFineTuning(TSPFNSystem):
                 else:
                     target = target.long()
                     self.metrics_binary[stage][target_task].update(y_hat, target)
-            # elif target_task == "location":
-            #     y_hat = predictions[target_task]  # (N=Query, num_locations)
-            #     if y_hat.ndim == 1:
-            #         y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_locations)
-            #     target = mask.unsqueeze(dim=0)  # (N=Query, num_locations)
-            #     losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
-            #         y_hat,
-            #         target,
-            #     )
-
-            #     # Metrics are automatically updated inside the Metric objects
-            #     self.metrics[stage][target_task].update(y_hat, target)
             else:
                 raise ValueError(f"Unknown target task '{target_task}' for prediction.")
 
