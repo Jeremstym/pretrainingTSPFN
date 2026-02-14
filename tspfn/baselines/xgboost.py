@@ -73,7 +73,10 @@ class XGBoostStaticBaseline(pl.LightningModule):
                 for batch in train_loader:
                     # Handle if train_loader is also a CombinedLoader or simple tuple
                     x, y = batch if isinstance(batch, (tuple, list)) else batch["train"]
-                    if self.num_channels > 1:
+                    batch_size, num_channels, seq_len = x.shape
+                    print(f"Original batch shape: {x.shape}, labels shape: {y.shape}")
+                    if num_channels > 1:
+                    # if self.num_channels > 1:
                         # Flatten
                         x = x.flatten(start_dim=1)
                     all_x.append(x.view(-1, x.size(-1)).cpu())
@@ -98,8 +101,11 @@ class XGBoostStaticBaseline(pl.LightningModule):
             raise ValueError("Expected 'val' key in batch for validation data.")
             
         x, y = batch_dict["val"] 
-
-        if self.num_channels > 1:
+        print(f"Original test batch shape: {x.shape}, labels shape: {y.shape}")
+        batch_size, num_channels, seq_len = x.shape
+        
+        if num_channels > 1:
+        # if self.num_channels > 1:
             x = x.flatten(start_dim=1)
         
         x_eval = x.view(-1, x.size(-1)).cpu().numpy()
