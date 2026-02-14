@@ -54,12 +54,12 @@ def resample_signals(path, target_dir, label_dir, target_sample=64):
         data = np.load(file)
         valid_patient = True
     
-        # First pass: Check if ALL required features meet the length requirement
-        for feature in data.files:
-            if len(data[feature]) < 20:
-                print(f"Skipping FULL PATIENT {file}: {feature} too short ({len(data[feature])})")
-                valid_patient = False
-                break
+        # # First pass: Check if ALL required features meet the length requirement
+        # for feature in data.files:
+        #     if len(data[feature]) < 20:
+        #         print(f"Skipping FULL PATIENT {file}: {feature} too short ({len(data[feature])})")
+        #         valid_patient = False
+        #         break
                 
         if not valid_patient:
             continue
