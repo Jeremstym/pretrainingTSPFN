@@ -207,11 +207,11 @@ class ORCHIDDataset(Dataset):
         self.selected_channels = [
             "gls",
             "ls_left",
-            "ls_right",
+            # "ls_right",
             "lv_area",
-            "lv_length",
+            # "lv_length",
             "myo_thickness_left",
-            "myo_thickness_right",
+            # "myo_thickness_right",
         ]
 
         self.all_patients = sorted(glob(os.path.join(self.file_dir, "*.npz")))
