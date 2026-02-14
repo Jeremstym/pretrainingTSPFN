@@ -20,7 +20,7 @@ label_dict = {}
 
 def process_gls(strain_data, target_len=64):
     data_consistent = np.copy(strain_data)
-    data_consistent[-1] = data_consistent[0]
+    # data_consistent[-1] = data_consistent[0]
     # Create the original time index (0 to 1)
     x = np.linspace(0, 1, len(data_consistent))
     # Create the new 64-point time index
@@ -28,7 +28,7 @@ def process_gls(strain_data, target_len=64):
     
     # Use 'periodic' bc_type if your cycle starts and ends at End-Diastole
     # This ensures a smooth transition if you were to loop the signal
-    cs = CubicSpline(x, data_consistent, bc_type='periodic')
+    cs = CubicSpline(x, data_consistent, bc_type='natural')
     
     return cs(x_new)
 
