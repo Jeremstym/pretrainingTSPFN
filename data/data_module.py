@@ -30,6 +30,7 @@ from data.evaluation_datasets import (
     ESRDataset,
     ORCHIDDataset,
     ABIDEDataset,
+    EICUCRDDataset,
 )
 from data.pretraining_datasets import (
     TUAB2ChannelDataset,
@@ -458,6 +459,67 @@ class ORCHIDDataModule(TSPFNDataModule):
         # This is identical to val_dataloader for the final evaluation
         return self.val_dataloader()
 
+
+class EICUCRDDatamodule(TSPFNDataModule):
+    """LightningDataModule for EICU-CRD dataset.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        test_batch_size: Optional[int] = None,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            subsets=subsets,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            test_batch_size=test_batch_size,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+        print(f"num workers: {self.num_workers}")
+
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Create datasets. Called on every process in distributed settings."""
+        self.train_dataset = EICUCRDDataset(
+            root=self.data_roots,
+            split="train",
+        )
+        # scaler = self.train_dataset.scaler
+        self.val_dataset = EICUCRDDataset(root=self.data_roots, split="test")
+
+        return
+
+    def train_dataloader(self):
+        return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
+
+    def val_dataloader(self):
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.val_dataset)
+        loaders = {
+            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
+            "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
+        }
+        return CombinedLoader(loaders, mode="max_size_cycle")
+
+    def test_dataloader(self):
+        # This is identical to val_dataloader for the final evaluation
+        return self.val_dataloader()
 
 
 class ESRFineTuneDataModule(TSPFNDataModule):

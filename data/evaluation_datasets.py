@@ -239,6 +239,45 @@ class ORCHIDDataset(Dataset):
         return x_tensor, y_tensor
 
 
+class EICUCRDDataset(Dataset):
+    def __init__(self, root, split: str):
+        self.root = root
+        self.file_dir = os.path.join(self.root, f"{split}")
+        self.label_file = os.path.join(self.root, "final_labels.csv")
+        self.selected_channels = ["heart_rate", "respiration", "spo2", "blood_pressure", "temperature"]
+
+        channel_maps = {
+            "heart_rate": 0,
+            "respiration": 1,
+            "spo2": 2,
+            "blood_pressure": 3,
+            "temperature": 4,
+        }
+
+        self.all_patients = sorted(glob(os.path.join(self.file_dir, "*.npz")))
+        print(f"Found {len(self.all_patients)} files in {self.file_dir}")
+        patient_dict = {}
+        for patient in self.all_patients:
+            data = np.load(patient)["data"]
+            patient_dict[Path(patient).stem] = data.T  # Transpose to get shape (Channels, Time)
+        self.patient_dict = patient_dict
+        self.df_labels = pd.read_csv(self.label_file, index_col=0)
+
+    def __len__(self):
+        return len(self.all_patients)
+
+    def __getitem__(self, index):
+        file_path = self.all_patients[index]
+        file_name = Path(file_path).stem
+        x_sample = self.patient_dict[file_name]
+        y_sample = self.df_labels.loc[int(file_name), "mortality_label"]  # Labels are indexed by file name
+
+        x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
+        y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+
+        return x_tensor, y_tensor
+
+
 # class ABIDEDataset(Dataset):
 #     def __init__(self, root, split: str):
 #         self.root = root
