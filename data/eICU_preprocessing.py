@@ -8,8 +8,9 @@ from sklearn.model_selection import train_test_split
 
 FILTERED_FOLDER = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/filtered_multi_channel_ts"
 IMPUTED_FOLDER = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/imputed_multi_channel_ts"
-SPLIT_TRAIN = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/train"
-SPLIT_TEST = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/test"
+IMPUTED_FOLDER_decease = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/imputed_multi_channel_ts_decease"
+SPLIT_TRAIN = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/train_decease"
+SPLIT_TEST = "/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/test_decease"
 
 
 def extract_multi_channel_vitals(min_valid_points=100):
@@ -129,7 +130,8 @@ def filter_imputed_blocks(source_folder, target_folder, window_size=100, max_nan
         if not file.endswith(".npz"):
             raise ValueError(f"Unexpected file format: {file}. Expected .npz files.")
         data = np.load(os.path.join(source_folder, file))["data"]
-        imputed_block = get_imputed_block(data, window_size, max_nan_ratio)
+        # imputed_block = get_imputed_block(data, window_size, max_nan_ratio)
+        imputed_block = get_terminal_100_points(data, window_size)
         if imputed_block is not None:
             np.savez_compressed(os.path.join(target_folder, file), data=imputed_block)
 
@@ -178,7 +180,7 @@ def split_train_val(label_csv, train_ratio=0.8):
 
     for _, row in df_train.iterrows():
         pid = row["patientunitstayid"]
-        src_file = os.path.join(IMPUTED_FOLDER, f"{pid}.npz")
+        src_file = os.path.join(IMPUTED_FOLDER_decease, f"{pid}.npz")
         dst_file = os.path.join(target_dir_train, f"{pid}.npz")
         if os.path.exists(src_file):
             os.rename(src_file, dst_file)
@@ -187,7 +189,7 @@ def split_train_val(label_csv, train_ratio=0.8):
 
     for _, row in df_val.iterrows():
         pid = row["patientunitstayid"]
-        src_file = os.path.join(IMPUTED_FOLDER, f"{pid}.npz")
+        src_file = os.path.join(IMPUTED_FOLDER_decease, f"{pid}.npz")
         dst_file = os.path.join(target_dir_val, f"{pid}.npz")
         if os.path.exists(src_file):
             os.rename(src_file, dst_file)
@@ -195,14 +197,65 @@ def split_train_val(label_csv, train_ratio=0.8):
             print(f"Warning: Source file {src_file} not found for validation set.")
 
 
+def calculate_true_medians(source_dir=FILTERED_FOLDER):
+    all_values = []
+    patient_files = [f for f in os.listdir(source_dir) if f.endswith('.npz')]
+    
+    # We only need a sample to get a stable median
+    for filename in patient_files[:2000]: 
+        data = np.load(os.path.join(source_dir, filename))['data']
+        all_values.append(data)
+    
+    # Stack everything and calculate median per column, ignoring NaNs
+    big_matrix = np.vstack(all_values)
+    medians = np.nanmedian(big_matrix, axis=0)
+    
+    print(f"Calculated Medians [HR, Resp, SpO2, BP, Temp]: {medians}")
+    return medians
+
+
+def get_terminal_100_points(ts, window_size=100):
+    """
+    ts: array of shape (N, 5)
+    Always returns (100, 5)
+    """
+    N = ts.shape[0]
+    
+    if N >= window_size:
+        # 1. Long Stay: Take the most recent 100 points
+        block = ts[-window_size:].copy()
+    else:
+        # 2. Short Stay: Pad the beginning with NaNs
+        pad_width = window_size - N
+        block = np.pad(ts, ((pad_width, 0), (0, 0)), mode='constant', constant_values=np.nan)
+    
+    # 3. Impute Gaps
+    # Convert to DataFrame to use clinical imputation logic
+    df = pd.DataFrame(block)
+    
+    # Linear interpolation for small gaps, Forward fill for the rest
+    # Backward fill handles the Padding we just added at the start
+    df = df.interpolate(method='linear', limit_direction='both').ffill().bfill()
+    
+    # 4. Global Median Fallback (for patients missing a whole channel)
+    # [HR, Resp, SpO2, MAP, Temp]
+    # global_medians = [85, 18, 97, 80, 37]
+    global_medians = calculate_true_medians()
+    if df.isnull().values.any():
+        for i, median_val in enumerate(global_medians):
+            df.iloc[:, i] = df.iloc[:, i].fillna(median_val)
+            
+    return df.values
+
+
 if __name__ == "__main__":
     # extract_multi_channel_vitals()
-    # filter_imputed_blocks(
-    #     source_folder=FILTERED_FOLDER, target_folder=IMPUTED_FOLDER, window_size=100, max_nan_ratio=0.3
-    # )
-    # create_final_labels(
-    #     ts_folder=IMPUTED_FOLDER,
-    #     patient_csv_path="/data/stympopper/BenchmarkTSPFN/EICU-CRD/patient.csv.gz",
-    #     output_path="/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/final_labels.csv",
-    # )
+    filter_imputed_blocks(
+        source_folder=FILTERED_FOLDER, target_folder=IMPUTED_FOLDER_decease, window_size=100, max_nan_ratio=0.3
+    )
+    create_final_labels(
+        ts_folder=IMPUTED_FOLDER_decease,
+        patient_csv_path="/data/stympopper/BenchmarkTSPFN/EICU-CRD/patient.csv.gz",
+        output_path="/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/final_labels.csv",
+    )
     split_train_val(label_csv="/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/final_labels.csv", train_ratio=0.8)
