@@ -124,14 +124,14 @@ def get_imputed_block(ts, window_size=100, max_nan_ratio=0.3):
     return df_block.values
 
 
-def filter_imputed_blocks(source_folder, target_folder, window_size=100, max_nan_ratio=0.3):
+def filter_imputed_blocks(source_folder, target_folder, window_size=100, max_nan_ratio=0.3, median=None):
     os.makedirs(target_folder, exist_ok=True)
     for file in tqdm(os.listdir(source_folder)):
         if not file.endswith(".npz"):
             raise ValueError(f"Unexpected file format: {file}. Expected .npz files.")
         data = np.load(os.path.join(source_folder, file))["data"]
         # imputed_block = get_imputed_block(data, window_size, max_nan_ratio)
-        imputed_block = get_terminal_100_points(data, window_size)
+        imputed_block = get_terminal_100_points(data, window_size, median=median)
         if imputed_block is not None:
             np.savez_compressed(os.path.join(target_folder, file), data=imputed_block)
 
@@ -214,7 +214,7 @@ def calculate_true_medians(source_dir=FILTERED_FOLDER):
     return medians
 
 
-def get_terminal_100_points(ts, window_size=100):
+def get_terminal_100_points(ts, window_size=100, median: list = None):
     """
     ts: array of shape (N, 5)
     Always returns (100, 5)
@@ -240,7 +240,7 @@ def get_terminal_100_points(ts, window_size=100):
     # 4. Global Median Fallback (for patients missing a whole channel)
     # [HR, Resp, SpO2, MAP, Temp]
     # global_medians = [85, 18, 97, 80, 37]
-    global_medians = calculate_true_medians()
+    global_medians = calculate_true_medians() if median is None else median
     if df.isnull().values.any():
         for i, median_val in enumerate(global_medians):
             df.iloc[:, i] = df.iloc[:, i].fillna(median_val)
@@ -250,8 +250,9 @@ def get_terminal_100_points(ts, window_size=100):
 
 if __name__ == "__main__":
     # extract_multi_channel_vitals()
+    median = calculate_true_medians()
     filter_imputed_blocks(
-        source_folder=FILTERED_FOLDER, target_folder=IMPUTED_FOLDER_decease, window_size=100, max_nan_ratio=0.3
+        source_folder=FILTERED_FOLDER, target_folder=IMPUTED_FOLDER_decease, window_size=100, max_nan_ratio=0.3, median=median
     )
     create_final_labels(
         ts_folder=IMPUTED_FOLDER_decease,
