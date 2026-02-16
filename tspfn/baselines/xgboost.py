@@ -74,13 +74,11 @@ class XGBoostStaticBaseline(pl.LightningModule):
                     # Handle if train_loader is also a CombinedLoader or simple tuple
                     x, y = batch if isinstance(batch, (tuple, list)) else batch["train"]
                     batch_size, num_channels, seq_len = x.shape
-                    print(f"Original batch shape: {x.shape}, labels shape: {y.shape}")
                     if num_channels > 1:
                     # if self.num_channels > 1:
                         # Flatten
                         x = x.flatten(start_dim=1)
                     all_x.append(x.view(-1, x.size(-1)).cpu())
-                    print(f"y shape: {y.shape}, y unique: {torch.unique(y)}")
                     all_y.append(y.view(-1).cpu())
                 
                 X_train = torch.cat(all_x, dim=0).numpy()
@@ -88,8 +86,8 @@ class XGBoostStaticBaseline(pl.LightningModule):
                 print(f"--- Training Data Loaded: {X_train.shape[0]} samples ---")
                 print(f"XGBoost Parameters: {self.xgb_params}")
                 
+                print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
                 self.clf = xgb.XGBClassifier(**self.xgb_params)
-                print(f"y unique in training data: {np.unique(y_train)}")
                 self.clf.fit(X_train, y_train)
                 print(f"--- XGBoost Fit Complete ({len(X_train)} samples) ---")
 
@@ -112,6 +110,7 @@ class XGBoostStaticBaseline(pl.LightningModule):
         x_eval = x.view(-1, x.size(-1)).cpu().numpy()
         y_eval = y.view(-1).cpu()
         
+        print(f"Query shape for XGBoost: {x_eval.shape}, Labels shape: {y_eval.shape}")
         y_probs = self.clf.predict_proba(x_eval)
         y_probs_ts = torch.tensor(y_probs, device=self.device)
 
