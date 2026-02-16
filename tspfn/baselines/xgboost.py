@@ -120,6 +120,8 @@ class XGBoostStaticBaseline(pl.LightningModule):
         if self.num_classes == 2:
             # For binary classification, use probabilities of the positive class
             y_probs_ts = torch.softmax(y_probs_ts, dim=-1)[:, 1]
+        print(f"Processed probabilities shape (after softmax if binary): {y_probs_ts.shape}")
+        print(f"True labels shape: {y_eval.shape}, unique labels: {torch.unique(y_eval)}")
         self.test_metrics.update(y_probs_ts, y_eval.to(self.device))
 
     def on_test_epoch_end(self):
