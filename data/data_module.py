@@ -147,6 +147,7 @@ class TSPFNDataModule(pl.LightningDataModule):
         num_workers: int = 0,
         batch_size: int = 32,
         test_batch_size: Optional[int] = None,
+        support_size: Optional[int] = None,
         meta_batch_size: int = 1,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
@@ -158,6 +159,7 @@ class TSPFNDataModule(pl.LightningDataModule):
         self.subsets = subsets
         self.batch_size = batch_size
         self.test_batch_size = test_batch_size
+        self.support_size = support_size
         self.meta_batch_size = meta_batch_size
         self.num_workers = num_workers
         self.pin_memory = pin_memory
@@ -352,6 +354,7 @@ class ESRDataModule(TSPFNDataModule):
         num_workers: int = 0,
         batch_size: int = 32,
         test_batch_size: Optional[int] = None,
+        support_size: Optional[int] = None,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
@@ -375,6 +378,7 @@ class ESRDataModule(TSPFNDataModule):
         self.train_dataset = ESRDataset(
             root=self.data_roots,
             split="train",
+            support_size=self.support_size,
         )
         scaler = self.train_dataset.scaler
         self.val_dataset = ESRDataset(root=self.data_roots, split="test", scaler=scaler)

@@ -23,6 +23,7 @@ updated_pfn_path: null
 data:
   batch_size: 64
   test_batch_size: null # Defaults to all data in one batch
+  support_size: null # Number of samples to use for training in the support set (for few-shot learning). If null, use all available samples.
   num_workers: 4 # try 4, 8, 16 depending on the system capabilities
 
 task:
