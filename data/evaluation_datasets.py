@@ -151,6 +151,8 @@ class ECG5000Dataset(Dataset):
                 self.X.shape[0], 1, -1
             )  # Add unichannel dimension if missing, shape becomes (N, 1, Time)
 
+        print(f"Shape of X: {self.X.shape}, Shape of Y: {self.Y.shape} for {split} split of ECG5000 dataset.")
+
     def __len__(self):
         return len(self.data)
 
