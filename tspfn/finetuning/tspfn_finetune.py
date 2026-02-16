@@ -420,6 +420,7 @@ class TSPFNFineTuning(TSPFNSystem):
 
         if time_series_support is not None:
             assert support_labels is not None, "Support labels must be provided for inference."
+            print(f"time_series_support shape: {time_series_support.shape}, support_labels shape: {support_labels.shape}")
             # Store inference data for val/test steps
             y_train_support, _, ts_train_support, _ = self.process_data(
                 time_series_attrs=time_series_support, labels=support_labels
