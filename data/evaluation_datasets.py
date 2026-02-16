@@ -118,12 +118,19 @@ class FilteredTUEVDataset(Dataset):
 
 
 class ECG5000Dataset(Dataset):
-    def __init__(self, root, split: str, scaler=None):  # Added scaler argument
+    def __init__(self, root, split: str, scaler=None, support_size=None):  # Added scaler argument
         self.root = root
         self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
 
         df = pd.read_csv(self.file_path, index_col=0)
         self.data = df.values
+
+        if support_size is not None and split == "train":
+            indices = list(range(len(self.data)))
+            _, sub_indices = train_test_split(indices, test_size=support_size, random_state=42, stratify=self.data[:, -1])
+            print(f"Subsampling {support_size} samples from {len(self.data)} for training.")
+            print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
+            self.data = self.data[sub_indices]
 
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1
