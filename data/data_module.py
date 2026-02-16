@@ -309,6 +309,7 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
         )
 
         print(f"num workers: {self.num_workers}")
+        print(f"support size: {self.support_size}")
 
     def setup(self, stage: Optional[str] = None) -> None:
 
@@ -358,6 +359,7 @@ class ESRDataModule(TSPFNDataModule):
         batch_size: int = 32,
         test_batch_size: Optional[int] = None,
         support_size: Optional[int] = None,
+        support_size: Optional[int] = None,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
@@ -369,6 +371,7 @@ class ESRDataModule(TSPFNDataModule):
             num_workers=num_workers,
             batch_size=batch_size,
             test_batch_size=test_batch_size,
+            support_size=support_size,
             support_size=support_size,
             pin_memory=pin_memory,
             transform=transform,
