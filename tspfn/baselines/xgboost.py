@@ -25,7 +25,7 @@ class XGBoostStaticBaseline(pl.LightningModule):
         self.save_hyperparameters()
         self.num_classes = num_classes
         self.num_channels = num_channels
-        
+        print(f"num_classes: {num_classes}, num_channels: {num_channels}")
         # Optimized XGBoost params for large tabular data
         self.xgb_params = xgb_params or {
             "n_estimators": 100,
