@@ -126,24 +126,24 @@ class ECG5000Dataset(Dataset):
         self.data = df.values
 
         if support_size is not None and split == "train":
-            # indices = list(range(len(self.data)))
-            # _, sub_indices = train_test_split(indices, test_size=support_size, random_state=42, stratify=self.data[:, -1])
+            indices = list(range(len(self.data)))
+            _, sub_indices = train_test_split(indices, test_size=support_size, random_state=42, stratify=self.data[:, -1])
             print(f"Subsampling {support_size} samples from {len(self.data)} for training.")
-            # print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
-            # self.data = self.data[sub_indices]
-            # Convert to DataFrame for easier grouping
-            df = pd.DataFrame(self.data)
-            label_column = df.columns[-1]
+            print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
+            self.data = self.data[sub_indices]
+            # # Convert to DataFrame for easier grouping
+            # df = pd.DataFrame(self.data)
+            # label_column = df.columns[-1]
 
-            # Define how many samples you want per class (e.g., 2 samples * 5 classes = 10)
-            samples_per_class = support_size // len(df[label_column].unique())
+            # # Define how many samples you want per class (e.g., 2 samples * 5 classes = 10)
+            # samples_per_class = support_size // len(df[label_column].unique())
 
-            # Group by label and take a random sample from each
-            subsampled_df = df.groupby(label_column, group_keys=False).apply(
-                lambda x: x.sample(n=samples_per_class, random_state=42)
-            )
+            # # Group by label and take a random sample from each
+            # subsampled_df = df.groupby(label_column, group_keys=False).apply(
+            #     lambda x: x.sample(n=samples_per_class, random_state=42)
+            # )
 
-            self.data = subsampled_df.values
+            # self.data = subsampled_df.values
 
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1
