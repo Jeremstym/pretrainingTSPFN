@@ -366,6 +366,7 @@ class ESRDataModule(TSPFNDataModule):
             num_workers=num_workers,
             batch_size=batch_size,
             test_batch_size=test_batch_size,
+            support_size=support_size,
             pin_memory=pin_memory,
             transform=transform,
             seed=seed,
