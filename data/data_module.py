@@ -372,6 +372,7 @@ class ESRDataModule(TSPFNDataModule):
         )
 
         print(f"num workers: {self.num_workers}")
+        print(f"support size: {self.support_size}")
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
