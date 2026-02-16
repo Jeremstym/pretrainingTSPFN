@@ -50,6 +50,8 @@ class PFNPredictionHead(nn.Module):
                 state_dict.pop("pe")  # Remove pe if present
             if "channel_positional_encoding" in state_dict:
                 state_dict.pop("channel_positional_encoding")  # Remove channel_positional_encoding if present
+            if "cwpe.weight" in state_dict:
+                state_dict.pop("cwpe.weight")  # Remove cwpe weights if present
             model.load_state_dict(state_dict, strict=True)
 
         self.head = model.decoder_dict["standard"]
