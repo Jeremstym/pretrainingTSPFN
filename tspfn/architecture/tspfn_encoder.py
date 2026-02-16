@@ -27,15 +27,18 @@ class TSPFNEncoder(nn.Module, ABC):
         recompute_layer: bool = True,
         num_channels: int = None,
         time_points: int = None,
-        positional_encoding: Literal["none", "sinusoidal", "rope", "learned"] = "none",
+        positional_encoding: Literal["none", "sinusoidal", "rope", "learned", "cwpe", "cwpe+rope"] = "none",
         **kwargs,
     ):
         super().__init__()
 
         self.channel_positional_encoding = nn.Parameter(torch.zeros(1, 5, 1, embed_dim)) # Leave 5 hardcoded
-        if positional_encoding == "learned":
-            self.pe = nn.Parameter(torch.zeros(1, 1, 500, embed_dim)) # Leave 500 hardcoded
-            nn.init.xavier_uniform_(self.pe)
+        # if positional_encoding == "learned":
+        #     self.pe = nn.Parameter(torch.zeros(1, 1, 500, embed_dim)) # Leave 500 hardcoded
+        #     nn.init.xavier_uniform_(self.pe)
+        # if positional_encoding == "cwpe" or positional_encoding == "cwpe+rope":
+        self.cwpe = nn.Embedding(5, embed_dim)
+        nn.init.normal_(self.cwpe.weight, mean=0, std=embed_dim**-0.5)
 
         list_model, _, self.model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
         self.model = list_model[0]
@@ -51,6 +54,10 @@ class TSPFNEncoder(nn.Module, ABC):
                 channel_pe_state = state_dict.pop("channel_positional_encoding")
                 with torch.no_grad():
                     self.channel_positional_encoding.copy_(channel_pe_state)
+            if "cwpe.weight" in state_dict:
+                cwpe_state = state_dict.pop("cwpe.weight")
+                with torch.no_grad():
+                    self.cwpe.weight.copy_(cwpe_state)
             self.model.load_state_dict(state_dict, strict=True)
 
         self.encoder = self.model.encoder
@@ -84,7 +91,7 @@ class TSPFNEncoder(nn.Module, ABC):
             #         rope_compute_heads_wrapper, num_channels=self.num_channels
             #     )
 
-        elif self.positional_encoding == "rope+channel":
+        elif self.positional_encoding == "cwpe+rope":
             # Modify attention mechanism to include RoPE with channel-wise application
             original_static_compute = MultiHeadAttention.compute_attention_heads
             patched_rope = partial(
@@ -197,7 +204,7 @@ class TSPFNEncoder(nn.Module, ABC):
     ) -> Tuple[torch.torch.Tensor, torch.torch.Tensor]:
 
         seq_len, batch_size, num_channels, num_features = X_full.shape
-        if self.positional_encoding == "rope" or self.positional_encoding == "rope+channel":
+        if self.positional_encoding == "rope" or self.positional_encoding == "cwpe+rope":
             for layer in self.transformer_encoder.layers:
                 layer.self_attn_between_features.time_points = num_features * num_channels
                 layer.self_attn_between_features.num_channels = num_channels
@@ -216,7 +223,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 seq_len=seq_len,
             )
 
-        elif self.positional_encoding == "rope+channel":
+        elif self.positional_encoding == "cwpe+rope" or self.positional_encoding == "cwpe":
             # Use PE from TabPFN model and add channel-wise positional encodings
             emb_x, emb_y = self.model.add_embeddings(
                 emb_x,
@@ -226,17 +233,23 @@ class TSPFNEncoder(nn.Module, ABC):
                 seq_len=seq_len,
             )
             # Add channel-wise positional encodings
-            if self.channel_positional_encoding is not None:
-                if self.channel_positional_encoding.shape[2] != num_features:
-                    # Interpolate channel positional encoding if number of features differs
-                    self.channel_positional_encoding = nn.Parameter(
-                        interpolate_pos_encoding(self.channel_positional_encoding, new_len=num_features)
-                    )
-                # Broadcast to (B, Seq, num_features, E)
-                channel_pe_broadcasted = self.channel_positional_encoding.expand(
-                    batch_size, seq_len, num_features, self.embed_dim
-                )
-                emb_x += channel_pe_broadcasted
+            emb_x = emb_x.reshape(batch_size, seq_len, num_channels, num_features, self.embed_dim)  # (B, Seq, C, L, E)
+            channel_indices = torch.arange(num_channels, device=emb_x.device)  # (C,)
+            channel_pe = self.cwpe(channel_indices)  # (C, E)
+            channel_pe = channel_pe.view(1, 1, num_channels, 1, self.embed_dim)  # (1, 1, C, 1, E)
+            emb_x = emb_x + channel_pe  # Broadcast addition to (B, Seq, C, L, E) + (1, 1, C, 1, E)
+            emb_x = emb_x.view(batch_size, seq_len, num_channels * num_features, self.embed_dim)  # (B, Seq, C*L, E)
+            # if self.channel_positional_encoding is not None:
+            #     if self.channel_positional_encoding.shape[2] != num_features:
+            #         # Interpolate channel positional encoding if number of features differs
+            #         self.channel_positional_encoding = nn.Parameter(
+            #             interpolate_pos_encoding(self.channel_positional_encoding, new_len=num_features)
+            #         )
+            #     # Broadcast to (B, Seq, num_features, E)
+            #     channel_pe_broadcasted = self.channel_positional_encoding.expand(
+            #         batch_size, seq_len, num_features, self.embed_dim
+            #     )
+            #     emb_x += channel_pe_broadcasted
 
         elif self.positional_encoding == "sinusoidal":
             # Add sinusoidal positional encodings to time series attributes
