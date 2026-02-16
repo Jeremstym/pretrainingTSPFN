@@ -89,6 +89,7 @@ class XGBoostStaticBaseline(pl.LightningModule):
                 print(f"XGBoost Parameters: {self.xgb_params}")
                 
                 self.clf = xgb.XGBClassifier(**self.xgb_params)
+                print(f"y unique in training data: {np.unique(y_train)}")
                 self.clf.fit(X_train, y_train)
                 print(f"--- XGBoost Fit Complete ({len(X_train)} samples) ---")
 
@@ -115,13 +116,10 @@ class XGBoostStaticBaseline(pl.LightningModule):
         y_probs_ts = torch.tensor(y_probs, device=self.device)
 
         print(f"--- Test Step {batch_idx}: Evaluated {x_eval.shape[0]} samples ---")
-        print(f"Predicted probabilities shape: {y_probs_ts.shape}")
         
         if self.num_classes == 2:
             # For binary classification, use probabilities of the positive class
             y_probs_ts = torch.softmax(y_probs_ts, dim=-1)[:, 1]
-        print(f"Processed probabilities shape (after softmax if binary): {y_probs_ts.shape}")
-        print(f"True labels shape: {y_eval.shape}, unique labels: {torch.unique(y_eval)}")
         self.test_metrics.update(y_probs_ts, y_eval.to(self.device))
 
     def on_test_epoch_end(self):
