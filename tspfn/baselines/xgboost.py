@@ -130,7 +130,7 @@ class XGBoostStaticBaseline(pl.LightningModule):
             output_data.append({"metric": name, "value": value.item()})
         self.test_metrics.reset()
 
-        with open(f"{self.trainer.logger.log_dir}/xgboost_test_metrics.csv", mode="w", newline="") as csvfile:
+        with open(f"{self.hparams.output_dir}/xgboost_test_metrics.csv", mode="w", newline="") as csvfile:
             fieldnames = ["metric", "value"]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
