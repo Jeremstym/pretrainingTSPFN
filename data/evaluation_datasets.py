@@ -125,8 +125,6 @@ class ECG5000Dataset(Dataset):
         df = pd.read_csv(self.file_path, index_col=0)
         self.data = df.values
 
-        print(f"Unque labels in {split} split: {np.unique(self.data[:, -1])}")
-        print(f"Count lables in {split} split: {np.unique(self.data[:, -1], return_counts=True)}")
         if support_size is not None and split == "train":
             indices = list(range(len(self.data)))
             _, sub_indices = train_test_split(indices, test_size=support_size, random_state=42, stratify=self.data[:, -1])
@@ -149,6 +147,7 @@ class ECG5000Dataset(Dataset):
 
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1
+        print(f"Count labels in {split} split: {np.unique(self.Y, return_counts=True)}")
 
         self.scaler = None
 
