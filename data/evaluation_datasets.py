@@ -125,6 +125,7 @@ class ECG5000Dataset(Dataset):
         df = pd.read_csv(self.file_path, index_col=0)
         self.data = df.values
 
+        print(f"Unque labels in {split} split: {np.unique(self.data[:, -1])}")
         print(f"Count lables in {split} split: {np.bincount(self.data[:, -1].astype(int))}")
         if support_size is not None and split == "train":
             indices = list(range(len(self.data)))
