@@ -225,13 +225,13 @@ class TSPFNEncoder(nn.Module, ABC):
 
         elif self.positional_encoding == "cwpe+rope" or self.positional_encoding == "cwpe":
             # Use PE from TabPFN model and add channel-wise positional encodings
-            emb_x, emb_y = self.model.add_embeddings(
-                emb_x,
-                emb_y,
-                data_dags=None,
-                num_features=num_features,
-                seq_len=seq_len,
-            )
+            # emb_x, emb_y = self.model.add_embeddings(
+            #     emb_x,
+            #     emb_y,
+            #     data_dags=None,
+            #     num_features=num_features,
+            #     seq_len=seq_len,
+            # )
             # Add channel-wise positional encodings
             emb_x = emb_x.reshape(batch_size, seq_len, num_channels, num_features, self.embed_dim)  # (B, Seq, C, L, E)
             channel_indices = torch.arange(num_channels, device=emb_x.device)  # (C,)
