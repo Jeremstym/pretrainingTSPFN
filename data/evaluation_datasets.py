@@ -273,7 +273,7 @@ class ORCHIDDataset(Dataset):
 
 
 class EICUCRDDataset(Dataset):
-    def __init__(self, root, split: str, support_size=None):
+    def __init__(self, root, split: str, support_size=None, support_size=None):
         self.root = root
         self.support_size = support_size
         self.file_dir = os.path.join(self.root, f"{split}_decease")
@@ -297,30 +297,18 @@ class EICUCRDDataset(Dataset):
         self.patient_dict = patient_dict
         print(f"data shape after loading: {data.T.shape}")
         self.df_labels = pd.read_csv(self.label_file, index_col=0)
-        print(f"Labels loaded: {self.df_labels} samples")
 
         if support_size is not None and split == "train":
-            # indices = list(range(len(self.all_patients)))
-            # train_labels = self.df_labels.loc[[int(Path(self.all_patients[i]).stem) for i in indices], "mortality_label"]
-            patient_ids_in_files = [int(Path(p).stem) for p in self.all_patients]
-            
-            # 2. Filter to only include IDs that actually exist in your label DataFrame
-            # This prevents KeyError if a file exists but the label is missing
-            valid_ids = [pid for pid in patient_ids_in_files if pid in self.df_labels.index]
-            print(f"valid index {valid_ids}")
-            
-            # 3. Access labels safely
-            train_labels = self.df_labels.loc[valid_ids, "mortality_label"]
-            indices = [i for i, pid in enumerate(patient_ids_in_files) if pid in valid_ids]
+            indices = list(range(len(self.all_patients)))
+            train_labels = self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], "mortality_label"]
+            print(f"train labels shape: {train_labels.shape}")
+            print(f"len indices: {len(indices)}")
             _, sub_indices = train_test_split(
-                indices, test_size=support_size, random_state=42, stratify=train_labels
+                indices, test_size=support_size, random_state=42, stratify=self.df_labels["mortality_label"]
             )
             print(f"Subsampling {support_size} samples from {len(self.all_patients)} for training.")
             print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
             self.all_patients = [self.all_patients[i] for i in sub_indices]
-            # Count labels in the subsampled set
-            subsampled_labels = self.df_labels.loc[[int(Path(self.all_patients[i]).stem) for i in sub_indices], "mortality_label"]
-            print(f"Count labels in subsampled training set: {subsampled_labels.value_counts().to_dict()}")
 
     def __len__(self):
         return len(self.all_patients)
