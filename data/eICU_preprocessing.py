@@ -131,7 +131,8 @@ def filter_imputed_blocks(source_folder, target_folder, window_size=100, max_nan
             raise ValueError(f"Unexpected file format: {file}. Expected .npz files.")
         data = np.load(os.path.join(source_folder, file))["data"]
         # imputed_block = get_imputed_block(data, window_size, max_nan_ratio)
-        imputed_block = get_terminal_100_points(data, window_size, median=median)
+        # imputed_block = get_terminal_100_points(data, window_size, median=median)
+        imputed_block = get_window_with_gap(data, window_size=window_size, gap_size=48)
         if imputed_block is not None:
             np.savez_compressed(os.path.join(target_folder, file), data=imputed_block)
 
@@ -220,13 +221,10 @@ def get_terminal_100_points(ts, window_size=100, median: list = None):
     Always returns (100, 5)
     """
     N = ts.shape[0]
-
-    # Take 4 hours before end
-    window_size += 48 # 48 points = 4 hours at 5-min intervals
     
     if N >= window_size:
         # 1. Long Stay: Take the most recent 100 points
-        block = ts[-window_size:-48].copy()
+        block = ts[-window_size:].copy()
     else:
         # 2. Short Stay: Pad the beginning with NaNs
         pad_width = window_size - N
@@ -249,6 +247,41 @@ def get_terminal_100_points(ts, window_size=100, median: list = None):
             df.iloc[:, i] = df.iloc[:, i].fillna(median_val)
             
     return df.values
+
+
+def get_window_with_gap(ts, window_size=100, gap_size=48):
+    """
+    ts: array of shape (N, 5)
+    Always returns (100, 5) or None if stay is too short for any data
+    """
+    N = ts.shape[0]
+    
+    # 1. Define the 'End' of our observation (4 hours before discharge)
+    end_idx = N - gap_size
+    
+    # 2. If the patient died/left before the gap even started, we have no valid data
+    if end_idx <= 0:
+        return None 
+
+    # 3. Define the 'Start' of our observation
+    start_idx = end_idx - window_size
+
+    if start_idx >= 0:
+        # CASE: Long Stay
+        # We have enough data to take a full 100-point block ending at the gap
+        block = ts[start_idx : end_idx].copy()
+    else:
+        # CASE: Short Stay
+        # We take everything from admission (0) up to the gap (end_idx)
+        available_data = ts[0 : end_idx].copy()
+        
+        # We need to pad the beginning to reach exactly 100
+        pad_width = window_size - len(available_data)
+        # Pre-pad with NaNs (which we will impute/median-fill later)
+        block = np.pad(available_data, ((pad_width, 0), (0, 0)), 
+                       mode='constant', constant_values=np.nan)
+    
+    return block
 
 
 if __name__ == "__main__":
