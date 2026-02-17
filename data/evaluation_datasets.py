@@ -273,7 +273,7 @@ class ORCHIDDataset(Dataset):
 
 
 class EICUCRDDataset(Dataset):
-    def __init__(self, root, split: str, support_size=None, support_size=None):
+    def __init__(self, root, split: str, support_size=None):
         self.root = root
         self.support_size = support_size
         self.file_dir = os.path.join(self.root, f"{split}_decease")
