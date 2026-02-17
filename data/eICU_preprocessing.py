@@ -220,10 +220,13 @@ def get_terminal_100_points(ts, window_size=100, median: list = None):
     Always returns (100, 5)
     """
     N = ts.shape[0]
+
+    # Take 4 hours before end
+    window_size += 48 # 48 points = 4 hours at 5-min intervals
     
     if N >= window_size:
         # 1. Long Stay: Take the most recent 100 points
-        block = ts[-window_size:].copy()
+        block = ts[-window_size:-48].copy()
     else:
         # 2. Short Stay: Pad the beginning with NaNs
         pad_width = window_size - N
