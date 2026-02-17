@@ -59,7 +59,7 @@ val_datasets:
   2ChannelHIRID:
     _target_: data.pretraining_datasets.HIRID2ChannelDataset
     root: ${oc.env:TWOCHANS_HIRID_DATA_PATH}
-    split: test
+    split: val
 #   2ChannelTUAB:
 #     _target_: data.pretraining_datasets.TUAB2ChannelDataset
 #     root: ${oc.env:TWOCHANS_TUAB_DATA_PATH}
