@@ -8,11 +8,12 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 ORIGIN_DIRECTORY = "/data/stympopper/HIRID/data"
-OUTPUT_DIRECTORY = ORIGIN_DIRECTORY + "/fourchannels"
+OUTPUT_DIRECTORY = ORIGIN_DIRECTORY + "/threechannels"
 PATH_TO_LABELS = "/data/stympopper/HIRID/labels.csv"
 # KEEP_CHANNELS = ["patientid", "reldatetime", "vm1", "pm41", "vm5", "vm20", "vm62"]
-KEEP_CHANNELS = ["patientid", "reldatetime", "vm1", "pm41", "vm5", "vm20"]
-WINDOW_SIZE = 125
+# KEEP_CHANNELS = ["patientid", "reldatetime", "vm1", "pm41", "vm5", "vm20", "vm62"]
+KEEP_CHANNELS = ["patientid", "reldatetime", "vm1", "pm41", "vm5"]
+WINDOW_SIZE = 166
 
 
 def preprocess_hirid_data(
