@@ -302,7 +302,7 @@ class EICUCRDDataset(Dataset):
         if support_size is not None and split == "train":
             indices = list(range(len(self.all_patients)))
             print(f"length of all patients before subsampling: {len(self.all_patients)}")
-            train_labels = self.df_labels.loc[[int(Path(self.all_patients[i]).stem) for i in indices], "mortality_label"]
+            train_labels = self.df_labels.loc[[int(Path(self.all_patients[i]).stem) for i in self.all_patients], "mortality_label"]
             _, sub_indices = train_test_split(
                 indices, test_size=support_size, random_state=42, stratify=train_labels
             )
