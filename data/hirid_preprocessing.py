@@ -57,5 +57,31 @@ def preprocess_hirid_data(
             output_file = os.path.join(output_dir, f"{patient_id}.npy")
             np.save(output_file, np.array(patient_matrices))
 
+
+def split_hirid_data(output_dir=OUTPUT_DIRECTORY, train_ratio=0.8, seed=42, labels_path=PATH_TO_LABELS):
+    np.random.seed(seed)
+    labels = pd.read_csv(labels_path)
+    indices = list(labels.index)
+    train_indices, test_indices = train_test_split(
+        indices, test_size=1 - train_ratio, random_state=seed, stratify=labels["discharge_status"]
+    )
+    print(f"Train indices: {train_indices[:10]}...")  # Print first 10 indices for verification
+    print(f"Test indices: {test_indices[:10]}...")  # Print first 10 indices for verification
+    raise Exception("Split complete. Check printed indices for verification before proceeding to save files.")
+
+    for split, split_indices in zip(["train", "test"], [train_indices, test_indices]):
+        split_dir = os.path.join(output_dir, split)
+        os.makedirs(split_dir, exist_ok=True)
+        for idx in tqdm(split_indices, total=len(split_indices), desc=f"Saving {split} data"):
+            patient_id = labels.iloc[idx]["patientid"]
+            input_file = os.path.join(output_dir, f"{patient_id}.npy")
+            output_file = os.path.join(split_dir, f"{patient_id}.npy")
+            if os.path.exists(input_file):
+                os.rename(input_file, output_file)
+            else:
+                print(f"Warning: File {input_file} does not exist and will be skipped.")
+
+
 if __name__ == "__main__":
     preprocess_hirid_data()
+    split_hirid_data()
