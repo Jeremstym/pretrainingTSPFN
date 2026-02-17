@@ -576,6 +576,7 @@ class HIRID2ChannelDataset(Dataset):
         self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
 
         print(f"X shape: {self.X.shape}, Y shape: {self.Y.shape}")
+        raise Exception("Debugging HIRID dataset loading - check shapes and labels")
 
     def __len__(self):
         return len(self.files)
