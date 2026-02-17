@@ -30,7 +30,7 @@ def preprocess_hirid_data(
         with open(file, "r") as f:
             df = pd.read_csv(f)
             # Keep only pids in label df
-            df = df[df["patientid"].isin(labels_df.index())]
+            df = df[df["patientid"].isin(labels_df.index)]
         df_group = df.groupby(["patientid", "reldatetime"])[keep_channels[2:]].mean()
         patient_matrices = []
         for patient_id, group in df_group.groupby(level=0):
