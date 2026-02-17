@@ -536,7 +536,7 @@ class HIRID2ChannelDataset(Dataset):
         print(f"Loading {len(self.files)} samples into RAM for HIRID 2 channels...")
         for f in tqdm(self.files):
             sample = np.load(os.path.join(self.root, f))
-            all_x.append(torch.from_numpy(sample).float())
+            all_x.append(torch.from_numpy(sample).float().transpose(-1, -2))  # Transpose to [Channels, Time]
             patient_id = os.path.basename(f).replace(".npy", "")
             all_y.append(self.labels.loc[int(patient_id), "discharge_status"])
 
@@ -568,7 +568,7 @@ class HIRID3ChannelDataset(Dataset):
         print(f"Loading {len(self.files)} samples into RAM for HIRID 3 channels...")
         for f in tqdm(self.files):
             sample = np.load(os.path.join(self.root, f))
-            all_x.append(torch.from_numpy(sample).float())
+            all_x.append(torch.from_numpy(sample).float().transpose(-1, -2))  # Transpose to [Channels, Time]
             patient_id = os.path.basename(f).replace(".npy", "")
             all_y.append(self.labels.loc[int(patient_id), "discharge_status"])
 
@@ -600,7 +600,7 @@ class HIRID4ChannelDataset(Dataset):
         print(f"Loading {len(self.files)} samples into RAM for HIRID 4 channels...")
         for f in tqdm(self.files):
             sample = np.load(os.path.join(self.root, f))
-            all_x.append(torch.from_numpy(sample).float())
+            all_x.append(torch.from_numpy(sample).float().transpose(-1, -2))  # Transpose to [Channels, Time]
             patient_id = os.path.basename(f).replace(".npy", "")
             all_y.append(self.labels.loc[int(patient_id), "discharge_status"])
 
