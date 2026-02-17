@@ -72,7 +72,7 @@ def split_hirid_data(output_dir=OUTPUT_DIRECTORY, train_ratio=0.8, seed=42, labe
         split_dir = os.path.join(output_dir, split)
         os.makedirs(split_dir, exist_ok=True)
         for idx in tqdm(split_indices, total=len(split_indices), desc=f"Saving {split} data"):
-            patient_id = labels.iloc[idx]["patientid"]
+            patient_id = idx  # Assuming patient_id is the same as the index in labels.csv
             input_file = os.path.join(output_dir, f"{patient_id}.npy")
             output_file = os.path.join(split_dir, f"{patient_id}.npy")
             if os.path.exists(input_file):
@@ -82,5 +82,5 @@ def split_hirid_data(output_dir=OUTPUT_DIRECTORY, train_ratio=0.8, seed=42, labe
 
 
 if __name__ == "__main__":
-    preprocess_hirid_data()
-    # split_hirid_data()
+    # preprocess_hirid_data()
+    split_hirid_data()
