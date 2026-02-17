@@ -297,7 +297,7 @@ class EICUCRDDataset(Dataset):
         self.patient_dict = patient_dict
         print(f"data shape after loading: {data.T.shape}")
         self.df_labels = pd.read_csv(self.label_file, index_col=0)
-        print(f"Labels loaded: {self.df_labels.shape[0]} samples")
+        print(f"Labels loaded: {self.df_labels} samples")
 
         if support_size is not None and split == "train":
             # indices = list(range(len(self.all_patients)))
@@ -307,6 +307,7 @@ class EICUCRDDataset(Dataset):
             # 2. Filter to only include IDs that actually exist in your label DataFrame
             # This prevents KeyError if a file exists but the label is missing
             valid_ids = [pid for pid in patient_ids_in_files if pid in self.df_labels.index]
+            print(f"valid index {valid_ids}")
             
             # 3. Access labels safely
             train_labels = self.df_labels.loc[valid_ids, "mortality_label"]
