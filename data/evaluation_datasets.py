@@ -304,7 +304,7 @@ class EICUCRDDataset(Dataset):
             print(f"train labels shape: {train_labels.shape}")
             print(f"len indices: {len(indices)}")
             _, sub_indices = train_test_split(
-                indices, test_size=support_size, random_state=42, stratify=self.df_labels["mortality_label"]
+                indices, test_size=support_size, random_state=42, stratify=train_labels
             )
             print(f"Subsampling {support_size} samples from {len(self.all_patients)} for training.")
             print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
