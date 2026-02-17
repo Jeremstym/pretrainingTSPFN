@@ -53,9 +53,9 @@ def preprocess_hirid_data(
                 # This aligns with SOTA 'First 24h' windowing logic
                 patient_matrices.append(vals[:window_size, :])
 
-        output_file = os.path.join(output_dir, os.path.basename(file).replace(".csv", ".npy"))
-        os.makedirs(output_dir, exist_ok=True)
-        np.save(output_file, np.array(patient_matrices))
+            os.makedirs(output_dir, exist_ok=True)
+            output_file = os.path.join(output_dir, f"{patient_id}.npy")
+            np.save(output_file, np.array(patient_matrices))
 
 if __name__ == "__main__":
     preprocess_hirid_data()
