@@ -109,6 +109,7 @@ class PretrainingTSPFNDataModule(pl.LightningDataModule):
     def train_dataloader(self):
         return DataLoader(
             self.train_ds,
+            shuffle=True,
             batch_size=self.meta_batch_size,
             num_workers=self.num_workers,
             pin_memory=self.num_workers > 0,
@@ -117,6 +118,7 @@ class PretrainingTSPFNDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.val_ds,
+            shuffle=False,
             batch_size=self.meta_batch_size,
             num_workers=self.num_workers,
             pin_memory=self.num_workers > 0,
