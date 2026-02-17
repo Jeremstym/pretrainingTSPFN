@@ -291,6 +291,7 @@ class EICUCRDDataset(Dataset):
             data = np.load(patient)["data"]
             patient_dict[Path(patient).stem] = data.T  # Transpose to get shape (Channels, Time)
         self.patient_dict = patient_dict
+        print(f"data shape after loading: {data.T.shape}")
         self.df_labels = pd.read_csv(self.label_file, index_col=0)
 
     def __len__(self):
