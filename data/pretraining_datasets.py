@@ -552,6 +552,38 @@ class TSPFNMetaDataset(Dataset):
         return x, y
 
 
+class HIRID2ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+        self.files = glob(os.path.join(root, f"{split}/*.npy"))
+        self.label_directory = os.path.dirname(self.root)
+        self.labels = pd.read_csv(os.path.join(self.label_directory, "labels.csv"), index_col="patientid")
+
+        label_map = {"alive": 0, "dead": 1}
+        self.labels["discharge_status"] = self.labels["discharge_status"].map(label_map)
+
+        all_x = []
+        all_y = []
+
+        print(f"Loading {len(self.files)} samples into RAM for HIRID 2 channels...")
+        for f in tqdm(self.files):
+            sample = np.load(os.path.join(self.root, f), allow_pickle=True).item()
+            all_x.append(torch.from_numpy(sample).float())
+            patient_id = os.path.basename(f).replace(".npy", "")
+            all_y.append(self.labels.loc[patient_id, "discharge_status"])
+
+        self.X = torch.stack(all_x)
+        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
+
+        print(f"X shape: {self.X.shape}, Y shape: {self.Y.shape}")
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        return self.X[index], self.Y[index]
+
+
 class TSPFNValidationDataset(Dataset):
     def __init__(self, train_datasets_list: Dict, val_datasets_list: Dict, chunk_size=10000):
         # self.n_support = n_support
