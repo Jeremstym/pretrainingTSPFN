@@ -567,7 +567,7 @@ class HIRID2ChannelDataset(Dataset):
 
         print(f"Loading {len(self.files)} samples into RAM for HIRID 2 channels...")
         for f in tqdm(self.files):
-            sample = np.load(os.path.join(self.root, f), allow_pickle=True).item()
+            sample = np.load(os.path.join(self.root, f))
             all_x.append(torch.from_numpy(sample).float())
             patient_id = os.path.basename(f).replace(".npy", "")
             all_y.append(self.labels.loc[patient_id, "discharge_status"])
