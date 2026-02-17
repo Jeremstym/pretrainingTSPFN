@@ -127,7 +127,9 @@ class ECG5000Dataset(Dataset):
         print(f"Count labels in {split} split before subsampling: {np.unique(self.data[:, -1], return_counts=True)}")
         if support_size is not None and split == "train":
             indices = list(range(len(self.data)))
-            _, sub_indices = train_test_split(indices, test_size=support_size, random_state=42, stratify=self.data[:, -1])
+            _, sub_indices = train_test_split(
+                indices, test_size=support_size, random_state=42, stratify=self.data[:, -1]
+            )
             print(f"Subsampling {support_size} samples from {len(self.data)} for training.")
             print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
             self.data = self.data[sub_indices]
@@ -165,7 +167,6 @@ class ECG5000Dataset(Dataset):
                 self.X.shape[0], 1, -1
             )  # Add unichannel dimension if missing, shape becomes (N, 1, Time)
 
-
     def __len__(self):
         return len(self.data)
 
@@ -189,7 +190,9 @@ class ESRDataset(Dataset):
 
         if support_size is not None and split == "train":
             indices = list(range(len(self.data)))
-            _, sub_indices = train_test_split(indices, test_size=support_size, random_state=42, stratify=self.data[:, -1])
+            _, sub_indices = train_test_split(
+                indices, test_size=support_size, random_state=42, stratify=self.data[:, -1]
+            )
             print(f"Subsampling {support_size} samples from {len(self.data)} for training.")
             print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
             self.data = self.data[sub_indices]
@@ -270,8 +273,9 @@ class ORCHIDDataset(Dataset):
 
 
 class EICUCRDDataset(Dataset):
-    def __init__(self, root, split: str, support_size = None):
+    def __init__(self, root, split: str, support_size=None, support_size=None):
         self.root = root
+        self.support_size = support_size
         self.file_dir = os.path.join(self.root, f"{split}_decease")
         self.label_file = os.path.join(self.root, "final_labels.csv")
         self.selected_channels = ["heart_rate", "respiration", "spo2", "blood_pressure", "temperature"]
@@ -293,6 +297,18 @@ class EICUCRDDataset(Dataset):
         self.patient_dict = patient_dict
         print(f"data shape after loading: {data.T.shape}")
         self.df_labels = pd.read_csv(self.label_file, index_col=0)
+
+        if support_size is not None and split == "train":
+            indices = list(range(len(self.all_patients)))
+            _, sub_indices = train_test_split(
+                indices, test_size=support_size, random_state=42, stratify=self.df_labels["mortality_label"]
+            )
+            print(f"Subsampling {support_size} samples from {len(self.all_patients)} for training.")
+            print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
+            self.all_patients = [self.all_patients[i] for i in sub_indices]
+            # Count labels in the subsampled set
+            subsampled_labels = self.df_labels.loc[[int(Path(self.all_patients[i]).stem) for i in sub_indices], "mortality_label"]
+            print(f"Count labels in subsampled training set: {subsampled_labels.value_counts().to_dict()}")
 
     def __len__(self):
         return len(self.all_patients)

@@ -493,6 +493,7 @@ class EICUDatamodule(TSPFNDataModule):
         num_workers: int = 0,
         batch_size: int = 32,
         test_batch_size: Optional[int] = None,
+        support_size: Optional[int] = None,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
@@ -504,6 +505,7 @@ class EICUDatamodule(TSPFNDataModule):
             num_workers=num_workers,
             batch_size=batch_size,
             test_batch_size=test_batch_size,
+            support_size=support_size,
             pin_memory=pin_memory,
             transform=transform,
             seed=seed,
@@ -516,6 +518,7 @@ class EICUDatamodule(TSPFNDataModule):
         self.train_dataset = EICUCRDDataset(
             root=self.data_roots,
             split="train",
+            support_size=self.support_size,
         )
         # scaler = self.train_dataset.scaler
         self.val_dataset = EICUCRDDataset(root=self.data_roots, split="test")
