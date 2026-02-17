@@ -520,38 +520,6 @@ class TUEV5ChannelDataset(Dataset):
         return self.X[index], self.Y[index]
 
 
-class TSPFNMetaDataset(Dataset):
-    def __init__(self, datasets: Dict, chunk_size: int = 10000):
-        self.chunk_size = chunk_size
-        self.chunks = []
-
-        for dataset in datasets.values():
-            n = len(dataset.X)
-            if n < chunk_size:
-                # Optionnel : On peut ignorer ou padder les datasets trop petits
-                raise ValueError(
-                    f"Dataset of size {n} is smaller than chunk size {chunk_size}. Please check the datasets or adjust the chunk size."
-                )
-
-            for i in range(0, n - chunk_size + 1, chunk_size):
-                # self.chunks.append((X[i : i + chunk_size], y[i : i + chunk_size]))
-                self.chunks.append((dataset[i : i + chunk_size]))
-
-            # (Overlapping last chunk)
-            if n % chunk_size != 0:
-                # self.chunks.append((X[-chunk_size:], y[-chunk_size:]))
-                self.chunks.append((dataset[-chunk_size:]))
-
-    def __len__(self):
-        return len(self.chunks)
-
-    def __getitem__(self, idx):
-        # On retourne le bloc de 10k (X et y)
-        # Supposons que y est la dernière colonne
-        x, y = self.chunks[idx]
-        return x, y
-
-
 class HIRID2ChannelDataset(Dataset):
     def __init__(self, root, split):
         self.root = root
@@ -583,6 +551,137 @@ class HIRID2ChannelDataset(Dataset):
 
     def __getitem__(self, index):
         return self.X[index], self.Y[index]
+
+
+class HIRID3ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+        self.files = glob(os.path.join(root, f"{split}/*.npy"))
+        self.label_directory = os.path.dirname(self.root)
+        self.labels = pd.read_csv(os.path.join(self.label_directory, "labels.csv"), index_col="patientid")
+
+        label_map = {"alive": 0, "dead": 1}
+        self.labels["discharge_status"] = self.labels["discharge_status"].map(label_map)
+
+        all_x = []
+        all_y = []
+
+        print(f"Loading {len(self.files)} samples into RAM for HIRID 3 channels...")
+        for f in tqdm(self.files):
+            sample = np.load(os.path.join(self.root, f))
+            all_x.append(torch.from_numpy(sample).float())
+            patient_id = os.path.basename(f).replace(".npy", "")
+            all_y.append(self.labels.loc[int(patient_id), "discharge_status"])
+
+        self.X = torch.stack(all_x)
+        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
+
+        print(f"X shape: {self.X.shape}, Y shape: {self.Y.shape}")
+        raise Exception("Debugging HIRID dataset loading - check shapes and labels")
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        return self.X[index], self.Y[index]
+
+
+class HIRID4ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+        self.files = glob(os.path.join(root, f"{split}/*.npy"))
+        self.label_directory = os.path.dirname(self.root)
+        self.labels = pd.read_csv(os.path.join(self.label_directory, "labels.csv"), index_col="patientid")
+
+        label_map = {"alive": 0, "dead": 1}
+        self.labels["discharge_status"] = self.labels["discharge_status"].map(label_map)
+
+        all_x = []
+        all_y = []
+
+        print(f"Loading {len(self.files)} samples into RAM for HIRID 4 channels...")
+        for f in tqdm(self.files):
+            sample = np.load(os.path.join(self.root, f))
+            all_x.append(torch.from_numpy(sample).float())
+            patient_id = os.path.basename(f).replace(".npy", "")
+            all_y.append(self.labels.loc[int(patient_id), "discharge_status"])
+
+        self.X = torch.stack(all_x)
+        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
+
+        print(f"X shape: {self.X.shape}, Y shape: {self.Y.shape}")
+        raise Exception("Debugging HIRID dataset loading - check shapes and labels")
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        return self.X[index], self.Y[index]
+
+
+class HIRID5ChannelDataset(Dataset):
+    def __init__(self, root, split):
+        self.root = root
+        self.files = glob(os.path.join(root, f"{split}/*.npy"))
+        self.label_directory = os.path.dirname(self.root)
+        self.labels = pd.read_csv(os.path.join(self.label_directory, "labels.csv"), index_col="patientid")
+
+        label_map = {"alive": 0, "dead": 1}
+        self.labels["discharge_status"] = self.labels["discharge_status"].map(label_map)
+
+        all_x = []
+        all_y = []
+
+        print(f"Loading {len(self.files)} samples into RAM for HIRID 5 channels...")
+        for f in tqdm(self.files):
+            sample = np.load(os.path.join(self.root, f))
+            all_x.append(torch.from_numpy(sample).float().transpose(-1, -2))  # Transpose to [Channels, Time]
+            patient_id = os.path.basename(f).replace(".npy", "")
+            all_y.append(self.labels.loc[int(patient_id), "discharge_status"])
+
+        self.X = torch.stack(all_x)
+        self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
+
+        print(f"X shape: {self.X.shape}, Y shape: {self.Y.shape}")
+        raise Exception("Debugging HIRID dataset loading - check shapes and labels")
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        return self.X[index], self.Y[index]
+
+
+class TSPFNMetaDataset(Dataset):
+    def __init__(self, datasets: Dict, chunk_size: int = 10000):
+        self.chunk_size = chunk_size
+        self.chunks = []
+
+        for dataset in datasets.values():
+            n = len(dataset.X)
+            if n < chunk_size:
+                # Optionnel : On peut ignorer ou padder les datasets trop petits
+                raise ValueError(
+                    f"Dataset of size {n} is smaller than chunk size {chunk_size}. Please check the datasets or adjust the chunk size."
+                )
+
+            for i in range(0, n - chunk_size + 1, chunk_size):
+                # self.chunks.append((X[i : i + chunk_size], y[i : i + chunk_size]))
+                self.chunks.append((dataset[i : i + chunk_size]))
+
+            # (Overlapping last chunk)
+            if n % chunk_size != 0:
+                # self.chunks.append((X[-chunk_size:], y[-chunk_size:]))
+                self.chunks.append((dataset[-chunk_size:]))
+
+    def __len__(self):
+        return len(self.chunks)
+
+    def __getitem__(self, idx):
+        # On retourne le bloc de 10k (X et y)
+        # Supposons que y est la dernière colonne
+        x, y = self.chunks[idx]
+        return x, y
 
 
 class TSPFNValidationDataset(Dataset):
