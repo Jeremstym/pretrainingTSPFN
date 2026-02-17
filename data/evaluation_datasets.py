@@ -297,9 +297,11 @@ class EICUCRDDataset(Dataset):
         self.patient_dict = patient_dict
         print(f"data shape after loading: {data.T.shape}")
         self.df_labels = pd.read_csv(self.label_file, index_col=0)
+        print(f"Labels loaded: {self.df_labels.shape[0]} samples")
 
         if support_size is not None and split == "train":
             indices = list(range(len(self.all_patients)))
+            print(f"length of all patients before subsampling: {len(self.all_patients)}")
             train_labels = self.df_labels.loc[[int(Path(self.all_patients[i]).stem) for i in indices], "mortality_label"]
             _, sub_indices = train_test_split(
                 indices, test_size=support_size, random_state=42, stratify=train_labels
