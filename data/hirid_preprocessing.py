@@ -83,5 +83,5 @@ def split_hirid_data(output_dir=OUTPUT_DIRECTORY, train_ratio=0.8, seed=42, labe
 
 
 if __name__ == "__main__":
-    preprocess_hirid_data()
+    # preprocess_hirid_data()
     split_hirid_data()
