@@ -300,9 +300,17 @@ class EICUCRDDataset(Dataset):
         print(f"Labels loaded: {self.df_labels.shape[0]} samples")
 
         if support_size is not None and split == "train":
-            indices = list(range(len(self.all_patients)))
-            print(f"length of all patients before subsampling: {len(self.all_patients)}")
-            train_labels = self.df_labels.loc[[int(Path(self.all_patients[i]).stem) for i in self.all_patients], "mortality_label"]
+            # indices = list(range(len(self.all_patients)))
+            # train_labels = self.df_labels.loc[[int(Path(self.all_patients[i]).stem) for i in indices], "mortality_label"]
+            patient_ids_in_files = [int(Path(p).stem) for p in self.all_patients]
+            
+            # 2. Filter to only include IDs that actually exist in your label DataFrame
+            # This prevents KeyError if a file exists but the label is missing
+            valid_ids = [pid for pid in patient_ids_in_files if pid in self.df_labels.index]
+            
+            # 3. Access labels safely
+            train_labels = self.df_labels.loc[valid_ids, "mortality_label"]
+            indices = [i for i, pid in enumerate(patient_ids_in_files) if pid in valid_ids]
             _, sub_indices = train_test_split(
                 indices, test_size=support_size, random_state=42, stratify=train_labels
             )
