@@ -7,6 +7,18 @@ train_datasets:
     _target_: data.pretraining_datasets.HIRID2ChannelDataset
     root: ${oc.env:TWOCHANS_HIRID_DATA_PATH}
     split: train
+  3ChannelHIRID:
+    _target_: data.pretraining_datasets.HIRID3ChannelDataset
+    root: ${oc.env:THREECHANS_HIRID_DATA_PATH}
+    split: train
+  4ChannelHIRID:
+    _target_: data.pretraining_datasets.HIRID4ChannelDataset
+    root: ${oc.env:FOURCHANS_HIRID_DATA_PATH}
+    split: train
+  5ChannelHIRID:
+    _target_: data.pretraining_datasets.HIRID5ChannelDataset
+    root: ${oc.env:FIVECHANS_HIRID_DATA_PATH}
+    split: train
   # 2ChannelTUAB:
   #   _target_: data.pretraining_datasets.TUAB2ChannelDataset
   #   root: ${oc.env:TWOCHANS_TUAB_DATA_PATH}
@@ -59,6 +71,18 @@ val_datasets:
   2ChannelHIRID:
     _target_: data.pretraining_datasets.HIRID2ChannelDataset
     root: ${oc.env:TWOCHANS_HIRID_DATA_PATH}
+    split: val
+  3ChannelHIRID:
+    _target_: data.pretraining_datasets.HIRID3ChannelDataset
+    root: ${oc.env:THREECHANS_HIRID_DATA_PATH}
+    split: val
+  4ChannelHIRID:
+    _target_: data.pretraining_datasets.HIRID4ChannelDataset
+    root: ${oc.env:FOURCHANS_HIRID_DATA_PATH}
+    split: val
+  5ChannelHIRID:
+    _target_: data.pretraining_datasets.HIRID5ChannelDataset
+    root: ${oc.env:FIVECHANS_HIRID_DATA_PATH}
     split: val
 #   2ChannelTUAB:
 #     _target_: data.pretraining_datasets.TUAB2ChannelDataset
