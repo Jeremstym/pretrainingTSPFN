@@ -21,7 +21,7 @@ def preprocess_hirid_data(
     window_size=WINDOW_SIZE,
     path_to_labels=PATH_TO_LABELS,
 ):
-    labels_df = pd.read_csv(path_to_labels)
+    labels_df = pd.read_csv(path_to_labels, index_col="patientid")
     for file in tqdm(
         glob(os.path.join(origin_dir, "*.csv")),
         total=len(glob(os.path.join(origin_dir, "*.csv"))),
@@ -60,14 +60,13 @@ def preprocess_hirid_data(
 
 def split_hirid_data(output_dir=OUTPUT_DIRECTORY, train_ratio=0.8, seed=42, labels_path=PATH_TO_LABELS):
     np.random.seed(seed)
-    labels = pd.read_csv(labels_path)
+    labels = pd.read_csv(labels_path, index_col="patientid")
     indices = list(labels.index)
     train_indices, test_indices = train_test_split(
         indices, test_size=1 - train_ratio, random_state=seed, stratify=labels["discharge_status"]
     )
     print(f"Train indices: {train_indices[:10]}...")  # Print first 10 indices for verification
     print(f"Test indices: {test_indices[:10]}...")  # Print first 10 indices for verification
-    raise Exception("Split complete. Check printed indices for verification before proceeding to save files.")
 
     for split, split_indices in zip(["train", "test"], [train_indices, test_indices]):
         split_dir = os.path.join(output_dir, split)
@@ -83,5 +82,5 @@ def split_hirid_data(output_dir=OUTPUT_DIRECTORY, train_ratio=0.8, seed=42, labe
 
 
 if __name__ == "__main__":
-    # preprocess_hirid_data()
-    split_hirid_data()
+    preprocess_hirid_data()
+    # split_hirid_data()
