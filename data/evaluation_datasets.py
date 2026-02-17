@@ -309,7 +309,7 @@ class EICUCRDDataset(Dataset):
             print(f"Subsampling {support_size} samples from {len(self.all_patients)} for training.")
             print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
             self.all_patients = [self.all_patients[i] for i in sub_indices]
-            print(f"Count labels in subsampled training set: {np.unique(train_labels[sub_indices], return_counts=True)}")
+            print(f"Count labels in subsampled training set: {np.unique(train_labels.iloc[sub_indices], return_counts=True)}")
 
     def __len__(self):
         return len(self.all_patients)
