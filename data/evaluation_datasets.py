@@ -311,9 +311,9 @@ class EICUCRDDataset(Dataset):
         self.file_dir = os.path.join(self.root, f"{split}_decease")
         self.label_file = os.path.join(self.root, "final_labels.csv")
         self.selected_channels = [
-            "heart_rate",
+            # "heart_rate",
             # "respiration",
-            "spo2",
+            # "spo2",
             "blood_pressure",
             # "temperature"
         ]
