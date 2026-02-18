@@ -132,7 +132,7 @@ def filter_imputed_blocks(source_folder, target_folder, window_size=100, max_nan
         data = np.load(os.path.join(source_folder, file))["data"]
         # imputed_block = get_imputed_block(data, window_size, max_nan_ratio)
         # imputed_block = get_terminal_100_points(data, window_size, median=median)
-        imputed_block = get_window_with_gap(data, window_size=window_size, gap_size=48)
+        imputed_block = get_window_with_gap(data, window_size=window_size, gap_size=48, median=median)
         if imputed_block is not None:
             np.savez_compressed(os.path.join(target_folder, file), data=imputed_block)
 
