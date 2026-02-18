@@ -310,7 +310,13 @@ class EICUCRDDataset(Dataset):
         self.support_size = support_size
         self.file_dir = os.path.join(self.root, f"{split}_decease")
         self.label_file = os.path.join(self.root, "final_labels.csv")
-        self.selected_channels = ["heart_rate", "respiration", "spo2", "blood_pressure", "temperature"]
+        self.selected_channels = [
+            "heart_rate",
+            # "respiration",
+            "spo2",
+            "blood_pressure",
+            # "temperature"
+        ]
 
         channel_maps = {
             "heart_rate": 0,
@@ -325,6 +331,9 @@ class EICUCRDDataset(Dataset):
         patient_dict = {}
         for patient in self.all_patients:
             data = np.load(patient)["data"]
+            if len(self.selected_channels) < 5:
+                channel_idxs = [channel_maps[ch] for ch in self.selected_channels]
+                data = data[:, channel_idxs]
             patient_dict[Path(patient).stem] = data.T  # Transpose to get shape (Channels, Time)
         self.patient_dict = patient_dict
         print(f"data shape after loading: {data.T.shape}")
