@@ -200,17 +200,17 @@ def split_train_val(label_csv, train_ratio=0.8):
 
 def calculate_true_medians(source_dir=FILTERED_FOLDER):
     all_values = []
-    patient_files = [f for f in os.listdir(source_dir) if f.endswith('.npz')]
-    
+    patient_files = [f for f in os.listdir(source_dir) if f.endswith(".npz")]
+
     # We only need a sample to get a stable median
-    for filename in patient_files[:2000]: 
-        data = np.load(os.path.join(source_dir, filename))['data']
+    for filename in patient_files[:2000]:
+        data = np.load(os.path.join(source_dir, filename))["data"]
         all_values.append(data)
-    
+
     # Stack everything and calculate median per column, ignoring NaNs
     big_matrix = np.vstack(all_values)
     medians = np.nanmedian(big_matrix, axis=0)
-    
+
     print(f"Calculated Medians [HR, Resp, SpO2, BP, Temp]: {medians}")
     return medians
 
@@ -221,23 +221,23 @@ def get_terminal_100_points(ts, window_size=100, median: list = None):
     Always returns (100, 5)
     """
     N = ts.shape[0]
-    
+
     if N >= window_size:
         # 1. Long Stay: Take the most recent 100 points
         block = ts[-window_size:].copy()
     else:
         # 2. Short Stay: Pad the beginning with NaNs
         pad_width = window_size - N
-        block = np.pad(ts, ((pad_width, 0), (0, 0)), mode='constant', constant_values=np.nan)
-    
+        block = np.pad(ts, ((pad_width, 0), (0, 0)), mode="constant", constant_values=np.nan)
+
     # 3. Impute Gaps
     # Convert to DataFrame to use clinical imputation logic
     df = pd.DataFrame(block)
-    
+
     # Linear interpolation for small gaps, Forward fill for the rest
     # Backward fill handles the Padding we just added at the start
-    df = df.interpolate(method='linear', limit_direction='both').ffill().bfill()
-    
+    df = df.interpolate(method="linear", limit_direction="both").ffill().bfill()
+
     # 4. Global Median Fallback (for patients missing a whole channel)
     # [HR, Resp, SpO2, MAP, Temp]
     # global_medians = [85, 18, 97, 80, 37]
@@ -245,23 +245,23 @@ def get_terminal_100_points(ts, window_size=100, median: list = None):
     if df.isnull().values.any():
         for i, median_val in enumerate(global_medians):
             df.iloc[:, i] = df.iloc[:, i].fillna(median_val)
-            
+
     return df.values
 
 
-def get_window_with_gap(ts, window_size=100, gap_size=48):
+def get_window_with_gap(ts, window_size=100, gap_size=48, median: list = None):
     """
     ts: array of shape (N, 5)
     Always returns (100, 5) or None if stay is too short for any data
     """
     N = ts.shape[0]
-    
+
     # 1. Define the 'End' of our observation (4 hours before discharge)
     end_idx = N - gap_size
-    
+
     # 2. If the patient died/left before the gap even started, we have no valid data
     if end_idx <= 0:
-        return None 
+        return None
 
     # 3. Define the 'Start' of our observation
     start_idx = end_idx - window_size
@@ -269,18 +269,24 @@ def get_window_with_gap(ts, window_size=100, gap_size=48):
     if start_idx >= 0:
         # CASE: Long Stay
         # We have enough data to take a full 100-point block ending at the gap
-        block = ts[start_idx : end_idx].copy()
+        block = ts[start_idx:end_idx].copy()
     else:
         # CASE: Short Stay
         # We take everything from admission (0) up to the gap (end_idx)
-        available_data = ts[0 : end_idx].copy()
-        
+        available_data = ts[0:end_idx].copy()
+
         # We need to pad the beginning to reach exactly 100
         pad_width = window_size - len(available_data)
         # Pre-pad with NaNs (which we will impute/median-fill later)
-        block = np.pad(available_data, ((pad_width, 0), (0, 0)), 
-                       mode='constant', constant_values=np.nan)
-    
+        block = np.pad(available_data, ((pad_width, 0), (0, 0)), mode="constant", constant_values=np.nan)
+
+        # block = pd.DataFrame(block)
+        # block = block.interpolate(method='linear', limit_direction='both').ffill().bfill()
+        global_medians = calculate_true_medians() if median is None else median
+        if np.isnan(block).any():
+            for i, median_val in enumerate(global_medians):
+                block[:, i] = np.where(np.isnan(block[:, i]), median_val, block[:, i])
+
     return block
 
 
@@ -288,11 +294,17 @@ if __name__ == "__main__":
     # extract_multi_channel_vitals()
     median = calculate_true_medians()
     filter_imputed_blocks(
-        source_folder=FILTERED_FOLDER, target_folder=IMPUTED_FOLDER_decease, window_size=100, max_nan_ratio=0.3, median=median
+        source_folder=FILTERED_FOLDER,
+        target_folder=IMPUTED_FOLDER_decease,
+        window_size=100,
+        max_nan_ratio=0.3,
+        median=median,
     )
     create_final_labels(
         ts_folder=IMPUTED_FOLDER_decease,
         patient_csv_path="/data/stympopper/BenchmarkTSPFN/EICU-CRD/patient.csv.gz",
         output_path="/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/final_labels.csv",
     )
-    split_train_val(label_csv="/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/final_labels.csv", train_ratio=0.8)
+    split_train_val(
+        label_csv="/data/stympopper/BenchmarkTSPFN/processed/EICU_preprocessed/final_labels.csv", train_ratio=0.8
+    )
