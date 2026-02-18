@@ -132,7 +132,8 @@ def filter_imputed_blocks(source_folder, target_folder, window_size=100, max_nan
         data = np.load(os.path.join(source_folder, file))["data"]
         # imputed_block = get_imputed_block(data, window_size, max_nan_ratio)
         # imputed_block = get_terminal_100_points(data, window_size, median=median)
-        imputed_block = get_window_with_gap(data, window_size=window_size, gap_size=48, median=median)
+        # imputed_block = get_window_with_gap(data, window_size=window_size, gap_size=48, median=median)
+        imputed_block = get_window_with_gap_v2(data, window_size=window_size, gap_size=48, global_medians=median)
         if imputed_block is not None:
             np.savez_compressed(os.path.join(target_folder, file), data=imputed_block)
 
@@ -288,6 +289,42 @@ def get_window_with_gap(ts, window_size=100, gap_size=48, median: list = None):
                 block[:, i] = np.where(np.isnan(block[:, i]), median_val, block[:, i])
 
     return block
+
+
+def get_window_with_gap_v2(ts, window_size=100, gap_size=48, global_medians=None):
+    N = ts.shape[0]
+    end_idx = N - gap_size
+    if end_idx <= 0:
+        return None
+
+    start_idx = max(0, end_idx - window_size)
+    block = ts[start_idx:end_idx].copy()
+
+    # Create a mask: 1 for real data, 0 for missing/padded
+    mask = (~np.isnan(block)).astype(np.float32)
+
+    # 1. Padding if too short
+    if len(block) < window_size:
+        pad_len = window_size - len(block)
+        block = np.pad(block, ((pad_len, 0), (0, 0)), constant_values=np.nan)
+        mask = np.pad(mask, ((pad_len, 0), (0, 0)), constant_values=0)
+
+    # 2. Advanced Imputation using Pandas
+    df = pd.DataFrame(block)
+    # Fill small gaps with linear lines, then carry values forward
+    df = df.interpolate(method="linear", limit_direction="both").ffill().bfill()
+
+    # 3. Last Resort: Global Medians (if a channel is 100% missing)
+    if global_medians is not None:
+        df = df.fillna(pd.Series(global_medians))
+
+    final_block = df.values.astype(np.float32)
+
+    # Optional: Concatenate mask to create a (100, 10) input
+    # This is HIGHLY recommended for SOTA performance
+    # final_block = np.concatenate([final_block, mask], axis=1)
+
+    return final_block
 
 
 if __name__ == "__main__":
