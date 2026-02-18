@@ -205,6 +205,10 @@ class TSPFNRunner(ABC):
                 best_model_path = trainer.checkpoint_callback.best_model_path
                 print(f"Best model checkpoint saved at {best_model_path}")
                 model = model.load_from_checkpoint(best_model_path)
+                if cfg.use_last:
+                    last_model_path = trainer.checkpoint_callback.last_model_path
+                    print(f"Last model checkpoint saved at {last_model_path}")
+                    model = model.load_from_checkpoint(last_model_path)
             if cfg.test:
                 trainer.test(model, datamodule=datamodule)
         else:

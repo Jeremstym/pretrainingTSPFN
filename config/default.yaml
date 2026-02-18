@@ -21,6 +21,7 @@ strict: True
 train: True
 test: False
 predict: False
+use_last: False
 
 results_processors_multiprocessing: True
 
