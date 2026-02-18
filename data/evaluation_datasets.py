@@ -136,43 +136,47 @@ class ECG5000Dataset(Dataset):
         #     self.data = self.data[sub_indices]
 
         if support_size is not None and split == "train":
-            unique_labels, counts = np.unique(self.data[:, -1], return_counts=True)
-            num_classes = len(unique_labels)
+            unique_labels = np.unique(self.data[:, -1])
             n_folds = 5
+            min_per_class = 10 # Ensuring fold safety
             
-            # 1. Guarantee a minimum for the tiny classes (at least 1 per fold)
-            # We take 10 per class to be safe, or 'all' if they have less than 10.
-            min_per_class = 10 
+            # 1. Create a deterministic shuffled order for every class
+            # We use a fixed seed so the "order" is the same every time you run this
+            rng = np.random.default_rng(42) 
             
-            selected_indices = []
-            remaining_slots = support_size
-            
-            # First pass: Take the minimum required from each class
+            # This dictionary will store the indices for each class, pre-shuffled
+            class_indices = {}
             for label in unique_labels:
-                label_indices = np.where(self.data[:, -1] == label)[0]
-                n_to_take = min(len(label_indices), min_per_class)
-                
-                chosen = np.random.choice(label_indices, n_to_take, replace=False)
-                selected_indices.extend(chosen)
-                remaining_slots -= n_to_take
+                idx = np.where(self.data[:, -1] == label)[0]
+                rng.shuffle(idx)
+                class_indices[label] = idx
 
-            # 2. Second pass: Fill the remaining slots from the large classes (1 and 2)
-            # We exclude the indices we already picked
-            current_selected_set = set(selected_indices)
-            all_indices = np.arange(len(self.data))
-            remaining_pool = [i for i in all_indices if i not in current_selected_set]
+            selected_indices = []
             
-            # Pick the rest randomly from whatever is left to hit exactly 500
-            if remaining_slots > 0:
-                extra_indices = np.random.choice(remaining_pool, remaining_slots, replace=False)
-                selected_indices.extend(extra_indices)
+            # 2. Mandatory "Safety" Pick (Small classes first)
+            # This ensures Class 5 always gets its 10-19 samples regardless of total size
+            for label in unique_labels:
+                n_to_take = min(len(class_indices[label]), min_per_class)
+                selected_indices.extend(class_indices[label][:n_to_take])
+                # Remove these from the available pool
+                class_indices[label] = class_indices[label][n_to_take:]
 
-            # 3. Finalize
+            # 3. Global "Greedy" Fill
+            # Combine everything else left into one big pool and shuffle it once
+            remaining_pool = np.concatenate(list(class_indices.values()))
+            rng.shuffle(remaining_pool)
+            
+            # Calculate how many more we need to hit the target support_size
+            needed = support_size - len(selected_indices)
+            
+            if needed > 0:
+                # Take the top 'N' from the remaining pool
+                selected_indices.extend(remaining_pool[:needed])
+
+            # 4. Apply
             self.data = self.data[selected_indices]
-            np.random.shuffle(self.data) # Shuffle so labels aren't grouped
-            
-            print(f"Final data size: {len(self.data)}") 
-            print(f"Counts: {np.unique(self.data[:, -1], return_counts=True)}")
+            # Optional: shuffle the final data so the model doesn't see classes in order
+            rng.shuffle(self.data)
             
             # print(f"Subsampling {len(sub_indices)} samples from {len(self.data)} for training.")
             # self.data = self.data[sub_indices]
