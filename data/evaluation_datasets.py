@@ -155,6 +155,7 @@ class ECG5000Dataset(Dataset):
                 chosen = np.random.choice(label_indices, n_to_take, replace=False)
                 sub_indices.extend(chosen)
             
+            print(f"Subsampling {len(sub_indices)} samples from {len(self.data)} for training.")
             self.data = self.data[sub_indices]
 
         self.X = self.data[:, :-1]

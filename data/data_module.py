@@ -341,6 +341,7 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
 
         # self.train_dataset = Subset(full_train_dataset, train_indices)
         # self.val_dataset = Subset(full_train_dataset, val_indices)
+        self.train_dataset = ECG5000DataModule
 
     def train_dataloader(self):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
