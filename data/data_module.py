@@ -343,7 +343,7 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
 
         # self.train_dataset = Subset(full_train_dataset, train_indices)
         # self.val_dataset = Subset(full_train_dataset, val_indices)
-        self.train_dataset = ECG5000DataModule(
+        self.train_dataset = ECG5000Dataset(
             root=self.data_roots,
             split="train",
             support_size=self.support_size,
