@@ -138,7 +138,7 @@ class ECG5000Dataset(Dataset):
         if support_size is not None and split == "train":
             unique_labels = np.unique(self.data[:, -1])
             n_folds = 5
-            min_per_class = 10 # Ensuring fold safety
+            min_per_class = 2 # Ensuring fold safety
             
             # 1. Create a deterministic shuffled order for every class
             # We use a fixed seed so the "order" is the same every time you run this
