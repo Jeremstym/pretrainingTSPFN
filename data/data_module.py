@@ -303,7 +303,9 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
         subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
         num_workers: int = 0,
         batch_size: int = 32,
+        test_batch_size: Optional[int] = None,
         support_size: Optional[int] = None,
+        fold: Optional[int] = None,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
@@ -314,7 +316,9 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
             subsets=subsets,
             num_workers=num_workers,
             batch_size=batch_size,
+            test_batch_size=test_batch_size,
             support_size=support_size,
+            fold=fold,
             pin_memory=pin_memory,
             transform=transform,
             seed=seed,
@@ -331,8 +335,6 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
         #     support_size=self.support_size,
         # )
 
-        self.test_dataset = ECG5000Dataset(root=self.data_roots, split="test")
-
         # # Handle Subsets
         # labels = full_train_dataset.Y
         # train_indices, val_indices = train_test_split(
@@ -342,8 +344,12 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
         # self.train_dataset = Subset(full_train_dataset, train_indices)
         # self.val_dataset = Subset(full_train_dataset, val_indices)
         self.train_dataset = ECG5000DataModule(
-            root=self.data_roots, split="train", support_size=self.support_size, fold=self.fold
+            root=self.data_roots,
+            split="train",
+            support_size=self.support_size,
+            fold=self.fold
         )
+        self.test_dataset = ECG5000Dataset(root=self.data_roots, split="test")
 
     def train_dataloader(self):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
@@ -352,6 +358,8 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
     #     return self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size)
 
     def test_dataloader(self):
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.test_dataset)
         return self._dataloader(self.test_dataset, shuffle=False, batch_size=self.test_batch_size)
 
 
