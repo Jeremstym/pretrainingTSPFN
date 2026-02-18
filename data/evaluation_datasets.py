@@ -154,9 +154,11 @@ class ECG5000Dataset(Dataset):
                 
                 chosen = np.random.choice(label_indices, n_to_take, replace=False)
                 sub_indices.extend(chosen)
-                
-        self.X = self.data[sub_indices, :-1]
-        self.Y = self.data[sub_indices, -1].astype(int) - 1
+            
+            self.data = self.data[sub_indices]
+
+        self.X = self.data[:, :-1]
+        self.Y = self.data[:, -1].astype(int) - 1
 
         if fold is not None and split == "train":
             skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
