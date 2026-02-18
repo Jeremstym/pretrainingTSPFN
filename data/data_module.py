@@ -325,11 +325,11 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
 
     def setup(self, stage: Optional[str] = None) -> None:
 
-        full_train_dataset = ECG5000Dataset(
-            root=self.data_roots,
-            split="train",
-            support_size=self.support_size,
-        )
+        # full_train_dataset = ECG5000Dataset(
+        #     root=self.data_roots,
+        #     split="train",
+        #     support_size=self.support_size,
+        # )
 
         self.test_dataset = ECG5000Dataset(root=self.data_roots, split="test")
 
@@ -348,8 +348,8 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
     def train_dataloader(self):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
 
-    def val_dataloader(self):
-        return self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size)
+    # def val_dataloader(self):
+    #     return self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size)
 
     def test_dataloader(self):
         return self._dataloader(self.test_dataset, shuffle=False, batch_size=self.test_batch_size)
