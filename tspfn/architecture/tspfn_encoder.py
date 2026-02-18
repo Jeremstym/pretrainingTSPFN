@@ -243,7 +243,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 channel_pe = channel_pe.view(1, 1, num_channels, 1, self.embed_dim)  # (1, 1, C, 1, E)
             elif num_channels > 5:
                 # Repeat the learned positional encodings for more channels
-                channel_pe = self.cwpe.weight[:5, :].unsqueeze(0).unsqueeze(0)  # (1, 1, 5, E)
+                channel_pe = self.cwpe.weight[:5, :].view(1, 1, 5, 1, self.embed_dim)  # (1, 1, 5, 1, E)
                 channel_pe = channel_pe.repeat(1, 1, num_channels // 5 + 1, 1)[:, :, :num_channels, :, :]  # (1, 1, C, 1, E)
             emb_x = emb_x + channel_pe  # Broadcast addition to (B, Seq, C, L, E) + (1, 1, C, 1, E)
             emb_x = emb_x.view(batch_size, seq_len, num_channels * num_features, self.embed_dim)  # (B, Seq, C*L, E)
