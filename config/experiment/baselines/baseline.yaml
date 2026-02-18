@@ -21,7 +21,7 @@ updated_pfn_path: null
 
 data:
   batch_size: 20
-  test_batch_size: 1 # Defaults to all data in one batch
+  test_batch_size: null # Defaults to all data in one batch
   num_workers: 4 # try 4, 8, 16 depending on the system capabilities
 
 task:
