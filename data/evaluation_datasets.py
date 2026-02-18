@@ -21,7 +21,7 @@ import pandas as pd
 from scipy.io import arff
 from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from pathlib import Path
 import argparse
 
@@ -118,7 +118,7 @@ class FilteredTUEVDataset(Dataset):
 
 
 class ECG5000Dataset(Dataset):
-    def __init__(self, root, split: str, scaler=None, support_size=None):  # Added scaler argument
+    def __init__(self, root, split: str, scaler=None, support_size=None, fold=None):  # Added scaler argument
         self.root = root
         self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
 
@@ -127,41 +127,27 @@ class ECG5000Dataset(Dataset):
         print(f"Count labels in {split} split before subsampling: {np.unique(self.data[:, -1], return_counts=True)}")
         if support_size is not None and split == "train":
             indices = list(range(len(self.data)))
+            train_labels = self.data[:, -1]
             _, sub_indices = train_test_split(
-                indices, test_size=support_size, random_state=42, stratify=self.data[:, -1]
+                indices, test_size=support_size, random_state=42, stratify=train_labels
             )
             print(f"Subsampling {support_size} samples from {len(self.data)} for training.")
             print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
             self.data = self.data[sub_indices]
-            # # Convert to DataFrame for easier grouping
-            # df = pd.DataFrame(self.data)
-            # label_column = df.columns[-1]
-
-            # # Define how many samples you want per class (e.g., 2 samples * 5 classes = 10)
-            # samples_per_class = support_size // len(df[label_column].unique())
-
-            # # Group by label and take a random sample from each
-            # subsampled_df = df.groupby(label_column, group_keys=False).apply(
-            #     lambda x: x.sample(n=samples_per_class, random_state=42)
-            # )
-
-            # self.data = subsampled_df.values
 
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1
+
+        if fold is not None and split == "train":
+            skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            list_of_split = list(skf.split(self.X, self.Y))
+            self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
+            self.Y = self.Y[list_of_split[fold][1]]
+
         print(f"Count labels in {split} split: {np.unique(self.Y, return_counts=True)}")
 
         self.scaler = None
-
-        # if split == "train":
-        #     self.scaler = StandardScaler()
-        #     self.X = self.scaler.fit_transform(self.X)
-        # else:
-        #     # Use the passed scaler, or handle the case where it's missing
-        #     if scaler is None:
-        #         raise ValueError("A fitted scaler must be provided for the test/val split!")
-        #     self.scaler = scaler
-        #     self.X = self.scaler.transform(self.X)
+        
         if self.X.ndim == 2:
             self.X = self.X.reshape(
                 self.X.shape[0], 1, -1
