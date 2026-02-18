@@ -367,6 +367,26 @@ class EICUCRDDataset(Dataset):
         return x_tensor, y_tensor
 
 
+class BlinkDataset(Dataset):
+    def __init__(self, root, split: str):
+        self.root = root
+
+        self.X = np.load(os.path.join(self.root, f"{split}_features.npy"))
+        self.Y = np.load(os.path.join(self.root, f"{split}_labels.npy")).astype(int)
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        x_sample = self.X[index]
+        y_sample = self.Y[index]
+
+        x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
+        y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+
+        return x_tensor, y_tensor
+
+
 # class ABIDEDataset(Dataset):
 #     def __init__(self, root, split: str):
 #         self.root = root
