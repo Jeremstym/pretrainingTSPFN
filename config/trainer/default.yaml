@@ -5,3 +5,4 @@ enable_progress_bar: True
 enable_model_summary: True
 inference_mode: False
 enable_checkpointing: True
+# limit_val_batches: 0.0 # For training baselines
