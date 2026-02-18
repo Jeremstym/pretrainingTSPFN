@@ -27,6 +27,7 @@ class TSPFNEncoder(nn.Module, ABC):
         recompute_layer: bool = True,
         num_channels: int = None,
         time_points: int = None,
+        use_tabpfn_pe: bool = True,
         positional_encoding: Literal["none", "sinusoidal", "rope", "learned", "cwpe", "cwpe+rope"] = "none",
         **kwargs,
     ):
@@ -68,6 +69,7 @@ class TSPFNEncoder(nn.Module, ABC):
         self.num_channels = num_channels
         self.time_points = time_points
         self.positional_encoding = positional_encoding
+        self.use_tabpfn_pe = use_tabpfn_pe
         self.embed_dim = embed_dim
 
 
@@ -225,13 +227,14 @@ class TSPFNEncoder(nn.Module, ABC):
 
         elif self.positional_encoding == "cwpe+rope" or self.positional_encoding == "cwpe":
             # Use PE from TabPFN model and add channel-wise positional encodings
-            emb_x, emb_y = self.model.add_embeddings(
-                emb_x,
-                emb_y,
-                data_dags=None,
-                num_features=num_features,
-                seq_len=seq_len,
-            )
+            if self.use_tabpfn_pe:
+                emb_x, emb_y = self.model.add_embeddings(
+                    emb_x,
+                    emb_y,
+                    data_dags=None,
+                    num_features=num_features,
+                    seq_len=seq_len,
+                )
             # Add channel-wise positional encodings
             emb_x = emb_x.reshape(batch_size, seq_len, num_channels, num_features, self.embed_dim)  # (B, Seq, C, L, E)
             channel_indices = torch.arange(num_channels, device=emb_x.device)  # (C,)
