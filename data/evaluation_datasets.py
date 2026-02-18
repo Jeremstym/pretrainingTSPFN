@@ -147,14 +147,14 @@ class ECG5000Dataset(Dataset):
         print(f"Count labels in {split} split: {np.unique(self.Y, return_counts=True)}")
 
         self.scaler = None
-        
+
         if self.X.ndim == 2:
             self.X = self.X.reshape(
                 self.X.shape[0], 1, -1
             )  # Add unichannel dimension if missing, shape becomes (N, 1, Time)
 
     def __len__(self):
-        return len(self.data)
+        return len(self.X)
 
     def __getitem__(self, index):
         x_sample = self.X[index]
