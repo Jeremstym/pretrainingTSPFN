@@ -20,11 +20,15 @@ def process_blink_data(origin_dir, output_dir, split_train, split_test):
     X_train_numpy = convert_to(X_train, "numpy3D")
     X_test_numpy = convert_to(X_test, "numpy3D")
 
+    label_map = {"longblink": 0.0, "shortblink": 1.0}
+    y_train_mapped = np.array([label_map[label] for label in y_train])
+    y_test_mapped = np.array([label_map[label] for label in y_test])
+
     os.makedirs(output_dir, exist_ok=True)
     np.save(os.path.join(output_dir, f"{split_train}_features.npy"), X_train_numpy)
-    np.save(os.path.join(output_dir, f"{split_train}_labels.npy"), y_train)
+    np.save(os.path.join(output_dir, f"{split_train}_labels.npy"), y_train_mapped)
     np.save(os.path.join(output_dir, f"{split_test}_features.npy"), X_test_numpy)
-    np.save(os.path.join(output_dir, f"{split_test}_labels.npy"), y_test)
+    np.save(os.path.join(output_dir, f"{split_test}_labels.npy"), y_test_mapped)
 
     return
 
