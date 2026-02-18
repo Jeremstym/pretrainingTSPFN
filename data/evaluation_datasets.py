@@ -125,18 +125,38 @@ class ECG5000Dataset(Dataset):
         df = pd.read_csv(self.file_path, index_col=0)
         self.data = df.values
         print(f"Count labels in {split} split before subsampling: {np.unique(self.data[:, -1], return_counts=True)}")
-        if support_size is not None and split == "train":
-            indices = list(range(len(self.data)))
-            train_labels = self.data[:, -1]
-            _, sub_indices = train_test_split(
-                indices, test_size=support_size, random_state=42, stratify=train_labels
-            )
-            print(f"Subsampling {support_size} samples from {len(self.data)} for training.")
-            print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
-            self.data = self.data[sub_indices]
+        # if support_size is not None and split == "train":
+        #     indices = list(range(len(self.data)))
+        #     train_labels = self.data[:, -1]
+        #     _, sub_indices = train_test_split(
+        #         indices, test_size=support_size, random_state=42, stratify=train_labels
+        #     )
+        #     print(f"Subsampling {support_size} samples from {len(self.data)} for training.")
+        #     print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
+        #     self.data = self.data[sub_indices]
 
-        self.X = self.data[:, :-1]
-        self.Y = self.data[:, -1].astype(int) - 1
+        if support_size is not None and split == "train":
+            unique_labels = np.unique(self.data[:, -1])
+            n_folds = 5
+            
+            # Calculate how many we need from each class to hit 500, 
+            # but ensure a MINIMUM of 5 (one per fold)
+            target_per_class = support_size // len(unique_labels)
+            
+            sub_indices = []
+            for label in unique_labels:
+                label_indices = np.where(self.data[:, -1] == label)[0]
+                num_available = len(label_indices)
+                
+                # Take at least 'n_folds' so StratifiedKFold doesn't starve a fold
+                # but don't exceed the total 100-per-class target unless necessary
+                n_to_take = max(n_folds, min(num_available, target_per_class))
+                
+                chosen = np.random.choice(label_indices, n_to_take, replace=False)
+                sub_indices.extend(chosen)
+                
+        self.X = self.data[sub_indices, :-1]
+        self.Y = self.data[sub_indices, -1].astype(int) - 1
 
         if fold is not None and split == "train":
             skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
