@@ -9,7 +9,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 ORIGIN_DIRECTORY = "/data/stympopper/BenchmarkTSPFN/Blink/"
-OUTPUT_DIRECTORY = "/data/stympopper/BenchmarkTSPFN/preprocessed/Blink/"
+OUTPUT_DIRECTORY = "/data/stympopper/BenchmarkTSPFN/processed/Blink/"
 SPLIT_TRAIN = "train"
 SPLIT_TEST = "test"
 
