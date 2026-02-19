@@ -394,6 +394,10 @@ class EOSDataset(Dataset):
         self.X = np.load(os.path.join(self.root, f"{split}_features.npy"))
         self.Y = np.load(os.path.join(self.root, f"{split}_labels.npy")).astype(int)
 
+        if self.X.shape[1] > 5:
+            # Use the first 5 channels if there are more than 5
+            self.X = self.X[:, :5, :]
+
     def __len__(self):
         return len(self.X)
 
