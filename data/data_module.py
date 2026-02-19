@@ -346,10 +346,7 @@ class ECG5000FineTuneDataModule(TSPFNDataModule):
         # self.train_dataset = Subset(full_train_dataset, train_indices)
         # self.val_dataset = Subset(full_train_dataset, val_indices)
         self.train_dataset = ECG5000Dataset(
-            root=self.data_roots,
-            split="train",
-            support_size=self.support_size,
-            fold=self.fold
+            root=self.data_roots, split="train", support_size=self.support_size, fold=self.fold
         )
         self.test_dataset = ECG5000Dataset(root=self.data_roots, split="test")
 
@@ -560,6 +557,7 @@ class EICUDatamodule(TSPFNDataModule):
         # This is identical to val_dataloader for the final evaluation
         return self.val_dataloader()
 
+
 class EICUFineTuneDataModule(TSPFNDataModule):
     """LightningDataModule for EICU-CRD dataset.
 
@@ -608,7 +606,6 @@ class EICUFineTuneDataModule(TSPFNDataModule):
         )
 
         self.test_dataset = EICUCRDDataset(root=self.data_roots, split="test")
-
 
     def train_dataloader(self):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
@@ -761,6 +758,9 @@ class ESRFineTuneDataModule(TSPFNDataModule):
         subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
         num_workers: int = 0,
         batch_size: int = 32,
+        test_batch_size: Optional[int] = None,
+        support_size: Optional[int] = None,
+        fold: Optional[int] = None,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
@@ -771,6 +771,9 @@ class ESRFineTuneDataModule(TSPFNDataModule):
             subsets=subsets,
             num_workers=num_workers,
             batch_size=batch_size,
+            test_batch_size=test_batch_size,
+            support_size=support_size,
+            fold=fold,
             pin_memory=pin_memory,
             transform=transform,
             seed=seed,
@@ -780,29 +783,16 @@ class ESRFineTuneDataModule(TSPFNDataModule):
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
-        full_train_dataset = ESRDataset(
+        self.train_dataset = ESRDataset(
             root=self.data_roots,
             split="train",
+            support_size=self.support_size,
+            fold=self.fold,
         )
-
-        train_scaler = full_train_dataset.scaler
-
-        self.test_dataset = ESRDataset(root=self.data_roots, split="test", scaler=train_scaler)
-
-        # Handle Subsets
-        labels = full_train_dataset.Y
-        train_indices, val_indices = train_test_split(
-            range(len(full_train_dataset)), test_size=0.2, stratify=labels, random_state=self.seed
-        )
-
-        self.train_dataset = Subset(full_train_dataset, train_indices)
-        self.val_dataset = Subset(full_train_dataset, val_indices)
+        self.test_dataset = ESRDataset(root=self.data_roots, split="test")
 
     def train_dataloader(self):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
-
-    def val_dataloader(self):
-        return self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size)
 
     def test_dataloader(self):
         return self._dataloader(self.test_dataset, shuffle=False, batch_size=self.test_batch_size)
