@@ -399,9 +399,11 @@ class EOSDataset(Dataset):
             all_channels = list(range(self.X.shape[1]))
             # keep_channels = [0, 10, 11, 12, 13]
             # keep_channels = [0, 10, 11, 12]
-            # keep_channels = [0, 10, 11]
             # keep_channels = [10, 11, 12]
-            np.random.seed(0)  # Set seed for reproducibility
+            # Good below
+            # keep_channels = [0, 10, 11]
+            # keep_channels = [4, 6, 8]
+            np.random.seed(1)  # Set seed for reproducibility
             keep_channels = np.random.choice(all_channels, size=3, replace=False)
             print(f"-----KEEP CHANNELS: {keep_channels}")
             self.X = self.X[:, keep_channels, :]
