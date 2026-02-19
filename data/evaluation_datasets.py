@@ -286,9 +286,6 @@ class ESRDataset(Dataset):
 
         print(f"Count labels in {split} split: {np.unique(self.Y, return_counts=True)}")
 
-        self.X = self.data[:, :-1]
-        self.Y = self.data[:, -1].astype(int) - 1  # Convert to zero-based indexing
-
         if self.X.ndim == 2:
             self.X = self.X.reshape(
                 self.X.shape[0], 1, -1
