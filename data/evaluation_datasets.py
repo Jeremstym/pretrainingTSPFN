@@ -138,12 +138,12 @@ class ECG5000Dataset(Dataset):
         if support_size is not None and split == "train":
             unique_labels = np.unique(self.data[:, -1])
             n_folds = 5
-            min_per_class = 2 # Ensuring fold safety
-            
+            min_per_class = 2  # Ensuring fold safety
+
             # 1. Create a deterministic shuffled order for every class
             # We use a fixed seed so the "order" is the same every time you run this
-            rng = np.random.default_rng(42) 
-            
+            rng = np.random.default_rng(42)
+
             # This dictionary will store the indices for each class, pre-shuffled
             class_indices = {}
             for label in unique_labels:
@@ -152,7 +152,7 @@ class ECG5000Dataset(Dataset):
                 class_indices[label] = idx
 
             selected_indices = []
-            
+
             # 2. Mandatory "Safety" Pick (Small classes first)
             # This ensures Class 5 always gets its 10-19 samples regardless of total size
             for label in unique_labels:
@@ -165,10 +165,10 @@ class ECG5000Dataset(Dataset):
             # Combine everything else left into one big pool and shuffle it once
             remaining_pool = np.concatenate(list(class_indices.values()))
             rng.shuffle(remaining_pool)
-            
+
             # Calculate how many more we need to hit the target support_size
             needed = support_size - len(selected_indices)
-            
+
             if needed > 0:
                 # Take the top 'N' from the remaining pool
                 selected_indices.extend(remaining_pool[:needed])
@@ -177,7 +177,7 @@ class ECG5000Dataset(Dataset):
             self.data = self.data[selected_indices]
             # Optional: shuffle the final data so the model doesn't see classes in order
             rng.shuffle(self.data)
-            
+
             # print(f"Subsampling {len(sub_indices)} samples from {len(self.data)} for training.")
             # self.data = self.data[sub_indices]
 
@@ -305,18 +305,12 @@ class ORCHIDDataset(Dataset):
 
 
 class EICUCRDDataset(Dataset):
-    def __init__(self, root, split: str, support_size=None):
+    def __init__(self, root, split: str, support_size=None, fold=None):
         self.root = root
         self.support_size = support_size
         self.file_dir = os.path.join(self.root, f"{split}_decease")
         self.label_file = os.path.join(self.root, "final_labels.csv")
-        self.selected_channels = [
-            "heart_rate",
-            "respiration",
-            "spo2",
-            "blood_pressure",
-            "temperature"
-        ]
+        self.selected_channels = ["heart_rate", "respiration", "spo2", "blood_pressure", "temperature"]
 
         channel_maps = {
             "heart_rate": 0,
@@ -339,18 +333,63 @@ class EICUCRDDataset(Dataset):
         print(f"data shape after loading: {data.T.shape}")
         self.df_labels = pd.read_csv(self.label_file, index_col=0)
 
+        # if support_size is not None and split == "train":
+        #     indices = list(range(len(self.all_patients)))
+        #     train_labels = self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], "mortality_label"]
+        #     print(f"train labels shape: {train_labels.shape}")
+        #     print(f"len indices: {len(indices)}")
+        #     _, sub_indices = train_test_split(
+        #         indices, test_size=support_size, random_state=42, stratify=train_labels
+        #     )
+        #     print(f"Subsampling {support_size} samples from {len(self.all_patients)} for training.")
+        #     print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
+        #     self.all_patients = [self.all_patients[i] for i in sub_indices]
+        #     print(f"Count labels in subsampled training set: {np.unique(train_labels.iloc[sub_indices], return_counts=True)}")
+
         if support_size is not None and split == "train":
-            indices = list(range(len(self.all_patients)))
-            train_labels = self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], "mortality_label"]
-            print(f"train labels shape: {train_labels.shape}")
-            print(f"len indices: {len(indices)}")
-            _, sub_indices = train_test_split(
-                indices, test_size=support_size, random_state=42, stratify=train_labels
+            unique_labels = np.unique(
+                self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], "mortality_label"]
             )
-            print(f"Subsampling {support_size} samples from {len(self.all_patients)} for training.")
-            print(f"Chosen indices: {sub_indices[:10]}...")  # Print first 10 indices for verification
-            self.all_patients = [self.all_patients[i] for i in sub_indices]
-            print(f"Count labels in subsampled training set: {np.unique(train_labels.iloc[sub_indices], return_counts=True)}")
+            n_folds = 5
+            min_per_class = 2  # Ensuring fold safety
+
+            rng = np.random.default_rng(42)
+
+            class_indices = {}
+            for label in unique_labels:
+                idx = np.where(
+                    self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], "mortality_label"] == label
+                )[0]
+                rng.shuffle(idx)
+                class_indices[label] = idx
+
+            selected_indices = []
+            for label in unique_labels:
+                n_to_take = min(len(class_indices[label]), min_per_class)
+                selected_indices.extend(class_indices[label][:n_to_take])
+                class_indices[label] = class_indices[label][n_to_take:]
+
+            remaining_pool = np.concatenate(list(class_indices.values()))
+            rng.shuffle(remaining_pool)
+
+            needed = support_size - len(selected_indices)
+            if needed > 0:
+                selected_indices.extend(remaining_pool[:needed])
+
+            # rng.shuffle(self.all_patients)  # Shuffle the order of patients after subsampling
+            self.all_patients = [self.all_patients[i] for i in selected_indices]
+            print(f"Subsampling {len(selected_indices)} samples from {len(self.all_patients)} for training.")
+            print(f"Count labels in subsampled training set: {np.unique(self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], 'mortality_label'], return_counts=True)}")
+
+        # self.X = self.data[:, :-1]
+        # self.Y = self.data[:, -1].astype(int) - 1
+
+        if fold is not None and split == "train":
+            skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            list_of_split = list(skf.split(self.all_patients, self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], "mortality_label"]))
+            self.all_patients = [self.all_patients[i] for i in list_of_split[fold][1]]  # Use the specified fold's test indices for validation
+            self.patient_dict = {Path(p).stem: self.patient_dict[Path(p).stem] for p in self.all_patients}
+            self.df_labels = self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients]]
 
     def __len__(self):
         return len(self.all_patients)
