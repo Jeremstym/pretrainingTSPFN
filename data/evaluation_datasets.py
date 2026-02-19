@@ -213,7 +213,7 @@ class ECG5000Dataset(Dataset):
 
 
 class ESRDataset(Dataset):
-    def __init__(self, root, split: str, scaler=None, support_size=None):  # Added scaler argument
+    def __init__(self, root, split: str, scaler=None, support_size=None, fold=None):  # Added scaler argument
         self.root = root
         self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
 
