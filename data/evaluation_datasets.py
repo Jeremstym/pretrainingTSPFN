@@ -396,10 +396,13 @@ class EOSDataset(Dataset):
 
         if self.X.shape[1] > 5:
             # Use the first 5 channels if there are more than 5
+            all_channels = list(range(self.X.shape[1]))
             # keep_channels = [0, 10, 11, 12, 13]
             # keep_channels = [0, 10, 11, 12]
             # keep_channels = [0, 10, 11]
-            keep_channels = [10, 11, 12]
+            # keep_channels = [10, 11, 12]
+            keep_channels = np.random.choice(all_channels, size=3, replace=False, random_state=42)
+            print(f"-----KEEP CHANNELS: {keep_channels}")
             self.X = self.X[:, keep_channels, :]
 
     def __len__(self):
