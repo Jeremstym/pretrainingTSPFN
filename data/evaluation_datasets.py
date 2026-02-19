@@ -397,8 +397,8 @@ class EOSDataset(Dataset):
         if self.X.shape[1] > 5:
             # Use the first 5 channels if there are more than 5
             # keep_channels = [0, 10, 11, 12, 13]
-            keep_channels = [0, 10, 11, 12]
-            # keep_channels = [0, 10, 11]
+            # keep_channels = [0, 10, 11, 12]
+            keep_channels = [10, 11, 12]
             self.X = self.X[:, keep_channels, :]
 
     def __len__(self):
