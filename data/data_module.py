@@ -560,7 +560,7 @@ class EICUDatamodule(TSPFNDataModule):
         # This is identical to val_dataloader for the final evaluation
         return self.val_dataloader()
 
-class EICUFineTuneDatamodule(TSPFNDataModule):
+class EICUFineTuneDataModule(TSPFNDataModule):
     """LightningDataModule for EICU-CRD dataset.
 
     Parameters
