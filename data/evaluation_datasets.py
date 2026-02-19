@@ -306,7 +306,7 @@ class ESRDataset(Dataset):
         #     self.X = self.scaler.transform(self.X)
 
     def __len__(self):
-        return len(self.data)
+        return len(self.X)
 
     def __getitem__(self, index):
         x_sample = self.X[index]
