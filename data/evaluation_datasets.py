@@ -400,12 +400,14 @@ class EOSDataset(Dataset):
             # keep_channels = [0, 10, 11, 12, 13]
             # keep_channels = [0, 10, 11, 12]
             # keep_channels = [10, 11, 12]
+            # keep_channels = [7, 4, 1]
             # Good below
             # keep_channels = [0, 10, 11]
             # keep_channels = [4, 6, 8]
             # keep_chahnels = [3, 6, 7]
+            # VERY GOOD BELOW
             # keep_channels = [11, 4, 5]
-            np.random.seed(3)  # Set seed for reproducibility
+            np.random.seed(4)  # Set seed for reproducibility
             keep_channels = np.random.choice(all_channels, size=3, replace=False)
             print(f"-----KEEP CHANNELS: {keep_channels}")
             self.X = self.X[:, keep_channels, :]
