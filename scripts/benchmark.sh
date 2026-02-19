@@ -14,7 +14,7 @@ uname -a
 nvidia-smi
 ulimit -n 4096
 
-# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-tabpfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-tabpfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 data=evaluating-ecg5000 train=False test=True
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-tabpfn-v2/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 data=evaluating-ecg5000 train=False test=True
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-tspfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True updated_pfn_path=/home/stympopper/didacticJerem/ckpts/tspfn_encoder_weights_v2.pt
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-tspfnv2-scaler/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-ecg5000 seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN_v2.pt"
@@ -28,7 +28,8 @@ ulimit -n 4096
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TSPFNFM-Baseline-zscoring/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-ecg5000 seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFNFM_Baseline-zscoring.pt"
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TSPFNFM-Baseline-zscoring-5chans/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-ecg5000 seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFNFM_Baseline-zscoring-5CHANS.pt"
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TSPFNFM-RoPE-zscoring-5chans/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-ecg5000 seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE-zscoring-5CHANS-nowarmup.pt" task.time_series_positional_encoding=rope
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TSPFNFM-RoPE+CWPE-zscoring-5chans/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-ecg5000 seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS-nowarmup.pt" task.time_series_positional_encoding=cwpe+rope
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TSPFNFM-RoPE+CWPE-zscoring-5chans/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-ecg5000 seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS-nowarmup.pt" task.time_series_positional_encoding=cwpe+rope
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TSPFNFM-RoPE+CWPE-zscoring-5chans-v2/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-ecg5000 seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" task.time_series_positional_encoding=cwpe+rope
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-tspfnv2/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-esr seed=42 train=False test=True
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-tabpfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 train=False test=True task.embed_dim=512
