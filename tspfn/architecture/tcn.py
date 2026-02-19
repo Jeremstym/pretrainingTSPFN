@@ -79,14 +79,14 @@ class Small_TCN(nn.Module):
     #             if hasattr(m, 'alpha'):
     #                 m.alpha.data.fill_(alpha_val)
 
-    def __init__(self):
+    def __init__(self, num_channels=1, num_classes=5, seq_length=178):
         super(Small_TCN, self).__init__()
-        n_inputs = 1
+        n_inputs = num_channels
         Kt = 11
         pt = 0.3
         Ft = 11
-        classes = 5
-        seq_length = 178  # Updated sequence length
+        classes = num_classes
+        seq_length = seq_length  # Updated sequence length
 
         self.pad0 = nn.ConstantPad1d(padding = (Kt-1, 0), value = 0)
         self.conv0 = nn.Conv1d(in_channels = n_inputs, out_channels = n_inputs + 1, kernel_size = Kt, bias=False)

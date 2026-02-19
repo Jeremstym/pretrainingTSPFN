@@ -1,1 +1,4 @@
 _target_: tspfn.architecture.tcn.Small_TCN
+num_channels: ${data.num_channels}
+num_classes: ${data.num_classes}
+seq_length: ${data.time_series_length}
