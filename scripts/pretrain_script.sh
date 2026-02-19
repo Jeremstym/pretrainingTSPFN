@@ -24,6 +24,7 @@ nvidia-smi
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zscoring' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zscoring-5CHANS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zscoring-5CHANS+hird-nowarmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=none
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-Real' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-csv task.time_series_positional_encoding=rope+channel
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring-2CHANS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
@@ -34,7 +35,7 @@ nvidia-smi
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring-3CHANS-warmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring-5CHANS-nowarmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring-5CHANS-nowarmup-2' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE-zscoring-5CHANS-nowarmup-v2.pt"
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring-5CHANS+hird-nowarmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring-5CHANS+hird-nowarmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-zscoring-5CHANS-nowarmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=cwpe+rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-zscoring-5CHANS-nowarmup-shuffle' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=cwpe+rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=cwpe+rope
