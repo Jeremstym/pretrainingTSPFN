@@ -721,7 +721,9 @@ class EOSFineTuneDataModule(TSPFNDataModule):
 
     def setup(self, stage: Optional[str] = None) -> None:
 
-        self.train_dataset = EOSDataset(root=self.data_roots, split="train")
+        self.train_dataset = EOSDataset(
+            root=self.data_roots, split="train", support_size=self.support_size, fold=self.fold
+        )
         self.test_dataset = EOSDataset(root=self.data_roots, split="test")
 
     def train_dataloader(self):

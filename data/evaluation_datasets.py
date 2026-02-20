@@ -481,11 +481,75 @@ class BlinkDataset(Dataset):
 
 
 class EOSDataset(Dataset):
-    def __init__(self, root, split: str):
+    def __init__(self, root, split: str, support_size=None, fold=None):
         self.root = root
 
         self.X = np.load(os.path.join(self.root, f"{split}_features.npy"))
         self.Y = np.load(os.path.join(self.root, f"{split}_labels.npy")).astype(int)
+
+        if support_size is not None and split == "train":
+            X_train = np.load(os.path.join(self.root, f"train_features.npy"))
+            Y_train = np.load(os.path.join(self.root, f"train_labels.npy")).astype(int)
+            X_test = np.load(os.path.join(self.root, f"test_features.npy"))
+            Y_test = np.load(os.path.join(self.root, f"test_labels.npy")).astype(int)
+            X_full = np.concatenate([X_train, X_test], axis=0)
+            Y_full = np.concatenate([Y_train, Y_test], axis=0)
+            
+            self.data = np.column_stack([X_full, Y_full])
+            unique_labels = np.unique(self.data[:, -1])
+            n_folds = 5
+            min_per_class = 2  # Ensuring fold safety
+
+            # 1. Create a deterministic shuffled order for every class
+            # We use a fixed seed so the "order" is the same every time you run this
+            rng = np.random.default_rng(42)
+
+            # This dictionary will store the indices for each class, pre-shuffled
+            class_indices = {}
+            for label in unique_labels:
+                idx = np.where(self.data[:, -1] == label)[0]
+                rng.shuffle(idx)
+                class_indices[label] = idx
+
+            selected_indices = []
+
+            # 2. Mandatory "Safety" Pick (Small classes first)
+            # This ensures Class 5 always gets its 10-19 samples regardless of total size
+            for label in unique_labels:
+                n_to_take = min(len(class_indices[label]), min_per_class)
+                selected_indices.extend(class_indices[label][:n_to_take])
+                # Remove these from the available pool
+                class_indices[label] = class_indices[label][n_to_take:]
+
+            # 3. Global "Greedy" Fill
+            # Combine everything else left into one big pool and shuffle it once
+            remaining_pool = np.concatenate(list(class_indices.values()))
+            rng.shuffle(remaining_pool)
+
+            # Calculate how many more we need to hit the target support_size
+            needed = support_size - len(selected_indices)
+
+            if needed > 0:
+                # Take the top 'N' from the remaining pool
+                selected_indices.extend(remaining_pool[:needed])
+
+            # 4. Apply
+            self.data = self.data[selected_indices]
+            # Optional: shuffle the final data so the model doesn't see classes in order
+            rng.shuffle(self.data)
+
+            # print(f"Subsampling {len(sub_indices)} samples from {len(self.data)} for training.")
+            # self.data = self.data[sub_indices]
+        
+        if fold is not None and split == "train":
+            self.X = self.data[:, :-1]
+            self.Y = self.data[:, -1].astype(int)
+            assert support_size is not None
+            skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+            list_of_split = list(skf.split(self.X, self.Y))
+            self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
+            self.Y = self.Y[list_of_split[fold][1]]
+            print(f"Count labels in {split} split after fold selection: {np.unique(self.Y, return_counts=True)}")
 
         if self.X.shape[1] > 5:
             # Use the first 5 channels if there are more than 5
