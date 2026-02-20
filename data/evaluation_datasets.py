@@ -495,8 +495,8 @@ class EOSDataset(Dataset):
             X_full = np.concatenate([X_train, X_test], axis=0)
             Y_full = np.concatenate([Y_train, Y_test], axis=0)
             
-            self.data = np.column_stack([X_full, Y_full])
-            unique_labels = np.unique(self.data[:, -1])
+            # self.data = np.column_stack([X_full, Y_full])
+            unique_labels = np.unique(Y_full)
             n_folds = 5
             min_per_class = 2  # Ensuring fold safety
 
@@ -507,7 +507,7 @@ class EOSDataset(Dataset):
             # This dictionary will store the indices for each class, pre-shuffled
             class_indices = {}
             for label in unique_labels:
-                idx = np.where(self.data[:, -1] == label)[0]
+                idx = np.where(Y_full == label)[0]
                 rng.shuffle(idx)
                 class_indices[label] = idx
 
@@ -534,16 +534,18 @@ class EOSDataset(Dataset):
                 selected_indices.extend(remaining_pool[:needed])
 
             # 4. Apply
-            self.data = self.data[selected_indices]
+            self.X = X_full[selected_indices]
+            self.Y = Y_full[selected_indices]
             # Optional: shuffle the final data so the model doesn't see classes in order
-            rng.shuffle(self.data)
+            indices = np.arange(len(self.X))
+            rng.shuffle(indices)
+            self.X = self.X[indices]
+            self.Y = self.Y[indices]
 
             # print(f"Subsampling {len(sub_indices)} samples from {len(self.data)} for training.")
             # self.data = self.data[sub_indices]
         
         if fold is not None and split == "train":
-            self.X = self.data[:, :-1]
-            self.Y = self.data[:, -1].astype(int)
             assert support_size is not None
             skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
             list_of_split = list(skf.split(self.X, self.Y))
