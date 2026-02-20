@@ -10,9 +10,9 @@ import torch.nn.functional as F
 import numpy as np
 
 from collections import OrderedDict
-from ..models.layers.pos_encoding import *
-from ..models.layers.basics import *
-from ..models.layers.attention import *
+from ..patchTST.pos_encoding import *
+from ..patchTST.basics import *
+from ..patchTST.attention import *
 
             
 # Cell
