@@ -159,16 +159,16 @@ if __name__ == "__main__":
     # df_rp = pd.read_pickle(path + "cpsc_dataframe_rp.pkl")
     # print(f"dataset shape after finding R-peaks: {df_rp.shape}")
 
-    # print("Segmenting ECG signals into heartbeats...")
-    # df_final = segment_ecg_in_clean_dataframe(
-    #     ROOT=path, data=df_rp, size_before_index=130, size_after_index=270, signal_length=2000
-    # )
-    # print("ECG signals segmented into heartbeats and added to the dataframe.")
-    # # print(df_final.columns)
-    # # df_final["heartbeat_indexes"]
+    print("Segmenting ECG signals into heartbeats...")
+    df_final = segment_ecg_in_clean_dataframe(
+        ROOT=path, data=df_rp, size_before_index=130, size_after_index=270, signal_length=2000
+    )
+    print("ECG signals segmented into heartbeats and added to the dataframe.")
+    # print(df_final.columns)
+    # df_final["heartbeat_indexes"]
 
-    # # # print(df_final)
-    # df_final.to_pickle(path + "cpsc_dataframe_final.pkl")
+    # # print(df_final)
+    df_final.to_pickle(path + "cpsc_dataframe_final.pkl")
 
     df_final = pd.read_pickle(path + "cpsc_dataframe_final.pkl")
     print(f"dataset shape after segmenting into heartbeats: {df_final.shape}")

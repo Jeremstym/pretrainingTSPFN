@@ -204,7 +204,7 @@ def segment_ecg_in_clean_dataframe(
         indexes_pairs: list of [start, end] pairs
         """
         if not indexes_pairs:
-            return []
+            raise ValueError("No valid R-peaks found for this signal, cannot segment into heartbeats.")
 
         heart_beats = []
         for start, end in indexes_pairs:
