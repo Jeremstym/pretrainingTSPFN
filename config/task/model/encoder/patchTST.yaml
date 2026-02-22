@@ -1,4 +1,4 @@
-_target_: tspfn.architecture.patchTST.PatchTST
+_target_: tspfn.architecture.patchTST.patchTST.PatchTST
 c_in: ${data.num_channels}
 seq_len: ${data.time_series_length}
 target_dim: ${data.num_classes}
