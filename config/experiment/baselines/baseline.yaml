@@ -2,7 +2,7 @@
 
 defaults:
   - /task/model/prediction_head: identity
-  - /task/model/encoder: tcn
+  - /task/model/encoder: patchTST # alternatives: [tcn, patchTST]
   - override /task/model: null
   - override /task/optim: adamw
   - override /data: finetuning-ecg5000
