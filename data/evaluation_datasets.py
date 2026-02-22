@@ -604,6 +604,7 @@ class AtrialFibrillationDataset(Dataset):
         # 2. Notch filter (50Hz or 60Hz)
         b_notch, a_notch = sgn.iirnotch(50 / (fs / 2), 30)
         x = sgn.filtfilt(b_notch, a_notch, x)
+        x = sgn.decimate(x, q=2, axis=-1)
 
         return x
 
