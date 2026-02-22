@@ -803,7 +803,7 @@ class CPSC4ChannelDataModule(TSPFNDataModule):
             fold=self.fold,
         )
         # scaler = self.train_dataset.scaler
-        self.val_dataset = CPSC4ChannelDataset(root=self.data_roots, split="test")
+        self.val_dataset = CPSC4ChannelDataset(root=self.data_roots, split="val")
 
         return
 
