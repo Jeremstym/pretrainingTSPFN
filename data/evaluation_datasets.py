@@ -729,17 +729,17 @@ class CPSCDataset(Dataset):
         self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
         # self.Y = self.Y[sub_indices]
         self.X = torch.from_numpy(self.X).float()
-        self.X = self.X.reshape(self.X.shape[0], 3, -1)  # Reshape to [Batch, Channels, Signal_Length]
+        self.X = self.X.reshape(self.X.shape[0], 4, -1)  # Reshape to [Batch, Channels, Signal_Length]
         self.Y = torch.from_numpy(self.Y).long()  # Shape [Batch, 1]
 
         print(f"Loaded CPSC dataset with {len(self.X)} samples")
-        if self.X.shape[2] < 166:
-            self.X = F.pad(self.X, (0, 166 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 166]
-        elif self.X.shape[2] == 166:
+        if self.X.shape[2] < 125:
+            self.X = F.pad(self.X, (0, 125 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 125]
+        elif self.X.shape[2] == 125:
             pass
         else:
             raise ValueError(
-                f"Expected signal length of 166, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of 125, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
