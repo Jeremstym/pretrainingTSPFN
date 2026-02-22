@@ -156,8 +156,8 @@ if __name__ == "__main__":
     # df_rp = find_rpeaks_clean_ecgs_in_dataframe(data=df, rate=resampled_rate)
     # print("R-peaks found and added to the dataframe.")
     # df_rp.to_pickle(path + "cpsc_dataframe_rp.pkl")
-    # df_rp = pd.read_pickle(path + "cpsc_dataframe_rp.pkl")
-    # print(f"dataset shape after finding R-peaks: {df_rp.shape}")
+    df_rp = pd.read_pickle(path + "cpsc_dataframe_rp.pkl")
+    print(f"dataset shape after finding R-peaks: {df_rp.shape}")
 
     print("Segmenting ECG signals into heartbeats...")
     df_final = segment_ecg_in_clean_dataframe(
