@@ -597,6 +597,8 @@ class EOSDataset(Dataset):
 
 class AtrialFibrillationDataset(Dataset):
     def _preprocess_ecg(self, x, fs=128):  # fs = sampling frequency
+        print(f"Original signal shape: {x.shape}")
+        raise Exception("Preprocessing is currently disabled for debugging. Remove this line to enable.")
         # 1. High-pass filter (0.5 Hz)
         b, a = sgn.butter(3, 0.5 / (fs / 2), "high")
         x = sgn.filtfilt(b, a, x)
