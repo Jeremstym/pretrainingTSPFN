@@ -62,40 +62,48 @@ import pandas as pd
 
 def detect_rpeaks(ecg, rate=200, ransac_window_size=5.0, lowfreq=5.0, highfreq=15.0):
     import warnings
-
     warnings.filterwarnings("ignore")
-
-    # 1. Improved Bandpass Filter (5-15 Hz is the QRS sweet spot)
+    
+    # 1. Bandpass Filter
     nyq = rate / 2.0
-    b, a = scipy.signal.butter(2, [lowfreq / nyq, highfreq / nyq], btype="band")
+    b, a = scipy.signal.butter(2, [lowfreq / nyq, highfreq / nyq], btype='band')
     ecg_band = scipy.signal.filtfilt(b, a, ecg)
 
-    # 2. Derivative + Squaring (Highlight the steep slopes of the R-wave)
+    # 2. Derivative + Squaring
     decg = np.diff(ecg_band)
     decg_power = decg**2
 
-    # 3. Robust Thresholding (RANSAC-like)
+    # 3. Dynamic Thresholding (RANSAC-inspired)
     ransac_samples = int(ransac_window_size * rate)
-    thresholds = []
-    for i in range(max(1, int(len(decg_power) / ransac_samples))):
-        d = decg_power[i * ransac_samples : (i + 1) * ransac_samples]
-        if len(d) > 0:
+    num_windows = int(len(decg_power) / ransac_samples)
+    
+    if num_windows < 1: # Handle very short signals
+        threshold = 0.5 * np.std(decg_power)
+    else:
+        thresholds = []
+        for i in range(num_windows):
+            d = decg_power[i * ransac_samples : (i + 1) * ransac_samples]
             thresholds.append(0.5 * np.std(d))
+        # Use a lower percentile (30th) instead of Median (50th) 
+        # to be more sensitive to weak peaks
+        threshold = np.percentile(thresholds, 30) 
 
-    threshold = np.median(thresholds) if thresholds else 0
+    # Safety: If signal is very clean/flat, don't let threshold be exactly 0
+    threshold = max(threshold, 1e-6)
+    
     decg_power[decg_power < threshold] = 0
 
-    # 4. Shannon Energy (Enveloping)
-    decg_power = decg_power / (np.max(decg_power) + 1e-10)
-    shannon_energy = -(decg_power**2) * np.log(decg_power**2 + 1e-10)
-
-    # 5. Integration (Smoothing)
-    # 0.125s window is standard for heartbeat integration
+    # 4. Shannon Energy
+    max_val = np.max(decg_power) + 1e-10
+    decg_power = decg_power / max_val
+    shannon_energy = - (decg_power**2) * np.log(decg_power**2 + 1e-10)
+    
+    # 5. Integration
     mean_window_len = int(rate * 0.125 + 1)
-    lp_energy = np.convolve(shannon_energy, np.ones(mean_window_len) / mean_window_len, mode="same")
+    lp_energy = np.convolve(shannon_energy, np.ones(mean_window_len)/mean_window_len, mode="same")
     lp_energy = scipy.ndimage.gaussian_filter1d(lp_energy, rate / 10.0)
 
-    # 6. Peak Finding via Zero Crossings of derivative
+    # 6. Peak Finding
     lp_energy_diff = np.diff(lp_energy)
     zero_crossings = (lp_energy_diff[:-1] > 0) & (lp_energy_diff[1:] < 0)
     peaks = np.flatnonzero(zero_crossings)
@@ -204,7 +212,7 @@ def segment_ecg_in_clean_dataframe(
         indexes_pairs: list of [start, end] pairs
         """
         if not indexes_pairs:
-            raise ValueError("No valid R-peaks found for this signal, cannot segment into heartbeats.")
+            return []
 
         heart_beats = []
         for start, end in indexes_pairs:

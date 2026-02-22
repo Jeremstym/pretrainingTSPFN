@@ -198,7 +198,9 @@ if __name__ == "__main__":
     # print("Heartbeats and labels extracted.")
 
     # print(f"heart_beats shape: {heart_beats.shape}, true_labels shape: {true_labels.shape}, heart_beats_indexes shape: {heart_beats_indexes.shape}")
-
+    # # Filter out rows where no heartbeats were found
+    # train = train[train['ecg_signal_heartbeat'].map(len) > 0].copy()
+    # test = test[test['ecg_signal_heartbeat'].map(len) > 0].copy()
     train_data = df_final[df_final["partition"] == "train"]
     test_data = df_final[df_final["partition"] == "test"]
     # train_data, validation_data, _, _ = train_test_split(train_data, train_data, test_size=0.2, random_state=42)
