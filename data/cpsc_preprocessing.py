@@ -127,11 +127,11 @@ if __name__ == "__main__":
     y_train = y_train["label"].values[:]
     y_test = y_test["label"].values[:]
 
-    print(f"X_test.shape: {X_test.shape}, y_test.shape: {y_test.shape}")
     X_test = X_test[:, :, CHOSEN_CHANNELS]
+    print(f"X_test.shape: {X_test.shape}, y_test.shape: {y_test.shape}")
 
-    print(f"X_train.shape: {X_train.shape}, y_train.shape: {y_train.shape}")
     X_train = X_train[:, :, CHOSEN_CHANNELS]
+    print(f"X_train.shape: {X_train.shape}, y_train.shape: {y_train.shape}")
 
     print(f"y_test.value_counts(sort=False): {y_test.value_counts(sort=False)}")
 
