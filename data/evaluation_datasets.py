@@ -722,12 +722,12 @@ class CPSCDataset(Dataset):
         self.root = root
 
         self.X = np.load(os.path.join(root, f"{split}.npy"))
-        # Subsample time series
-        indices = range(len(self.X))
-        sub_indices = np.random.choice(indices, size=int(len(self.X) * 0.3), replace=False)
-        self.X = self.X[sub_indices]
+        # # Subsample time series
+        # indices = range(len(self.X))
+        # sub_indices = np.random.choice(indices, size=int(len(self.X) * 0.3), replace=False)
+        # self.X = self.X[sub_indices]
         self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
-        self.Y = self.Y[sub_indices]
+        # self.Y = self.Y[sub_indices]
         self.X = torch.from_numpy(self.X).float()
         self.X = self.X.reshape(self.X.shape[0], 3, -1)  # Reshape to [Batch, Channels, Signal_Length]
         self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
