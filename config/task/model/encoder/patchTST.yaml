@@ -1,0 +1,7 @@
+_target_: tspfn.architecture.patchTST.PatchTST
+c_in: ${data.num_channels}
+seq_len: ${data.time_series_length}
+target_dim: ${data.num_classes}
+patch_len: 16
+stride: 8
+mean_pool: False
