@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --partition=electronic,hard
-#SBATCH --job-name=TUEV-finetuning
+#SBATCH --partition=heavy
+#SBATCH --job-name=Baselines
 #SBATCH --nodes=1
-#SBATCH --nodelist=kavinsky
+#SBATCH --nodelist=dc
 #SBATCH --gpus-per-node=1
 #SBATCH --time=1-23:00:00
 #SBATCH --output=/home/stympopper/bash/out/%x-%j.out
