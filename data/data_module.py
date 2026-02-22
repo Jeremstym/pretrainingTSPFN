@@ -856,6 +856,8 @@ class ESRFineTuneDataModule(TSPFNDataModule):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
 
     def test_dataloader(self):
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.test_dataset)
         return self._dataloader(self.test_dataset, shuffle=False, batch_size=self.test_batch_size)
 
 
