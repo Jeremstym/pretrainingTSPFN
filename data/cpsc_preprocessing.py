@@ -49,7 +49,10 @@ def load_raw_data(df, path):
             continue
         elif record[0].shape[0] > 5000:
             record[0] = record[0][:5000, :]
-        data.append(record)
+            new_record = (record[0], record[1])
+            data.append(new_record)
+        else:
+            data.append(record)
     data = np.array([signal for signal, meta in data])
     return data
 
