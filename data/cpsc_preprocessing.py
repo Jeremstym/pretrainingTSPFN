@@ -159,9 +159,6 @@ if __name__ == "__main__":
     # print("R-peaks found and added to the dataframe.")
     # df_rp.to_pickle(path + "cpsc_dataframe_rp.pkl")
     df_rp = pd.read_pickle(path + "cpsc_dataframe_rp.pkl")
-    print(f'df_rp columns: {df_rp.columns}')
-    print(f"Sample rpeaks_indexes: {df_rp.rpeaks_indexes.iloc[0]}")
-    print(f"Sample ecg_signal_raw shape: {df_rp.ecg_signal_raw.iloc[0].shape}")
 
     print("Segmenting ECG signals into heartbeats...")
     df_final = segment_ecg_in_clean_dataframe(ROOT=path, data=df_rp, size_before_index=130, size_after_index=270)
