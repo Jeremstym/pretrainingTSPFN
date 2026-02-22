@@ -605,6 +605,8 @@ class AtrialFibrillationDataset(Dataset):
         b_notch, a_notch = sgn.iirnotch(50 / (fs / 2), 30)
         x = sgn.filtfilt(b_notch, a_notch, x)
 
+        return x
+
     def __init__(self, root, split: str, support_size=None, fold=None):
         self.root = root
 
