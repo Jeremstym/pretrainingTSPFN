@@ -91,12 +91,6 @@ def extract_hb_from_dataframe(df):
     heart_beats_indexes, _ = values_from_dataframe_ny_list(df, "heartbeat_indexes", as_list=True)
     true_labels_ = df.true_label.values[:]
     true_labels = np.array([item for item, count in zip(true_labels_, len_heart_beats) for _ in range(count)])
-    for hb in heart_beats:
-        if type(hb) == list:
-            print("hb is a list, converting to numpy array.")
-            print(f"hb content: {hb}")  # Print first 5 elements to check the content
-            raise ValueError("hb is a list, expected a numpy array.")
-        print(f"hb shape: {hb.shape}")
     heart_beats = np.vstack(heart_beats)
     heart_beats_indexes = np.vstack(heart_beats_indexes)
     return heart_beats, true_labels
