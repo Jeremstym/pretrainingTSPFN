@@ -433,15 +433,24 @@ class EICUCRDDataset(Dataset):
             # rng.shuffle(self.all_patients)  # Shuffle the order of patients after subsampling
             self.all_patients = [self.all_patients[i] for i in selected_indices]
             print(f"Subsampling {len(selected_indices)} samples from {len(self.all_patients)} for training.")
-            print(f"Count labels in subsampled training set: {np.unique(self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], 'mortality_label'], return_counts=True)}")
+            print(
+                f"Count labels in subsampled training set: {np.unique(self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], 'mortality_label'], return_counts=True)}"
+            )
 
         # self.X = self.data[:, :-1]
         # self.Y = self.data[:, -1].astype(int) - 1
 
         if fold is not None and split == "train":
             skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-            list_of_split = list(skf.split(self.all_patients, self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], "mortality_label"]))
-            self.all_patients = [self.all_patients[i] for i in list_of_split[fold][1]]  # Use the specified fold's test indices for validation
+            list_of_split = list(
+                skf.split(
+                    self.all_patients,
+                    self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients], "mortality_label"],
+                )
+            )
+            self.all_patients = [
+                self.all_patients[i] for i in list_of_split[fold][1]
+            ]  # Use the specified fold's test indices for validation
             self.patient_dict = {Path(p).stem: self.patient_dict[Path(p).stem] for p in self.all_patients}
             self.df_labels = self.df_labels.loc[[int(Path(p).stem) for p in self.all_patients]]
 
@@ -494,7 +503,7 @@ class EOSDataset(Dataset):
             Y_test = np.load(os.path.join(self.root, f"test_labels.npy")).astype(int)
             X_full = np.concatenate([X_train, X_test], axis=0)
             Y_full = np.concatenate([Y_train, Y_test], axis=0)
-            
+
             # self.data = np.column_stack([X_full, Y_full])
             unique_labels = np.unique(Y_full)
             n_folds = 5
@@ -544,7 +553,7 @@ class EOSDataset(Dataset):
 
             # print(f"Subsampling {len(sub_indices)} samples from {len(self.data)} for training.")
             # self.data = self.data[sub_indices]
-        
+
         if fold is not None and split == "train":
             assert support_size is not None
             skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
@@ -552,6 +561,111 @@ class EOSDataset(Dataset):
             self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
             self.Y = self.Y[list_of_split[fold][1]]
             print(f"Count labels in {split} split after fold selection: {np.unique(self.Y, return_counts=True)}")
+
+        if self.X.shape[1] > 5:
+            # Use the first 5 channels if there are more than 5
+            all_channels = list(range(self.X.shape[1]))
+            # keep_channels = [0, 10, 11, 12, 13]
+            # keep_channels = [0, 10, 11, 12]
+            # keep_channels = [10, 11, 12]
+            # keep_channels = [7, 4, 1]
+            # Good below
+            # keep_channels = [0, 10, 11]
+            # keep_channels = [4, 6, 8]
+            # keep_chahnels = [3, 6, 7]
+            # VERY GOOD BELOW
+            # keep_channels = [11, 4, 5]
+            # np.random.seed(11)  # Set seed for reproducibility
+            # keep_channels = np.random.choice(all_channels, size=3, replace=False)
+            keep_channels = [4, 5, 11]
+            print(f"-----KEEP CHANNELS: {keep_channels}")
+            self.X = self.X[:, keep_channels, :]
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        x_sample = self.X[index]
+        y_sample = self.Y[index]
+
+        x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
+        y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+
+        return x_tensor, y_tensor
+
+
+class AtrialFibrillationDataset(Dataset):
+    def __init__(self, root, split: str, support_size=None, fold=None):
+        self.root = root
+
+        self.X = np.load(os.path.join(self.root, f"{split}_features.npy"))
+        self.Y = np.load(os.path.join(self.root, f"{split}_labels.npy")).astype(int)
+
+        if support_size is not None and split == "train":
+            X_train = np.load(os.path.join(self.root, f"train_features.npy"))
+            Y_train = np.load(os.path.join(self.root, f"train_labels.npy")).astype(int)
+            X_test = np.load(os.path.join(self.root, f"test_features.npy"))
+            Y_test = np.load(os.path.join(self.root, f"test_labels.npy")).astype(int)
+            X_full = np.concatenate([X_train, X_test], axis=0)
+            Y_full = np.concatenate([Y_train, Y_test], axis=0)
+
+            # self.data = np.column_stack([X_full, Y_full])
+            unique_labels = np.unique(Y_full)
+            n_folds = 5
+            min_per_class = 2  # Ensuring fold safety
+
+            # 1. Create a deterministic shuffled order for every class
+            # We use a fixed seed so the "order" is the same every time you run this
+            rng = np.random.default_rng(42)
+
+            # This dictionary will store the indices for each class, pre-shuffled
+            class_indices = {}
+            for label in unique_labels:
+                idx = np.where(Y_full == label)[0]
+                rng.shuffle(idx)
+                class_indices[label] = idx
+
+            selected_indices = []
+
+            # 2. Mandatory "Safety" Pick (Small classes first)
+            # This ensures Class 5 always gets its 10-19 samples regardless of total size
+            for label in unique_labels:
+                n_to_take = min(len(class_indices[label]), min_per_class)
+                selected_indices.extend(class_indices[label][:n_to_take])
+                # Remove these from the available pool
+                class_indices[label] = class_indices[label][n_to_take:]
+
+            # 3. Global "Greedy" Fill
+            # Combine everything else left into one big pool and shuffle it once
+            remaining_pool = np.concatenate(list(class_indices.values()))
+            rng.shuffle(remaining_pool)
+
+            # Calculate how many more we need to hit the target support_size
+            needed = support_size - len(selected_indices)
+
+            if needed > 0:
+                # Take the top 'N' from the remaining pool
+                selected_indices.extend(remaining_pool[:needed])
+
+            # 4. Apply
+            self.X = X_full[selected_indices]
+            self.Y = Y_full[selected_indices]
+            # Optional: shuffle the final data so the model doesn't see classes in order
+            indices = np.arange(len(self.X))
+            rng.shuffle(indices)
+            self.X = self.X[indices]
+            self.Y = self.Y[indices]
+
+            # print(f"Subsampling {len(sub_indices)} samples from {len(self.data)} for training.")
+            # self.data = self.data[sub_indices]
+
+        if fold is not None and split == "train":
+            assert support_size is not None
+            skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+            list_of_split = list(skf.split(self.X, self.Y))
+            self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
+            self.Y = self.Y[list_of_split[fold][1]]
+            print(f"Count labels in {self.split} split after fold selection: {np.unique(self.Y, return_counts=True)}")
 
         if self.X.shape[1] > 5:
             # Use the first 5 channels if there are more than 5
