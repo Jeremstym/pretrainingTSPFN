@@ -25,6 +25,53 @@ CHOSEN_CHANNELS = [0, 1, 2, 3]  # Fix channel
 # CHOSEN_CHANNELS = [0, 1, 2]  # Fix channel
 
 
+def group_cpsc_labels(labels, mode="5_cat"):
+    """
+    Original Mapping (assuming standard order):
+    0: 164884008 (STD)
+    1: 164889003 (AFib)
+    2: 164909002 (LBBB)
+    3: 164931005 (STE)
+    4: 270492004 (IAVB)
+    5: 284470004 (PAC)
+    6: 426783006 (Normal)
+    7: 429622005 (PVC)
+    8: 59118001  (RBBB)
+    """
+
+    # 0: Normal, 1: AFib, 2: Other Arrhythmia, 3: Conduction Block, 4: ST-Change
+    map_5 = {
+        6: 0,  # Normal
+        1: 1,  # AFib
+        5: 2,
+        7: 2,  # PAC, PVC -> Other Arrhythmia
+        2: 3,
+        4: 3,
+        8: 3,  # LBBB, IAVB, RBBB -> Blocks
+        0: 4,
+        3: 4,  # STD, STE -> ST-Changes
+    }
+
+    # 0: Normal, 1: Arrhythmias (inc. AFib), 2: Blocks, 3: ST-Change
+    map_4 = {
+        6: 0,  # Normal
+        1: 1,
+        5: 1,
+        7: 1,  # AFib, PAC, PVC -> Arrhythmias
+        2: 2,
+        4: 2,
+        8: 2,  # LBBB, IAVB, RBBB -> Blocks
+        0: 3,
+        3: 3,  # STD, STE -> ST-Changes
+    }
+
+    mapping = map_5 if mode == "5_cat" else map_4
+
+    # Vectorized mapping
+    new_labels = np.array([mapping[label] for label in labels])
+    return new_labels
+
+
 def resample_hb_batch(data, fs_in, fs_out):
     """
     data shape: (N, 400, 2) -> (N, Time, Channels)
@@ -111,6 +158,7 @@ if __name__ == "__main__":
 
     # load and convert annotation data
     Y = pd.read_csv(path + "cpsc_2018_labels.csv")
+    Y["label"] = group_cpsc_labels(Y["label"], mode="4_cat")  # Map to 4 categories (Normal, Arrhythmia, Block, ST-Change)
     # Load raw signal data
     X, Y = load_raw_data(Y, path_data)
     X = resample_hb_batch(X, fs_in=500, fs_out=resampled_rate)
@@ -118,7 +166,9 @@ if __name__ == "__main__":
     # Split data into train and test
     indices = np.arange(len(Y))
     _, subsample_indices = train_test_split(indices, test_size=1000, random_state=42, stratify=Y["label"])
-    train_indices, test_indices = train_test_split(subsample_indices, test_size=0.2, random_state=42, stratify=Y.iloc[subsample_indices]["label"])
+    train_indices, test_indices = train_test_split(
+        subsample_indices, test_size=0.2, random_state=42, stratify=Y.iloc[subsample_indices]["label"]
+    )
     # Train
     X_train = X[train_indices]
     y_train = Y.iloc[train_indices]
@@ -172,12 +222,11 @@ if __name__ == "__main__":
     df_final = pd.read_pickle(path + "cpsc_dataframe_final.pkl")
     print(f"dataset shape after segmenting into heartbeats: {df_final.shape}")
 
-
     train_data = df_final[df_final["partition"] == "train"]
     test_data = df_final[df_final["partition"] == "test"]
     # Filter out rows where no heartbeats were found
-    train = train_data[train_data['ecg_signal_heartbeat'].map(len) > 0].copy()
-    test = test_data[test_data['ecg_signal_heartbeat'].map(len) > 0].copy()
+    train = train_data[train_data["ecg_signal_heartbeat"].map(len) > 0].copy()
+    test = test_data[test_data["ecg_signal_heartbeat"].map(len) > 0].copy()
 
     print("Extracting heartbeats and labels for train and test sets...")
     X_train, y_train = extract_hb_from_dataframe(train)
