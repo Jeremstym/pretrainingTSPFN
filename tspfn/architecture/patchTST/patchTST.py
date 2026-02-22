@@ -21,7 +21,7 @@ class PatchTST(nn.Module):
          [bs x target_dim x nvars] for prediction
          [bs x target_dim] for regression
          [bs x target_dim] for classification
-         [bs x num_patch x n_vars x patch_len] for pretrain
+         [bs x num_patch x num_chans x patch_len] for pretrain
     """
 
     def __init__(
@@ -66,6 +66,9 @@ class PatchTST(nn.Module):
         # Backbone
 
         num_patch = (seq_len - patch_len) // stride + 1
+        self.num_patch = num_patch
+        self.patch_len = patch_len
+        self.stride = stride
         self.backbone = PatchTSTEncoder(
             c_in,
             num_patch=num_patch,
@@ -88,7 +91,7 @@ class PatchTST(nn.Module):
         )
 
         # Head
-        self.n_vars = c_in
+        self.num_chans = c_in
         self.head_type = head_type
 
         if head_type == "pretrain":
@@ -96,40 +99,44 @@ class PatchTST(nn.Module):
                 d_model, patch_len, head_dropout
             )  # custom head passed as a partial func with all its kwargs
         elif head_type == "prediction":
-            self.head = PredictionHead(individual, self.n_vars, d_model, num_patch, target_dim, head_dropout)
+            self.head = PredictionHead(individual, self.num_chans, d_model, num_patch, target_dim, head_dropout)
         elif head_type == "regression":
-            self.head = RegressionHead(self.n_vars, d_model, target_dim, head_dropout, y_range)
+            self.head = RegressionHead(self.num_chans, d_model, target_dim, head_dropout, y_range)
         elif head_type == "classification":
-            self.head = ClassificationHead(self.n_vars, d_model, target_dim, head_dropout, mean_pool)
+            self.head = ClassificationHead(self.num_chans, d_model, target_dim, head_dropout, mean_pool)
 
     def forward(self, z):
         """
-        z: tensor [bs x num_patch x n_vars x patch_len]
+        z: tensor [bs  x num_chans x seq_len]
         """
-        z = self.backbone(z)  # z: [bs x nvars x d_model x num_patch]
+        # Patch model
+        z = z.unfold(dimension=-1, size=self.patch_len, step=self.stride)  # z: [bs x num_chans x num_patch x patch_len]
+        z = z.permute(0, 2, 1, 3)  # z: [bs x num_patch x num_chans x patch_len]
+        print(f"num patches: {z.shape[1]}, patch_len: {z.shape[-1]}")
+        z = self.backbone(z)  # z: [bs x num_chans x d_model x num_patch]
         z = self.head(z)
-        # z: [bs x target_dim x nvars] for prediction
+        # z: [bs x target_dim x num_chans] for prediction
         #    [bs x target_dim] for regression
         #    [bs x target_dim] for classification
-        #    [bs x num_patch x n_vars x patch_len] for pretrain
+        #    [bs x num_patch x num_chans x patch_len] for pretrain
         return z
 
 
 class RegressionHead(nn.Module):
-    def __init__(self, n_vars, d_model, output_dim, head_dropout, y_range=None):
+    def __init__(self, num_chans, d_model, output_dim, head_dropout, y_range=None):
         super().__init__()
         self.y_range = y_range
         self.flatten = nn.Flatten(start_dim=1)
         self.dropout = nn.Dropout(head_dropout)
-        self.linear = nn.Linear(n_vars * d_model, output_dim)
+        self.linear = nn.Linear(num_chans * d_model, output_dim)
 
     def forward(self, x):
         """
-        x: [bs x nvars x d_model x num_patch]
+        x: [bs x num_chans x d_model x num_patch]
         output: [bs x output_dim]
         """
-        x = x[:, :, :, -1]  # only consider the last item in the sequence, x: bs x nvars x d_model
-        x = self.flatten(x)  # x: bs x nvars * d_model
+        x = x[:, :, :, -1]  # only consider the last item in the sequence, x: bs x num_chans x d_model
+        x = self.flatten(x)  # x: bs x num_chans * d_model
         x = self.dropout(x)
         y = self.linear(x)  # y: bs x output_dim
         if self.y_range:
@@ -138,34 +145,34 @@ class RegressionHead(nn.Module):
 
 
 class ClassificationHead(nn.Module):
-    def __init__(self, n_vars, d_model, n_classes, head_dropout, mean_pool=False):
+    def __init__(self, num_chans, d_model, n_classes, head_dropout, mean_pool=False):
         super().__init__()
         self.flatten = nn.Flatten(start_dim=1)
         self.dropout = nn.Dropout(head_dropout)
-        self.linear = nn.Linear(n_vars * d_model, n_classes)
+        self.linear = nn.Linear(num_chans * d_model, n_classes)
         self.mean_pool = mean_pool
 
     def forward(self, x):
         """
-        x: [bs x nvars x d_model x num_patch]
+        x: [bs x num_chans x d_model x num_patch]
         output: [bs x n_classes]
         """
         if self.mean_pool:
-            x = x.mean(dim=-1)  # x: bs x nvars x d_model
+            x = x.mean(dim=-1)  # x: bs x num_chans x d_model
         else:
-            x = x[:, :, :, -1]  # only consider the last item in the sequence, x: bs x nvars x d_model
-        x = self.flatten(x)  # x: bs x nvars * d_model
+            x = x[:, :, :, -1]  # only consider the last item in the sequence, x: bs x num_chans x d_model
+        x = self.flatten(x)  # x: bs x num_chans * d_model
         x = self.dropout(x)
         y = self.linear(x)  # y: bs x n_classes
         return y
 
 
 class PredictionHead(nn.Module):
-    def __init__(self, individual, n_vars, d_model, num_patch, forecast_len, head_dropout=0, flatten=False):
+    def __init__(self, individual, num_chans, d_model, num_patch, forecast_len, head_dropout=0, flatten=False):
         super().__init__()
 
         self.individual = individual
-        self.n_vars = n_vars
+        self.num_chans = num_chans
         self.flatten = flatten
         head_dim = d_model * num_patch
 
@@ -173,7 +180,7 @@ class PredictionHead(nn.Module):
             self.linears = nn.ModuleList()
             self.dropouts = nn.ModuleList()
             self.flattens = nn.ModuleList()
-            for i in range(self.n_vars):
+            for i in range(self.num_chans):
                 self.flattens.append(nn.Flatten(start_dim=-2))
                 self.linears.append(nn.Linear(head_dim, forecast_len))
                 self.dropouts.append(nn.Dropout(head_dropout))
@@ -189,17 +196,17 @@ class PredictionHead(nn.Module):
         """
         if self.individual:
             x_out = []
-            for i in range(self.n_vars):
+            for i in range(self.num_chans):
                 z = self.flattens[i](x[:, i, :, :])  # z: [bs x d_model * num_patch]
                 z = self.linears[i](z)  # z: [bs x forecast_len]
                 z = self.dropouts[i](z)
                 x_out.append(z)
-            x = torch.stack(x_out, dim=1)  # x: [bs x nvars x forecast_len]
+            x = torch.stack(x_out, dim=1)  # x: [bs x num_chans x forecast_len]
         else:
-            x = self.flatten(x)  # x: [bs x nvars x (d_model * num_patch)]
+            x = self.flatten(x)  # x: [bs x num_chans x (d_model * num_patch)]
             x = self.dropout(x)
-            x = self.linear(x)  # x: [bs x nvars x forecast_len]
-        return x.transpose(2, 1)  # [bs x forecast_len x nvars]
+            x = self.linear(x)  # x: [bs x num_chans x forecast_len]
+        return x.transpose(2, 1)  # [bs x forecast_len x num_chans]
 
 
 class PretrainHead(nn.Module):
@@ -210,13 +217,13 @@ class PretrainHead(nn.Module):
 
     def forward(self, x):
         """
-        x: tensor [bs x nvars x d_model x num_patch]
-        output: tensor [bs x nvars x num_patch x patch_len]
+        x: tensor [bs x num_chans x d_model x num_patch]
+        output: tensor [bs x num_chans x num_patch x patch_len]
         """
 
-        x = x.transpose(2, 3)  # [bs x nvars x num_patch x d_model]
-        x = self.linear(self.dropout(x))  # [bs x nvars x num_patch x patch_len]
-        x = x.permute(0, 2, 1, 3)  # [bs x num_patch x nvars x patch_len]
+        x = x.transpose(2, 3)  # [bs x num_chans x num_patch x d_model]
+        x = self.linear(self.dropout(x))  # [bs x num_chans x num_patch x patch_len]
+        x = x.permute(0, 2, 1, 3)  # [bs x num_patch x num_chans x patch_len]
         return x
 
 
@@ -245,7 +252,7 @@ class PatchTSTEncoder(nn.Module):
     ):
 
         super().__init__()
-        self.n_vars = c_in
+        self.num_chans = c_in
         self.num_patch = num_patch
         self.patch_len = patch_len
         self.d_model = d_model
@@ -254,7 +261,7 @@ class PatchTSTEncoder(nn.Module):
         # Input encoding: projection of feature vectors onto a d-dim vector space
         if not shared_embedding:
             self.W_P = nn.ModuleList()
-            for _ in range(self.n_vars):
+            for _ in range(self.num_chans):
                 self.W_P.append(nn.Linear(patch_len, d_model))
         else:
             self.W_P = nn.Linear(patch_len, d_model)
@@ -284,11 +291,11 @@ class PatchTSTEncoder(nn.Module):
         """
         x: tensor [bs x num_patch x nvars x patch_len]
         """
-        bs, num_patch, n_vars, patch_len = x.shape
+        bs, num_patch, num_chans, patch_len = x.shape
         # Input encoding
         if not self.shared_embedding:
             x_out = []
-            for i in range(n_vars):
+            for i in range(num_chans):
                 z = self.W_P[i](x[:, :, i, :])
                 x_out.append(z)
             x = torch.stack(x_out, dim=2)
@@ -296,12 +303,12 @@ class PatchTSTEncoder(nn.Module):
             x = self.W_P(x)  # x: [bs x num_patch x nvars x d_model]
         x = x.transpose(1, 2)  # x: [bs x nvars x num_patch x d_model]
 
-        u = torch.reshape(x, (bs * n_vars, num_patch, self.d_model))  # u: [bs * nvars x num_patch x d_model]
+        u = torch.reshape(x, (bs * num_chans, num_patch, self.d_model))  # u: [bs * nvars x num_patch x d_model]
         u = self.dropout(u + self.W_pos)  # u: [bs * nvars x num_patch x d_model]
 
         # Encoder
         z = self.encoder(u)  # z: [bs * nvars x num_patch x d_model]
-        z = torch.reshape(z, (-1, n_vars, num_patch, self.d_model))  # z: [bs x nvars x num_patch x d_model]
+        z = torch.reshape(z, (-1, num_chans, num_patch, self.d_model))  # z: [bs x nvars x num_patch x d_model]
         z = z.permute(0, 1, 3, 2)  # z: [bs x nvars x d_model x num_patch]
 
         return z
