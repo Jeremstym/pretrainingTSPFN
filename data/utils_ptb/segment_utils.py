@@ -274,6 +274,8 @@ def values_from_dataframe_ny_list(df: pd.DataFrame, key: str, as_list=False):
         if not as_list:
             values_arr[i, :] = val[i]
         else:
+            if val[i].ndim < 3:
+                raise ValueError(f"Expected 3D array for heartbeat segments, got {val[i].ndim}D array for index {i}.")
             len_arr.append(len(val[i]))
             values_arr.append(val[i])
     return values_arr, len_arr
