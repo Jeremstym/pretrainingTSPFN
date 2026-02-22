@@ -185,8 +185,8 @@ if __name__ == "__main__":
     print("Heartbeats and labels extracted for train and test sets.")
 
     print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
-    X_train = resample_hb_batch(X_train, fs_in=400, fs_out=125)
-    X_test = resample_hb_batch(X_test, fs_in=400, fs_out=125)
+    X_train = resample_hb_batch(X_train, fs_in=400, fs_out=166)
+    X_test = resample_hb_batch(X_test, fs_in=400, fs_out=166)
     print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
 
     print(f"Flatten on channel dimension - Train: {X_train.shape}, Test: {X_test.shape}")

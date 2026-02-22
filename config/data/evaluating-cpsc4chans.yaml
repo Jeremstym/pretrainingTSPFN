@@ -1,8 +1,8 @@
 defaults:
   - default
 
-_target_: data.data_module.CPSC4ChannelDataModule
-data_roots: ${oc.env:FOURCHANS_CPSC_DATA_PATH}
+_target_: data.data_module.CPSCDataModule
+data_roots: ${oc.env:CPSC_DATA_PATH}
 time_series_length: 125
 time_points: null
 num_channels: null
