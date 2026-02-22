@@ -4,12 +4,12 @@ import torch.nn.functional as F
 import nemo
 
 class Small_TCN(nn.Module):
-    def __init__(self, num_channels=1, num_classes=5, seq_length=178):
+    def __init__(self, num_channels=1, num_classes=5, seq_length=178, ft=11, kt=11, pt=0.3):
         super(Small_TCN, self).__init__()
         n_inputs = num_channels
-        Kt = 11
-        pt = 0.3
-        Ft = 11
+        Kt = kt
+        pt = pt
+        Ft = ft
         classes = num_classes
         seq_length = seq_length  # Updated sequence length
 
@@ -144,13 +144,13 @@ class Small_TCN(nn.Module):
 
 
 class SOTA_TCN_Baseline(nn.Module):
-    def __init__(self, num_channels=1, num_classes=5, Ft=64, Kt=11):
+    def __init__(self, num_channels=1, num_classes=5, Ft=64, Kt=11, Pt=0.2):
         super(SOTA_TCN_Baseline, self).__init__()
         
         # SOTA models typically use 32, 64, or 128 filters
         self.Ft = Ft 
         self.Kt = Kt
-        pt = 0.2 # Standard dropout for TCNs
+        pt = Pt # Standard dropout for TCNs
         
         # Initial Layer
         self.pad0 = nn.ConstantPad1d(padding=(Kt-1, 0), value=0)
