@@ -30,6 +30,7 @@ import torch.distributed as dist
 from torch import inf
 
 import pickle
+import scipy.signal as sgn
 from scipy.signal import resample
 from torch.utils.data import Dataset
 
@@ -595,6 +596,15 @@ class EOSDataset(Dataset):
 
 
 class AtrialFibrillationDataset(Dataset):
+    def _preprocess_ecg(self, x, fs=128):  # fs = sampling frequency
+        # 1. High-pass filter (0.5 Hz)
+        b, a = sgn.butter(3, 0.5 / (fs / 2), "high")
+        x = sgn.filtfilt(b, a, x)
+
+        # 2. Notch filter (50Hz or 60Hz)
+        b_notch, a_notch = sgn.iirnotch(50 / (fs / 2), 30)
+        x = sgn.filtfilt(b_notch, a_notch, x)
+
     def __init__(self, root, split: str, support_size=None, fold=None):
         self.root = root
 
@@ -667,25 +677,8 @@ class AtrialFibrillationDataset(Dataset):
             self.Y = self.Y[list_of_split[fold][1]]
             print(f"Count labels in {self.split} split after fold selection: {np.unique(self.Y, return_counts=True)}")
 
-        if self.X.shape[1] > 5:
-            # Use the first 5 channels if there are more than 5
-            all_channels = list(range(self.X.shape[1]))
-            # keep_channels = [0, 10, 11, 12, 13]
-            # keep_channels = [0, 10, 11, 12]
-            # keep_channels = [10, 11, 12]
-            # keep_channels = [7, 4, 1]
-            # Good below
-            # keep_channels = [0, 10, 11]
-            # keep_channels = [4, 6, 8]
-            # keep_chahnels = [3, 6, 7]
-            # VERY GOOD BELOW
-            # keep_channels = [11, 4, 5]
-            # np.random.seed(11)  # Set seed for reproducibility
-            # keep_channels = np.random.choice(all_channels, size=3, replace=False)
-            keep_channels = [4, 5, 11]
-            print(f"-----KEEP CHANNELS: {keep_channels}")
-            self.X = self.X[:, keep_channels, :]
-
+        self.X = np.array([self._preprocess_ecg(x) for x in self.X])
+    
     def __len__(self):
         return len(self.X)
 
