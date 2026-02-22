@@ -59,13 +59,15 @@ import pandas as pd
 
 #     return zero_crossings
 
+
 def detect_rpeaks(ecg, rate=200, ransac_window_size=5.0, lowfreq=5.0, highfreq=15.0):
     import warnings
+
     warnings.filterwarnings("ignore")
-    
+
     # 1. Improved Bandpass Filter (5-15 Hz is the QRS sweet spot)
     nyq = rate / 2.0
-    b, a = scipy.signal.butter(2, [lowfreq / nyq, highfreq / nyq], btype='band')
+    b, a = scipy.signal.butter(2, [lowfreq / nyq, highfreq / nyq], btype="band")
     ecg_band = scipy.signal.filtfilt(b, a, ecg)
 
     # 2. Derivative + Squaring (Highlight the steep slopes of the R-wave)
@@ -79,18 +81,18 @@ def detect_rpeaks(ecg, rate=200, ransac_window_size=5.0, lowfreq=5.0, highfreq=1
         d = decg_power[i * ransac_samples : (i + 1) * ransac_samples]
         if len(d) > 0:
             thresholds.append(0.5 * np.std(d))
-    
+
     threshold = np.median(thresholds) if thresholds else 0
     decg_power[decg_power < threshold] = 0
 
     # 4. Shannon Energy (Enveloping)
     decg_power = decg_power / (np.max(decg_power) + 1e-10)
-    shannon_energy = - (decg_power**2) * np.log(decg_power**2 + 1e-10)
-    
+    shannon_energy = -(decg_power**2) * np.log(decg_power**2 + 1e-10)
+
     # 5. Integration (Smoothing)
     # 0.125s window is standard for heartbeat integration
     mean_window_len = int(rate * 0.125 + 1)
-    lp_energy = np.convolve(shannon_energy, np.ones(mean_window_len)/mean_window_len, mode="same")
+    lp_energy = np.convolve(shannon_energy, np.ones(mean_window_len) / mean_window_len, mode="same")
     lp_energy = scipy.ndimage.gaussian_filter1d(lp_energy, rate / 10.0)
 
     # 6. Peak Finding via Zero Crossings of derivative
@@ -99,6 +101,7 @@ def detect_rpeaks(ecg, rate=200, ransac_window_size=5.0, lowfreq=5.0, highfreq=1
     peaks = np.flatnonzero(zero_crossings)
 
     return peaks
+
 
 # def find_rpeaks_clean_ecgs_in_dataframe(filename: str=None, data: pd.DataFrame=None, save: bool=False) -> pd.DataFrame:
 
@@ -178,11 +181,15 @@ def find_rpeaks_clean_ecgs_in_dataframe(data: pd.DataFrame, ref_channel_idx: int
 
 
 def segment_ecg_in_clean_dataframe(
-    ROOT: str = ".", data: pd.DataFrame = None, size_before_index: int = 200, size_after_index: int = 300
+    ROOT: str = ".",
+    data: pd.DataFrame = None,
+    size_before_index: int = 200,
+    size_after_index: int = 300,
+    signal_length: int = 5000,
 ) -> pd.DataFrame:
 
     def get_heartbeats_indexes(
-        indexes, size_before_index=size_before_index, size_after_index=size_after_index, signal_length=5000
+        indexes, size_before_index=size_before_index, size_after_index=size_after_index, signal_length=signal_length
     ):
         if len(indexes) == 0:
             return []
