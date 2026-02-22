@@ -596,18 +596,37 @@ class EOSDataset(Dataset):
 
 
 class AtrialFibrillationDataset(Dataset):
-    def _preprocess_ecg(self, x, fs=128):  # fs = sampling frequency
-        # 1. High-pass filter (0.5 Hz)
+    # def _preprocess_ecg(self, x, fs=128):  # fs = sampling frequency
+    #     # 1. High-pass filter (0.5 Hz)
+    #     b, a = sgn.butter(3, 0.5 / (fs / 2), "high")
+    #     x = sgn.filtfilt(b, a, x)
+
+    #     # 2. Notch filter (50Hz or 60Hz)
+    #     b_notch, a_notch = sgn.iirnotch(50 / (fs / 2), 30)
+    #     x = sgn.filtfilt(b_notch, a_notch, x)
+    #     # x = sgn.decimate(x, q=2, axis=-1)
+    #     x = resample(x, num=250, axis=-1)  # Resample to 250 time points
+
+    #     return x
+    def _preprocess_ecg(self, x, fs=128):
+        # 1. High-pass (0.5 Hz) -> Remove breathing drift
         b, a = sgn.butter(3, 0.5 / (fs / 2), "high")
         x = sgn.filtfilt(b, a, x)
 
-        # 2. Notch filter (50Hz or 60Hz)
-        b_notch, a_notch = sgn.iirnotch(50 / (fs / 2), 30)
-        x = sgn.filtfilt(b_notch, a_notch, x)
-        # x = sgn.decimate(x, q=2, axis=-1)
-        x = resample(x, num=250, axis=-1)  # Resample to 250 time points
+        # 2. Low-pass (40 Hz) -> CRITICAL: Remove muscle noise/EMG
+        # AFib signals are very noisy; this cleans the "fuzz"
+        b_lp, a_lp = sgn.butter(3, 40.0 / (fs / 2), "low")
+        x = sgn.filtfilt(b_lp, a_lp, x)
 
-        return x
+        # 3. Notch filter (50Hz) -> Remove power line hum
+        b_n, a_n = sgn.iirnotch(50 / (fs / 2), 30)
+        x = sgn.filtfilt(b_n, a_n, x)
+
+        # 4. Polyphase Resampling (Cleaner than FFT resample)
+        # Target 250, Current 640 -> Ratio is 25/64
+        x = sgn.resample_poly(x, 25, 64, axis=-1) 
+
+    return x
 
     def __init__(self, root, split: str, support_size=None, fold=None):
         self.root = root
