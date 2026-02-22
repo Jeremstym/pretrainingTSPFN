@@ -42,6 +42,7 @@ def load_raw_data(df, path):
     
     # data = [wfdb.rdsamp(path+f) for f in df.filename_hr]
     data = []
+    file_name_kept = []
     for f in tqdm(df.file_name, total=len(df)):
         record = wfdb.rdsamp(path + f)
         if record[0].shape[0] <= 5000:
@@ -51,10 +52,13 @@ def load_raw_data(df, path):
             new_signal = record[0][:5000, :]
             new_record = (new_signal, record[1])
             data.append(new_record)
+            file_name_kept.append(f)
         else:
             data.append(record)
+            file_name_kept.append(f)
     data = np.array([signal for signal, meta in data])
-    return data
+    df = df[df.file_name.isin(file_name_kept)].reset_index(drop=True)
+    return data, df
 
 
 def standardize(row):
@@ -107,8 +111,8 @@ if __name__ == "__main__":
     # load and convert annotation data
     Y = pd.read_csv(path + "cpsc_2018_labels.csv")
     # Load raw signal data
-    X = load_raw_data(Y, path_data)
-    X = resample(X, num=resampled_rate, axis=1)
+    X, Y = load_raw_data(Y, path_data)
+    X = resample_hb_batch(X, fs_in=500, fs_out=resampled_rate)
 
     # Split data into train and test
     indices = np.arange(len(Y))
