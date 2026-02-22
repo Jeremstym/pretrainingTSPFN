@@ -12,18 +12,19 @@ def detect_rpeaks(ecg, rate, ransac_window_size=5.0, lowfreq=35.0, highfreq=43.0
     cutoff threshold).
     """
     import warnings
-    warnings.filterwarnings('ignore')
+
+    warnings.filterwarnings("ignore")
     ransac_window_size = int(ransac_window_size * rate)
 
-    lowpass = scipy.signal.butter(1, highfreq / (rate / 2.0), 'low')
-    highpass = scipy.signal.butter(1, lowfreq / (rate / 2.0), 'high')
+    lowpass = scipy.signal.butter(1, highfreq / (rate / 2.0), "low")
+    highpass = scipy.signal.butter(1, lowfreq / (rate / 2.0), "high")
     # TODO: Could use an actual bandpass filter
     ecg_low = scipy.signal.filtfilt(*lowpass, x=ecg)
     ecg_band = scipy.signal.filtfilt(*highpass, x=ecg_low)
 
     # Square (=signal power) of the first difference of the signal
     decg = np.diff(ecg_band)
-    decg_power = decg ** 2
+    decg_power = decg**2
 
     # Robust threshold and normalizator estimation
     thresholds = []
@@ -40,13 +41,13 @@ def detect_rpeaks(ecg, rate, ransac_window_size=5.0, lowfreq=35.0, highfreq=43.0
 
     decg_power /= max_power
     decg_power[decg_power > 1.0] = 1.0
-    square_decg_power = decg_power ** 2
+    square_decg_power = decg_power**2
 
     shannon_energy = -square_decg_power * np.log(square_decg_power)
     shannon_energy[~np.isfinite(shannon_energy)] = 0.0
 
     mean_window_len = int(rate * 0.125 + 1)
-    lp_energy = np.convolve(shannon_energy, [1.0 / mean_window_len] * mean_window_len, mode='same')
+    lp_energy = np.convolve(shannon_energy, [1.0 / mean_window_len] * mean_window_len, mode="same")
     # lp_energy = scipy.signal.filtfilt(*lowpass2, x=shannon_energy)
 
     lp_energy = scipy.ndimage.gaussian_filter1d(lp_energy, rate / 8.0)
@@ -57,6 +58,7 @@ def detect_rpeaks(ecg, rate, ransac_window_size=5.0, lowfreq=35.0, highfreq=43.0
     zero_crossings -= 1
 
     return zero_crossings
+
 
 # def find_rpeaks_clean_ecgs_in_dataframe(filename: str=None, data: pd.DataFrame=None, save: bool=False) -> pd.DataFrame:
 
@@ -74,8 +76,9 @@ def detect_rpeaks(ecg, rate, ransac_window_size=5.0, lowfreq=35.0, highfreq=43.0
 #     if save: df_clean.to_pickle(filename + '_clean_with_rpeaks_indexes.pkl')
 #     return df_clean
 
+
 def find_rpeaks_clean_ecgs_in_dataframe(data: pd.DataFrame, ref_channel_idx: int = 1) -> pd.DataFrame:
-    
+
     def find_rpeaks_multi(signal_2d):
         # signal_2d shape: (5000, 12) or (5000, num_chosen)
         # We detect peaks based ONLY on the reference channel
@@ -84,10 +87,10 @@ def find_rpeaks_clean_ecgs_in_dataframe(data: pd.DataFrame, ref_channel_idx: int
 
     df_clean = data.copy()
     # Apply detection to the multi-channel signal
-    df_clean['rpeaks_indexes'] = df_clean['ecg_signal_raw'].apply(find_rpeaks_multi)
-    
+    df_clean["rpeaks_indexes"] = df_clean["ecg_signal_raw"].apply(find_rpeaks_multi)
+
     # FILTER: Retrieve only patients who have at least one peak
-    df_clean = df_clean[df_clean['rpeaks_indexes'].apply(len) >= 1]
+    df_clean = df_clean[df_clean["rpeaks_indexes"].apply(len) >= 1]
     # if save: df_clean.to_pickle(filename + '_clean_with_rpeaks_indexes.pkl')
     return df_clean
 
@@ -133,9 +136,14 @@ def find_rpeaks_clean_ecgs_in_dataframe(data: pd.DataFrame, ref_channel_idx: int
 #     print(df['ecg_signal_heartbeat'])
 #     return df
 
-def segment_ecg_in_clean_dataframe(ROOT: str='.', data: pd.DataFrame=None) -> pd.DataFrame:
 
-    def get_heartbeats_indexes(indexes, size_before_index=200, size_after_index=300, signal_length=5000):
+def segment_ecg_in_clean_dataframe(
+    ROOT: str = ".", data: pd.DataFrame = None, size_before_index: int = 200, size_after_index: int = 300
+) -> pd.DataFrame:
+
+    def get_heartbeats_indexes(
+        indexes, size_before_index=size_before_index, size_after_index=size_after_index, signal_length=5000
+    ):
         if len(indexes) == 0:
             return []
         # Filter peaks that are too close to the start or end to extract a full window
@@ -150,32 +158,30 @@ def segment_ecg_in_clean_dataframe(ROOT: str='.', data: pd.DataFrame=None) -> pd
         """
         if not indexes_pairs:
             return []
-        
+
         heart_beats = []
         for start, end in indexes_pairs:
             # Slicing a 2D array [start:end, :] keeps all channels for that window
-            segment = ecg[start:end,:] # or try ecg[start:end] if ecg is already in shape (5000, num_channels)
+            segment = ecg[start:end, :]  # or try ecg[start:end] if ecg is already in shape (5000, num_channels)
             heart_beats.append(segment)
-            
+
         # Stack into shape: (num_heartbeats, window_length, num_channels)
         return np.array(heart_beats)
 
     df = data.copy()
 
-    df['heartbeat_indexes'] = df['rpeaks_indexes'].apply(
-        lambda x: get_heartbeats_indexes(x)
-    )
+    df["heartbeat_indexes"] = df["rpeaks_indexes"].apply(lambda x: get_heartbeats_indexes(x))
 
     # Filter out patients who ended up with < 2 valid windows after boundary checking
     # df = df[df['heartbeat_indexes'].map(len) >= 2].copy()
 
     # Extract segments (Maintains multichannel structure)
-    df['ecg_signal_heartbeat'] = df.apply(
-        lambda x: split_ecgs_multichannel(x['ecg_signal_raw'], x['heartbeat_indexes']), 
-        axis=1
+    df["ecg_signal_heartbeat"] = df.apply(
+        lambda x: split_ecgs_multichannel(x["ecg_signal_raw"], x["heartbeat_indexes"]), axis=1
     )
-    
+
     return df
+
 
 def get_heartbeats_indexes(indexes, size_before_index=200, size_after_index=300):
     if len(indexes) == 0:
@@ -184,21 +190,30 @@ def get_heartbeats_indexes(indexes, size_before_index=200, size_after_index=300)
     indexes_new = [[index - size_before_index] + [index + size_after_index] for index in indexes_]
     return indexes_new
 
+
 def split_ecgs(ecg, indexes, size_before_index=200, size_after_index=300):
     import itertools
+
     if len(indexes) == 0:
         return []
     indexes_final = list(itertools.chain(*get_heartbeats_indexes(indexes, size_before_index, size_after_index)))
-    heart_beats = np.split(ecg, indexes_final)[1::2]#[:-1]
+    heart_beats = np.split(ecg, indexes_final)[1::2]  # [:-1]
     arr = np.stack(heart_beats, axis=0) if len(heart_beats) > 1 else heart_beats
     return arr
 
-def save_x_y_numpy(uuid: str, df_all: pd.DataFrame, partition: str='training'):
-    noisy_hb = df_all[(df_all['partition'] == partition) & (df_all['ecg_signal_noised'] == True) & (df_all['ecg_origin_uuid'] == uuid)].ecg_signal_heartbeat.values[:]
+
+def save_x_y_numpy(uuid: str, df_all: pd.DataFrame, partition: str = "training"):
+    noisy_hb = df_all[
+        (df_all["partition"] == partition) & (df_all["ecg_signal_noised"] == True) & (df_all["ecg_origin_uuid"] == uuid)
+    ].ecg_signal_heartbeat.values[:]
     if noisy_hb.shape[0] < 2:
         return None, None
     arr_noisy = np.vstack(noisy_hb)
-    clean_hb = df_all[(df_all['partition'] == partition) & (df_all['ecg_signal_noised'] == False) & (df_all['ecg_origin_uuid'] == uuid)].ecg_signal_heartbeat.values[:][0]
+    clean_hb = df_all[
+        (df_all["partition"] == partition)
+        & (df_all["ecg_signal_noised"] == False)
+        & (df_all["ecg_origin_uuid"] == uuid)
+    ].ecg_signal_heartbeat.values[:][0]
     arr_clean = np.repeat(clean_hb, repeats=arr_noisy.shape[0] // clean_hb.shape[0], axis=0)
     return arr_clean, arr_noisy
 
