@@ -722,15 +722,49 @@ class CPSCDataset(Dataset):
         self.root = root
 
         self.X = np.load(os.path.join(root, f"{split}.npy"))
-        # # Subsample time series
-        # indices = range(len(self.X))
-        # sub_indices = np.random.choice(indices, size=int(len(self.X) * 0.3), replace=False)
-        # self.X = self.X[sub_indices]
         self.Y = np.load(os.path.join(root, f"{split}_label.npy"))
-        # self.Y = self.Y[sub_indices]
         self.X = torch.from_numpy(self.X).float()
         self.X = self.X.reshape(self.X.shape[0], 3, -1)  # Reshape to [Batch, Channels, Signal_Length]
         self.Y = torch.from_numpy(self.Y).long()  # Shape [Batch, 1]
+
+        if support_size is not None and split == "train":
+            unique_labels = np.unique(self.Y)
+            n_folds = 5
+            min_per_class = 2  # Ensuring fold safety
+
+            rng = np.random.default_rng(42)
+
+            class_indices = {}
+            for label in unique_labels:
+                idx = np.where(self.Y == label)[0]
+                rng.shuffle(idx)
+                class_indices[label] = idx
+
+            selected_indices = []
+            for label in unique_labels:
+                n_to_take = min(len(class_indices[label]), min_per_class)
+                selected_indices.extend(class_indices[label][:n_to_take])
+                class_indices[label] = class_indices[label][n_to_take:]
+
+            remaining_pool = np.concatenate(list(class_indices.values()))
+            rng.shuffle(remaining_pool)
+
+            needed = support_size - len(selected_indices)
+            if needed > 0:
+                selected_indices.extend(remaining_pool[:needed])
+
+            self.X = self.X[selected_indices]
+            self.Y = self.Y[selected_indices]
+            print(f"Subsampling {len(selected_indices)} samples from {len(self.X)} for training.")
+            print(f"Count labels in subsampled training set: {np.unique(self.Y, return_counts=True)}")
+
+        if fold is not None and split == "train":
+            assert support_size is not None
+            skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+            list_of_split = list(skf.split(self.X, self.Y))
+            self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
+            self.Y = self.Y[list_of_split[fold][1]]
+            print(f"Count labels in {split} split after fold selection: {np.unique(self.Y, return_counts=True)}")
 
         print(f"Loaded CPSC dataset with {len(self.X)} samples")
         if self.X.shape[2] < 166:
