@@ -824,6 +824,61 @@ class CPSCDataModule(TSPFNDataModule):
         return self.val_dataloader()
 
 
+class CPSCFineTuneDataModule(TSPFNDataModule):
+    """LightningDataModule for ECG datasets during finetuning.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        test_batch_size: Optional[int] = None,
+        support_size: Optional[int] = None,
+        fold: Optional[int] = None,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            subsets=subsets,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            test_batch_size=test_batch_size,
+            support_size=support_size,
+            fold=fold,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+        print(f"num workers: {self.num_workers}")
+        print(f"support size: {self.support_size}")
+
+    def setup(self, stage: Optional[str] = None) -> None:
+
+        self.train_dataset = CPSCDataset(
+            root=self.data_roots, split="train", support_size=self.support_size, fold=self.fold
+        )
+        self.test_dataset = CPSCDataset(root=self.data_roots, split="val")
+
+    def train_dataloader(self):
+        return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.batch_size)
+
+    def test_dataloader(self):
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.test_dataset)
+        return self._dataloader(self.test_dataset, shuffle=False, batch_size=self.test_batch_size)
+
+
 class EOSFineTuneDataModule(TSPFNDataModule):
     """LightningDataModule for ECG datasets during finetuning.
 
