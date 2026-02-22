@@ -21,7 +21,8 @@ sys.path.insert(0, os.path.abspath(".."))
 rng = np.random.default_rng(seed=42)
 
 # CHOSEN_CHANNELS = [0, 1, 2, 3, 4]  # Fix channel
-CHOSEN_CHANNELS = [0, 1, 2, 3]  # Fix channel
+# CHOSEN_CHANNELS = [0, 1, 2, 3]  # Fix channel
+CHOSEN_CHANNELS = [0, 1, 2]  # Fix channel
 
 
 def resample_hb_batch(data, fs_in, fs_out):
@@ -116,7 +117,8 @@ if __name__ == "__main__":
 
     # Split data into train and test
     indices = np.arange(len(Y))
-    train_indices, test_indices = train_test_split(indices, test_size=0.2, random_state=42, stratify=Y["label"])
+    _, subsample_indices = train_test_split(indices, test_size=10000, random_state=42, stratify=Y["label"])
+    train_indices, test_indices = train_test_split(subsample_indices, test_size=0.2, random_state=42, stratify=Y.iloc[subsample_indices]["label"])
     # Train
     X_train = X[train_indices]
     y_train = Y.iloc[train_indices]
@@ -200,7 +202,7 @@ if __name__ == "__main__":
     print(X_test.shape, y_test.shape)
     print(count_occurrences(y_test))
 
-    target_path = path + "fourchannels/"
+    target_path = path + "threechans/"
     os.makedirs(target_path, exist_ok=True)
     np.save(target_path + "train.npy", X_train)
     np.save(target_path + "val.npy", X_test)
