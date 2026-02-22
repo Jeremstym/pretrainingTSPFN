@@ -26,21 +26,16 @@ CHOSEN_CHANNELS = [0, 1, 2, 3]  # Fix channel
 
 def resample_hb_batch(data, fs_in, fs_out):
     """
-    data shape: (N, 500, 2) -> (N, Time, Channels)
+    data shape: (N, 400, 2) -> (N, Time, Channels)
     """
     L_original = data.shape[1]
     L_out = int(np.round(L_original * fs_out / fs_in))
     
-    # Resample along axis 1 (the 500-sample time dimension)
+    # Resample along axis 1 (the 400-sample time dimension)
     # This preserves axis 0 (Batch) and axis 2 (Channels)
     resampled_data = resample(data, L_out, axis=1)
     
     return resampled_data
-
-
-def convert_labels(label):
-    labels = {"MI": 1, "NORM": 0, "HYP": 1, "CD": 1, "STTC": 1}
-    return labels[label]
 
 
 def load_raw_data(df, path):
@@ -50,6 +45,7 @@ def load_raw_data(df, path):
     for f in tqdm(df.file_name, total=len(df)):
         record = wfdb.rdsamp(path + f)
         data.append(record)
+        print(f"Loaded {f} with shape {record[0].shape}")
     data = np.array([signal for signal, meta in data])
     return data
 
@@ -98,7 +94,7 @@ if __name__ == "__main__":
 
     path = "/data/stympopper/CARDIOLOGY/cpsc_2018/"
     path_data = "/data/stympopper/CARDIOLOGY/cpsc_2018/data/"
-    sampling_rate = 500
+    # sampling_rate = 500
     resampled_rate = 200
 
     # load and convert annotation data
@@ -202,8 +198,8 @@ if __name__ == "__main__":
     print("Heartbeats and labels extracted for train and test sets.")
 
     print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
-    X_train = resample_hb_batch(X_train, fs_in=500, fs_out=100)
-    X_test = resample_hb_batch(X_test, fs_in=500, fs_out=100)
+    X_train = resample_hb_batch(X_train, fs_in=400, fs_out=125)
+    X_test = resample_hb_batch(X_test, fs_in=400, fs_out=125)
     print(f"Downsampled heartbeats shape - Train: {X_train.shape}, Test: {X_test.shape}")
 
     print(f"Flatten on channel dimension - Train: {X_train.shape}, Test: {X_test.shape}")
