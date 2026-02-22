@@ -47,8 +47,8 @@ def load_raw_data(df, path):
         if record.shape[0] <= 5000:
             print(f"Record {f} has less than 5000 samples, skipping.")
             continue
-        elif record.shape[0] > 5000:
-            record = record[0][:5000, :]
+        elif record[0].shape[0] > 5000:
+            record[0] = record[0][:5000, :]
         data.append(record)
     data = np.array([signal for signal, meta in data])
     return data
