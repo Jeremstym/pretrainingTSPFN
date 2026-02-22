@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     # Split data into train and test
     indices = np.arange(len(Y))
-    _, subsample_indices = train_test_split(indices, test_size=10000, random_state=42, stratify=Y["label"])
+    _, subsample_indices = train_test_split(indices, test_size=1000, random_state=42, stratify=Y["label"])
     train_indices, test_indices = train_test_split(subsample_indices, test_size=0.2, random_state=42, stratify=Y.iloc[subsample_indices]["label"])
     # Train
     X_train = X[train_indices]
