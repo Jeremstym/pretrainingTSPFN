@@ -91,6 +91,8 @@ def extract_hb_from_dataframe(df):
     heart_beats_indexes, _ = values_from_dataframe_ny_list(df, "heartbeat_indexes", as_list=True)
     true_labels_ = df.true_label.values[:]
     true_labels = np.array([item for item, count in zip(true_labels_, len_heart_beats) for _ in range(count)])
+    for hb in heart_beats:
+        print(f"hb shape: {hb.shape}")
     heart_beats = np.vstack(heart_beats)
     heart_beats_indexes = np.vstack(heart_beats_indexes)
     return heart_beats, true_labels
@@ -108,69 +110,70 @@ if __name__ == "__main__":
     # sampling_rate = 500
     resampled_rate = 200
 
-    # load and convert annotation data
-    Y = pd.read_csv(path + "cpsc_2018_labels.csv")
-    # Load raw signal data
-    X, Y = load_raw_data(Y, path_data)
-    X = resample_hb_batch(X, fs_in=500, fs_out=resampled_rate)
+    # # load and convert annotation data
+    # Y = pd.read_csv(path + "cpsc_2018_labels.csv")
+    # # Load raw signal data
+    # X, Y = load_raw_data(Y, path_data)
+    # X = resample_hb_batch(X, fs_in=500, fs_out=resampled_rate)
 
-    # Split data into train and test
-    indices = np.arange(len(Y))
-    train_indices, test_indices = train_test_split(indices, test_size=0.2, random_state=42, stratify=Y["label"])
-    # Train
-    X_train = X[train_indices]
-    y_train = Y.iloc[train_indices]
-    # Test
-    X_test = X[test_indices]
-    y_test = Y.iloc[test_indices]
+    # # Split data into train and test
+    # indices = np.arange(len(Y))
+    # train_indices, test_indices = train_test_split(indices, test_size=0.2, random_state=42, stratify=Y["label"])
+    # # Train
+    # X_train = X[train_indices]
+    # y_train = Y.iloc[train_indices]
+    # # Test
+    # X_test = X[test_indices]
+    # y_test = Y.iloc[test_indices]
 
-    y_train = pd.Series(y_train["label"].values, name="true_label")
-    y_test = pd.Series(y_test["label"].values, name="true_label")
+    # y_train = pd.Series(y_train["label"].values, name="true_label")
+    # y_test = pd.Series(y_test["label"].values, name="true_label")
 
-    X_test = X_test[:, :, CHOSEN_CHANNELS]
-    print(f"X_test.shape: {X_test.shape}, y_test.shape: {y_test.shape}")
+    # X_test = X_test[:, :, CHOSEN_CHANNELS]
+    # print(f"X_test.shape: {X_test.shape}, y_test.shape: {y_test.shape}")
 
-    X_train = X_train[:, :, CHOSEN_CHANNELS]
-    print(f"X_train.shape: {X_train.shape}, y_train.shape: {y_train.shape}")
+    # X_train = X_train[:, :, CHOSEN_CHANNELS]
+    # print(f"X_train.shape: {X_train.shape}, y_train.shape: {y_train.shape}")
 
-    print(f"y_test.value_counts(sort=False): {y_test.value_counts(sort=False)}")
+    # print(f"y_test.value_counts(sort=False): {y_test.value_counts(sort=False)}")
 
-    print(f"y_train.value_counts(sort=False): {y_train.value_counts(sort=False)}")
+    # print(f"y_train.value_counts(sort=False): {y_train.value_counts(sort=False)}")
 
-    # Window data by heart beats and save
-    list_of_arrays_train = [row for row in X_train]
-    list_of_arrays_test = [row for row in X_test]
+    # # Window data by heart beats and save
+    # list_of_arrays_train = [row for row in X_train]
+    # list_of_arrays_test = [row for row in X_test]
 
-    df_train = pd.DataFrame(
-        {"ecg_signal_raw": list_of_arrays_train, "true_label": y_train, "partition": ["train"] * len(y_train)}
-    )
-    df_test = pd.DataFrame(
-        {"ecg_signal_raw": list_of_arrays_test, "true_label": y_test, "partition": ["test"] * len(y_test)}
-    )
+    # df_train = pd.DataFrame(
+    #     {"ecg_signal_raw": list_of_arrays_train, "true_label": y_train, "partition": ["train"] * len(y_train)}
+    # )
+    # df_test = pd.DataFrame(
+    #     {"ecg_signal_raw": list_of_arrays_test, "true_label": y_test, "partition": ["test"] * len(y_test)}
+    # )
 
-    df = pd.concat([df_train, df_test])
-    print(f"dataset shape before finding R-peaks: {df.shape}")
-    df.to_pickle(path + "cpsc_dataframe.pkl")
+    # df = pd.concat([df_train, df_test])
+    # print(f"dataset shape before finding R-peaks: {df.shape}")
+    # df.to_pickle(path + "cpsc_dataframe.pkl")
 
-    print("Finding R-peaks in the ECG signals...")
-    df_rp = find_rpeaks_clean_ecgs_in_dataframe(data=df, rate=resampled_rate)
-    print("R-peaks found and added to the dataframe.")
-    df_rp.to_pickle(path + "cpsc_dataframe_rp.pkl")
-    df_rp = pd.read_pickle(path + "cpsc_dataframe_rp.pkl")
-    print(f"dataset shape after finding R-peaks: {df_rp.shape}")
+    # print("Finding R-peaks in the ECG signals...")
+    # df_rp = find_rpeaks_clean_ecgs_in_dataframe(data=df, rate=resampled_rate)
+    # print("R-peaks found and added to the dataframe.")
+    # df_rp.to_pickle(path + "cpsc_dataframe_rp.pkl")
+    # df_rp = pd.read_pickle(path + "cpsc_dataframe_rp.pkl")
+    # print(f"dataset shape after finding R-peaks: {df_rp.shape}")
 
-    print("Segmenting ECG signals into heartbeats...")
-    df_final = segment_ecg_in_clean_dataframe(
-        ROOT=path, data=df_rp, size_before_index=130, size_after_index=270, signal_length=2000
-    )
-    print("ECG signals segmented into heartbeats and added to the dataframe.")
-    # print(df_final.columns)
-    # df_final["heartbeat_indexes"]
+    # print("Segmenting ECG signals into heartbeats...")
+    # df_final = segment_ecg_in_clean_dataframe(
+    #     ROOT=path, data=df_rp, size_before_index=130, size_after_index=270, signal_length=2000
+    # )
+    # print("ECG signals segmented into heartbeats and added to the dataframe.")
+    # # print(df_final.columns)
+    # # df_final["heartbeat_indexes"]
 
-    # # print(df_final)
-    df_final.to_pickle(path + "cpsc_dataframe_final.pkl")
+    # # # print(df_final)
+    # df_final.to_pickle(path + "cpsc_dataframe_final.pkl")
 
     df_final = pd.read_pickle(path + "cpsc_dataframe_final.pkl")
+    print(f"dataset shape after segmenting into heartbeats: {df_final.shape}")
     # df_final.head()
 
     # print("Standardizing ECG signals...")
