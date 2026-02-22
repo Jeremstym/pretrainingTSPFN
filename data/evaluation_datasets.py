@@ -626,7 +626,7 @@ class AtrialFibrillationDataset(Dataset):
         # Target 250, Current 640 -> Ratio is 25/64
         x = sgn.resample_poly(x, 25, 64, axis=-1) 
 
-    return x
+        return x
 
     def __init__(self, root, split: str, support_size=None, fold=None):
         self.root = root
