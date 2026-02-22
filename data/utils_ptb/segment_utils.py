@@ -200,6 +200,7 @@ def segment_ecg_in_clean_dataframe(
             return []
 
         heart_beats = []
+        print(f"Extracting heartbeats from ECG with shape {ecg.shape} using indexes: {indexes_pairs}")
         for start, end in indexes_pairs:
             # Slicing a 2D array [start:end, :] keeps all channels for that window
             segment = ecg[start:end, :]  # or try ecg[start:end] if ecg is already in shape (5000, num_channels)
