@@ -607,7 +607,7 @@ class AtrialFibrillationDataset(Dataset):
         # x = sgn.decimate(x, q=2, axis=-1)
         # x = resample(x, num=250, axis=-1)  # Resample to 250 time points
         # Truncate to 250 time points
-        x = x[:250]
+        x = x[-250:]
 
         return x
 
