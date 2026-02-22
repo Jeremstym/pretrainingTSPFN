@@ -34,7 +34,7 @@ from data.evaluation_datasets import (
     BlinkDataset,
     EOSDataset,
     AtrialFibrillationDataset,
-    CPSC4ChannelDataset,
+    CPSCDataset,
 )
 from data.pretraining_datasets import (
     TUAB2ChannelDataset,
@@ -756,7 +756,7 @@ class AtrialFibrillationDataModule(TSPFNDataModule):
         return self.val_dataloader()
 
 
-class CPSC4ChannelDataModule(TSPFNDataModule):
+class CPSCDataModule(TSPFNDataModule):
     """LightningDataModule for Atrial Fibrillation dataset.
 
     Parameters
@@ -796,14 +796,14 @@ class CPSC4ChannelDataModule(TSPFNDataModule):
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
-        self.train_dataset = CPSC4ChannelDataset(
+        self.train_dataset = CPSCDataset(
             root=self.data_roots,
             split="train",
             support_size=self.support_size,
             fold=self.fold,
         )
         # scaler = self.train_dataset.scaler
-        self.val_dataset = CPSC4ChannelDataset(root=self.data_roots, split="val")
+        self.val_dataset = CPSCDataset(root=self.data_roots, split="val")
 
         return
 
