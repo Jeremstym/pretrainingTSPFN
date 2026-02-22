@@ -69,6 +69,7 @@ class PatchTST(nn.Module):
         self.num_patch = num_patch
         self.patch_len = patch_len
         self.stride = stride
+        print(f"num_patch: {num_patch}, patch_len: {patch_len}, stride: {stride}")
         self.backbone = PatchTSTEncoder(
             c_in,
             num_patch=num_patch,
@@ -112,7 +113,7 @@ class PatchTST(nn.Module):
         # Patch model
         z = z.unfold(dimension=-1, size=self.patch_len, step=self.stride)  # z: [bs x num_chans x num_patch x patch_len]
         z = z.permute(0, 2, 1, 3)  # z: [bs x num_patch x num_chans x patch_len]
-        print(f"num patches: {z.shape[1]}, patch_len: {z.shape[-1]}")
+        # print(f"num patches: {z.shape[1]}, patch_len: {z.shape[-1]}")
         z = self.backbone(z)  # z: [bs x num_chans x d_model x num_patch]
         z = self.head(z)
         # z: [bs x target_dim x num_chans] for prediction
