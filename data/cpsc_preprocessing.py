@@ -46,7 +46,7 @@ def load_raw_data(df, path):
     for f in tqdm(df.file_name, total=len(df)):
         record = wfdb.rdsamp(path + f)
         if record[0].shape[0] <= 5000:
-            print(f"Record {f} has less than 5000 samples, skipping.")
+            # print(f"Record {f} has less than 5000 samples, skipping.")
             continue
         elif record[0].shape[0] > 5000:
             new_signal = record[0][:5000, :]
