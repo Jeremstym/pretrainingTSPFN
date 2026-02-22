@@ -730,7 +730,7 @@ class CPSCDataset(Dataset):
         # self.Y = self.Y[sub_indices]
         self.X = torch.from_numpy(self.X).float()
         self.X = self.X.reshape(self.X.shape[0], 3, -1)  # Reshape to [Batch, Channels, Signal_Length]
-        self.Y = torch.from_numpy(self.Y).long().unsqueeze(1)  # Shape [Batch, 1]
+        self.Y = torch.from_numpy(self.Y).long()  # Shape [Batch, 1]
 
         print(f"Loaded CPSC dataset with {len(self.X)} samples")
         if self.X.shape[2] < 166:
