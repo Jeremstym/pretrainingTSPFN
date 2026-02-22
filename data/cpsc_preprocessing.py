@@ -130,19 +130,19 @@ if __name__ == "__main__":
     print(f"X_train.shape: {X_train.shape}, y_train.shape: {y_train.shape}")
     X_train = X_train[:, :, CHOSEN_CHANNELS]
 
-    print(f"y_test.value_counts(sort=False): {y_test.value_counts(sort=False)}")
+    print(f"y_test.value_counts(sort=False): {y_test['label'].value_counts(sort=False)}")
 
-    print(f"y_train.value_counts(sort=False): {y_train.value_counts(sort=False)}")
+    print(f"y_train.value_counts(sort=False): {y_train['label'].value_counts(sort=False)}")
 
     # Window data by heart beats and save
     list_of_arrays_train = [row for row in X_train]
     list_of_arrays_test = [row for row in X_test]
 
     df_train = pd.DataFrame(
-        {"ecg_signal_raw": list_of_arrays_train, "true_label": y_train, "partition": ["train"] * len(y_train)}
+        {"ecg_signal_raw": list_of_arrays_train, "true_label": y_train["label"].values[:], "partition": ["train"] * len(y_train)}
     )
     df_test = pd.DataFrame(
-        {"ecg_signal_raw": list_of_arrays_test, "true_label": y_test, "partition": ["test"] * len(y_test)}
+        {"ecg_signal_raw": list_of_arrays_test, "true_label": y_test["label"].values[:], "partition": ["test"] * len(y_test)}
     )
 
     df = pd.concat([df_train, df_test])
