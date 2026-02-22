@@ -124,11 +124,11 @@ if __name__ == "__main__":
     X_test = X[test_indices]
     y_test = Y.iloc[test_indices]
 
-    print(f"X_test.shape: {X_test.shape}, y_test.shape: {y_test.shape}")
     X_test = X_test[:, :, CHOSEN_CHANNELS]
+    print(f"X_test.shape: {X_test.shape}, y_test.shape: {y_test.shape}")
 
-    print(f"X_train.shape: {X_train.shape}, y_train.shape: {y_train.shape}")
     X_train = X_train[:, :, CHOSEN_CHANNELS]
+    print(f"X_train.shape: {X_train.shape}, y_train.shape: {y_train.shape}")
 
     print(f"y_test.value_counts(sort=False): {y_test['label'].value_counts(sort=False)}")
 
