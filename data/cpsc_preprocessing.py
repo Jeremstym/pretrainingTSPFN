@@ -48,8 +48,8 @@ def load_raw_data(df, path):
             print(f"Record {f} has less than 5000 samples, skipping.")
             continue
         elif record[0].shape[0] > 5000:
-            record[0] = record[0][:5000, :]
-            new_record = (record[0], record[1])
+            new_signal = record[0][:5000, :]
+            new_record = (new_signal, record[1])
             data.append(new_record)
         else:
             data.append(record)
