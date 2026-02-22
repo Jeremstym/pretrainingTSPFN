@@ -5,3 +5,4 @@ target_dim: ${data.num_classes}
 patch_len: ${task.patch_len}
 stride: ${task.stride}
 mean_pool: False
+d_model: 128
