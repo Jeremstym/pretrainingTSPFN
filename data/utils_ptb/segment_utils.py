@@ -77,13 +77,13 @@ def detect_rpeaks(ecg, rate, ransac_window_size=5.0, lowfreq=35.0, highfreq=43.0
 #     return df_clean
 
 
-def find_rpeaks_clean_ecgs_in_dataframe(data: pd.DataFrame, ref_channel_idx: int = 1) -> pd.DataFrame:
+def find_rpeaks_clean_ecgs_in_dataframe(data: pd.DataFrame, ref_channel_idx: int = 1, rate: int = 500) -> pd.DataFrame:
 
     def find_rpeaks_multi(signal_2d):
         # signal_2d shape: (5000, 12) or (5000, num_chosen)
         # We detect peaks based ONLY on the reference channel
         reference_signal = signal_2d[:, ref_channel_idx]
-        return detect_rpeaks(ecg=reference_signal, rate=500)
+        return detect_rpeaks(ecg=reference_signal, rate=rate)
 
     df_clean = data.copy()
     # Apply detection to the multi-channel signal
