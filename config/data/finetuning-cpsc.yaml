@@ -9,4 +9,4 @@ num_classes: 4
 
 predict_losses:
   classification:
-    _target_: torch.nn.BCEWithLogitsLoss
+    _target_: torch.nn.CrossEntropyLoss
