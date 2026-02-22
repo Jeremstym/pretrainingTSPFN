@@ -124,8 +124,8 @@ if __name__ == "__main__":
     X_test = X[test_indices]
     y_test = Y.iloc[test_indices]
 
-    y_train = pd.DataFrame(y_train["label"].values, columns=["true_label"])
-    y_test = pd.DataFrame(y_test["label"].values, columns=["true_label"])
+    y_train = pd.Series(y_train["label"].values, name="true_label")
+    y_test = pd.Series(y_test["label"].values, name="true_label")
 
     X_test = X_test[:, :, CHOSEN_CHANNELS]
     print(f"X_test.shape: {X_test.shape}, y_test.shape: {y_test.shape}")
