@@ -105,3 +105,5 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eos-TSPF
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/atrialfibri-TabPFN/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-atrialfibri seed=42 train=False test=True
 poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/atrialfibri-TSPFNFM-RoPE+CWPE-zscoring-shuffle-5chans+hirid/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-atrialfibri seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle.pt" task.time_series_positional_encoding=cwpe+rope
+
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc4chans-TSPFNFM-RoPE+CWPE-zscoring-shuffle-5chans+hirid/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-cpsc4chans seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle.pt" task.time_series_positional_encoding=cwpe+rope
