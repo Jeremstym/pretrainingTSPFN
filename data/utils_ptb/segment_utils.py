@@ -274,8 +274,10 @@ def values_from_dataframe_ny_list(df: pd.DataFrame, key: str, as_list=False):
         if not as_list:
             values_arr[i, :] = val[i]
         else:
-            if val[i].ndim < 3:
-                raise ValueError(f"Expected 3D array for heartbeat segments, got {val[i].ndim}D array for index {i}.")
+            check_val = np.array(val[i])
+            if check_val.ndim < 3:
+                print(f"Warning: value at index {i} has less than 3 dimensions, skipping.")
+                raise ValueError(f"Value at index {i} has less than 3 dimensions, expected (num_heartbeats, window_length, num_channels).")
             len_arr.append(len(val[i]))
             values_arr.append(val[i])
     return values_arr, len_arr
