@@ -43,11 +43,12 @@ task:
   seed : ${seed}
   optim:
     optimizer:
-      _target_: torch.optim.Adam
-      lr: 0.0025
-    #   _target_: torch.optim.AdamW
-    #   lr: 1e-4
-    #   weight_decay: 1e-5
+      # _target_: torch.optim.Adam
+      # lr: 0.0025
+      # For minirocket below
+      _target_: torch.optim.AdamW
+      lr: 1e-3
+      weight_decay: 1e-2
     # scheduler:
     #   _target_: transformers.get_linear_schedule_with_warmup
     #   num_warmup_steps: 0.1
