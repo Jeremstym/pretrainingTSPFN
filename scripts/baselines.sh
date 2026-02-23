@@ -81,9 +81,9 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-min
 #     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-minirocket/fold${fold}' +experiment=baselines/baseline data=finetuning-eicucrd task/model/encoder=minirocket seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 task.baseline_name=minirocket data.support_size=500 data.fold=${fold} +fold=${fold} +trainer.num_sanity_val_steps=0 trainer.enable_model_summary=False
 #   done
 
-# for fold in 0 1 2 3 4; do
-#     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-minirocket/fold${fold}' +experiment=baselines/baseline data=finetuning-esr task/model/encoder=minirocket seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 task.baseline_name=minirocket data.support_size=500 data.fold=${fold} +fold=${fold} +trainer.num_sanity_val_steps=0 trainer.enable_model_summary=False
-#   done
+for fold in 0 1 2 3 4; do
+    poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-minirocket/fold${fold}' +experiment=baselines/baseline data=finetuning-esr task/model/encoder=minirocket seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 task.baseline_name=minirocket data.support_size=500 data.fold=${fold} +fold=${fold} +trainer.num_sanity_val_steps=0 trainer.enable_model_summary=False
+  done
 
 # for fold in 0 1 2; do
 #     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eos-minirocket/fold${fold}' +experiment=baselines/baseline data=finetuning-eos task/model/encoder=minirocket seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 task.baseline_name=minirocket data.support_size=500 data.fold=${fold} +fold=${fold} +trainer.num_sanity_val_steps=0 trainer.enable_model_summary=False
