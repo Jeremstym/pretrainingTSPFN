@@ -50,6 +50,7 @@ class BaselineModule(TSPFNSystem):
         time_series_length: int = 1000,
         channel_handler: Literal["average", "flatten", "convolution", "labram"] = None,
         num_classes: int = 10,
+        baseline_name: Literal["others", "minirocket"] = "others",
         *args,
         **kwargs,
     ):
@@ -138,6 +139,8 @@ class BaselineModule(TSPFNSystem):
             self.ts_tokenizer = None
         else:
             raise ValueError(f"Unknown foundation model name '{channel_handler}' provided.")
+
+        self.baseline_name = baseline_name
 
     @property
     def example_input_array(self) -> Tensor:
@@ -307,6 +310,26 @@ class BaselineModule(TSPFNSystem):
         metrics.update(losses)
 
         return metrics
+
+    def on_train_start(self):
+        """
+        Runs once at the very beginning of training.
+        We grab a sample of the training data from the dataloader to fit.
+        """
+        if self.baseline_name != "minirocket":
+            return  # Only need to fit MiniRocket kernels, which is done once at the start of training
+        # Access the training dataloader
+        train_loader = self.trainer.datamodule.train_dataloader()
+        
+        # Get one batch to determine channel count and length
+        # Note: Ideally, MiniRocket fits on a larger sample (e.g., 1024 samples)
+        # for better quantile (bias) estimation.
+        batch = next(iter(train_loader))
+        x, _ = batch 
+        
+        # Fit the random kernels and biases
+        print("Fitting MiniRocket kernels on training sample...")
+        self.encoder.fit_extractor(x.numpy())
 
     def on_test_epoch_end(self):
         output_data = []
