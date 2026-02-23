@@ -32,6 +32,7 @@ task:
   time_series_num_channels: ${data.num_channels}
   time_series_length: ${data.time_series_length}
   num_classes: ${data.num_classes}
+  baseline_name: others
   patch_len: 16
   stride: 8
   split_finetuning: 0.5
