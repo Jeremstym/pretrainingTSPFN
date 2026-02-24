@@ -90,6 +90,7 @@ class TimeSeriesLabramEncoder(torch.nn.Module):
             return_patch_tokens=False,
         )
         ts_encoded = tokens[:, 0]  # CLS token
+        print(f"Encoded token shape: {ts_encoded.shape}")
         return ts_encoded
 
 
