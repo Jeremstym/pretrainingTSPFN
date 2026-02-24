@@ -65,7 +65,6 @@ class TimeSeriesLabramEncoder(torch.nn.Module):
             embed: (B, num_tokens, D) Token embeddings.
         """
         B, N, T = x.size()
-        print(f"Input shape: {x.shape}")
         if T < 200:
             # Interpolate to 200
             x = F.interpolate(x, size=200, mode="linear", align_corners=False)
@@ -78,7 +77,6 @@ class TimeSeriesLabramEncoder(torch.nn.Module):
             # Interpolate to 600
             x = F.interpolate(x, size=600, mode="linear", align_corners=False)
             T = 600
-        print(f"Post-interpolation shape: {x.shape}")
         assert T % 200 == 0, "Time dimension must be divisible by 200."
         A = T // 200
         x = rearrange(x, "B N (A T) -> B N A T", A=A)
@@ -92,7 +90,6 @@ class TimeSeriesLabramEncoder(torch.nn.Module):
             return_patch_tokens=False,
         )
         ts_encoded = tokens[:, 0]  # CLS token
-        print(f"Encoded token shape: {ts_encoded.shape}")
         return ts_encoded
 
 
