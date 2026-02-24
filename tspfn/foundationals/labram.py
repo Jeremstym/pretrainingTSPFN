@@ -65,6 +65,7 @@ class TimeSeriesLabramEncoder(torch.nn.Module):
             embed: (B, num_tokens, D) Token embeddings.
         """
         B, N, T = x.size()
+        print(f"Input shape: {x.shape}")
         if T < 200:
             # Interpolate to 200
             x = F.interpolate(x, size=(N, 200), mode="linear", align_corners=False)
