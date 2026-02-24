@@ -68,16 +68,17 @@ class TimeSeriesLabramEncoder(torch.nn.Module):
         print(f"Input shape: {x.shape}")
         if T < 200:
             # Interpolate to 200
-            x = F.interpolate(x, size=(N, 200), mode="linear", align_corners=False)
+            x = F.interpolate(x, size=200, mode="linear", align_corners=False)
             T = 200
         if T > 200 and T < 400:
             # Interpolate to 400
-            x = F.interpolate(x, size=(N, 400), mode="linear", align_corners=False)
+            x = F.interpolate(x, size=400, mode="linear", align_corners=False)
             T = 400
         if T > 400 and T < 600:
             # Interpolate to 600
-            x = F.interpolate(x, size=(N, 600), mode="linear", align_corners=False)
+            x = F.interpolate(x, size=600, mode="linear", align_corners=False)
             T = 600
+        print(f"Post-interpolation shape: {x.shape}")
         assert T % 200 == 0, "Time dimension must be divisible by 200."
         A = T // 200
         x = rearrange(x, "B N (A T) -> B N A T", A=A)
