@@ -41,6 +41,8 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eos-mini
 poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-minirocket-full/seed${seed}' +experiment=baselines/baseline data=finetuning-eicucrd task/model/encoder=minirocket seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 task.baseline_name=minirocket +trainer.num_sanity_val_steps=0 trainer.enable_model_summary=False
 poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-minirocket-full/seed${seed}' +experiment=baselines/baseline data=finetuning-cpsc task/model/encoder=minirocket seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 task.baseline_name=minirocket +trainer.num_sanity_val_steps=0 trainer.enable_model_summary=False
 
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-labram-full/seed${seed}' +experiment=baselines/baseline data=finetuning-ecg5000 task/model/encoder=labram task/model/prediction_head=pfn-prediction seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0
+
 # for fold in 0 1 2 3 4; do
 #     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TCN/fold${fold}' +experiment=baselines/baseline data=finetuning-ecg5000 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
 #   done
