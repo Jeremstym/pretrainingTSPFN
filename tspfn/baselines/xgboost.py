@@ -90,6 +90,29 @@ class XGBoostStaticBaseline(pl.LightningModule):
                 self.clf = xgb.XGBClassifier(**self.xgb_params)
                 self.clf.fit(X_train, y_train)
                 print(f"--- XGBoost Fit Complete ({len(X_train)} samples) ---")
+                if np.unique(y_train).shape[0] < self.num_classes:
+                    print(f"Warning: Only {np.unique(y_train).shape[0]} unique classes found in training data, but num_classes is set to {self.num_classes}. Changing metrics")
+                    self.num_classes = np.unique(y_train).shape[0]
+                    # Reinitialize metrics with the correct number of classes
+                    if self.num_classes == 2:
+                        metrics = MetricCollection({
+                            "acc": BinaryAccuracy(),
+                            "auroc": BinaryAUROC(),
+                            "f1": BinaryF1Score(),
+                            "auprc": BinaryAveragePrecision(),
+                            "cohen_kappa": BinaryCohenKappa(),
+                            "recall": BinaryRecall()
+                        })
+                    else:
+                        metrics = MetricCollection({
+                            "acc": MulticlassAccuracy(num_classes=self.num_classes),
+                            "auroc": MulticlassAUROC(num_classes=self.num_classes),
+                            "f1": MulticlassF1Score(num_classes=self.num_classes, average="macro"),
+                            "auprc": MulticlassAveragePrecision(num_classes=self.num_classes),
+                            "cohen_kappa": MulticlassCohenKappa(num_classes=self.num_classes),
+                            "recall": MulticlassRecall(num_classes=self.num_classes, average="macro")
+                        })
+                    self.test_metrics = metrics.clone(prefix="test")
 
     def test_step(self, batch, batch_idx):
         if self.clf is None:
