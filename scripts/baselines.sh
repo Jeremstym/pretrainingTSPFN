@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --partition=electronic
+#SBATCH --partition=heavy
 #SBATCH --job-name=TSPFN-Baselines
 #SBATCH --nodes=1
-#SBATCH --nodelist=kavinsky
+#SBATCH --nodelist=dc
 #SBATCH --gpus-per-node=1
 #SBATCH --time=1-23:00:00
 #SBATCH --output=/home/stympopper/bash/out/%x-%j.out
@@ -98,30 +98,30 @@ ulimit -n 4096
 for fold in 0 1 2; do
   for supsize in 150 300 750 1500 2250 3000; do
         poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TSPFNFM-RoPE+CWPE-zscoring-5chans-v2/multisup${supsize}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-ecg5000 seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" task.time_series_positional_encoding=cwpe+rope data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-tabpfn/multisup${supsize}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 data=evaluating-ecg5000 train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-xgboost/multisup${supsize}/fold${fold}' +experiment=baselines/xgboost data=evaluating-ecg5000 seed=42 train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TCN/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-ecg5000 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-labram/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-ecg5000 task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-tabpfn/multisup${supsize}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 data=evaluating-ecg5000 train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-xgboost/multisup${supsize}/fold${fold}' +experiment=baselines/xgboost data=evaluating-ecg5000 seed=42 train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TCN/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-ecg5000 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-labram/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-ecg5000 task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
   done
 done
 
 for fold in 0 1 2; do
   for supsize in 150 300 750 1500 2250 3000; do
         poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-TSPFNFM-RoPE+CWPE-zscoring-5chans-v2/multisup${supsize}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-eicucrd seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" task.time_series_positional_encoding=cwpe+rope data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-tabpfn/multisup${supsize}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 data=evaluating-eicucrd train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-xgboost/multisup${supsize}/fold${fold}' +experiment=baselines/xgboost data=evaluating-eicucrd seed=42 train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-TCN/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-eicucrd seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-labram/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-eicucrd task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-tabpfn/multisup${supsize}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 data=evaluating-eicucrd train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-xgboost/multisup${supsize}/fold${fold}' +experiment=baselines/xgboost data=evaluating-eicucrd seed=42 train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-TCN/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-eicucrd seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-labram/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-eicucrd task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
   done
 done
 
 for fold in 0 1 2; do
   for supsize in 150 300 750 1500 2250 3000; do
         poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-TSPFNFM-RoPE+CWPE-zscoring-5chans-v2/multisup${supsize}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-cpsc seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" task.time_series_positional_encoding=cwpe+rope data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-tabpfn/multisup${supsize}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 data=evaluating-cpsc train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-xgboost/multisup${supsize}/fold${fold}' +experiment=baselines/xgboost data=evaluating-cpsc seed=42 train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-TCN/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-cpsc seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-labram/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-cpsc task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-tabpfn/multisup${supsize}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning seed=42 data=evaluating-cpsc train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-xgboost/multisup${supsize}/fold${fold}' +experiment=baselines/xgboost data=evaluating-cpsc seed=42 train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-TCN/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-cpsc seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+        # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-labram/multisup${supsize}/fold${fold}' +experiment=baselines/baseline data=finetuning-cpsc task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
   done
 done
 
