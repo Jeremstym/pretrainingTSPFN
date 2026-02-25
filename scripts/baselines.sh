@@ -125,6 +125,12 @@ for fold in 0 1 2 3 4; do
   done
 done
 
+for fold in 0 1 2 3 4; do
+  for supsize in 50 100; do
+        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-xgboost/multisup${supsize}/fold${fold}' +experiment=baselines/xgboost data=evaluating-ecg5000 seed=42 train=False test=True data.support_size=${supsize} +supsize=${supsize} data.fold=${fold} +fold=${fold}
+  done
+done
+
 
 
 # for fold in 0 1 2 3 4; do

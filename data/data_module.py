@@ -155,6 +155,7 @@ class TSPFNDataModule(pl.LightningDataModule):
         test_batch_size: Optional[int] = None,
         support_size: Optional[int] = None,
         fold: Optional[int] = None,
+        filter_labels: bool = False,
         meta_batch_size: int = 1,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
@@ -168,6 +169,7 @@ class TSPFNDataModule(pl.LightningDataModule):
         self.test_batch_size = test_batch_size
         self.support_size = support_size
         self.fold = fold
+        self.filter_labels = filter_labels
         self.meta_batch_size = meta_batch_size
         self.num_workers = num_workers
         self.pin_memory = pin_memory
