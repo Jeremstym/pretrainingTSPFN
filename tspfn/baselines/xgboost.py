@@ -90,6 +90,7 @@ class XGBoostStaticBaseline(pl.LightningModule):
                 self.clf = xgb.XGBClassifier(**self.xgb_params)
                 self.clf.fit(X_train, y_train)
                 print(f"--- XGBoost Fit Complete ({len(X_train)} samples) ---")
+                
                 if np.unique(y_train).shape[0] < self.num_classes:
                     print(f"Warning: Only {np.unique(y_train).shape[0]} unique classes found in training data, but num_classes is set to {self.num_classes}. Changing metrics")
                     self.num_classes = np.unique(y_train).shape[0]
