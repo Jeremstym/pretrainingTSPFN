@@ -119,12 +119,13 @@ class FilteredTUEVDataset(Dataset):
 
 
 class ECG5000Dataset(Dataset):
-    def __init__(self, root, split: str, scaler=None, support_size=None, fold=None):  # Added scaler argument
+    def __init__(self, root, split: str, scaler=None, support_size=None, fold=None, present_labels=None):  # Added scaler argument
         self.root = root
         self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
 
         df = pd.read_csv(self.file_path, index_col=0)
         self.data = df.values
+        self.present_labels = present_labels
         print(f"Count labels in {split} split before subsampling: {np.unique(self.data[:, -1], return_counts=True)}")
         # if support_size is not None and split == "train":
         #     indices = list(range(len(self.data)))
@@ -184,16 +185,25 @@ class ECG5000Dataset(Dataset):
 
         self.X = self.data[:, :-1]
         self.Y = self.data[:, -1].astype(int) - 1
+        if self.present_labels is not None:
+            filtered_indices = []
+            filtered_labels = []
+            for idx, label in enumerate(self.Y):
+                if label in self.present_labels:
+                    filtered_indices.append(idx)
+                    filtered_labels.append(label)
+            print(f"Filtering to present labels {self.present_labels}: {len(filtered_indices)} samples remain.")
+            self.X = self.X[filtered_indices]
+            self.Y = np.array(filtered_labels)
 
         if fold is not None and split == "train":
             skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
             list_of_split = list(skf.split(self.X, self.Y))
             self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
             self.Y = self.Y[list_of_split[fold][1]]
+            self.present_labels = np.unique(self.Y)
 
         print(f"Count labels in {split} split: {np.unique(self.Y, return_counts=True)}")
-
-        self.scaler = None
 
         if self.X.ndim == 2:
             self.X = self.X.reshape(
