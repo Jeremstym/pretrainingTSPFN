@@ -193,22 +193,22 @@ done
 #     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-patchTST/fold${fold}' +experiment=baselines/baseline data=finetuning-cpsc task/model/encoder=patchTST seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
 #   done
 
-for fold in 0 1 2 3 4; do
-    poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-cpsc task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
-  done
+# for fold in 0 1 2 3 4; do
+#     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-cpsc task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
+#   done
 
-for fold in 0 1 2 3 4; do
-    poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-eicucrd task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
-  done
+# for fold in 0 1 2 3 4; do
+#     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-eicucrd task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
+#   done
 
-for fold in 0 1 2; do
-    poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eos-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-eos task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
-  done
+# for fold in 0 1 2; do
+#     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eos-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-eos task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
+#   done
 
-for fold in 0 1 2 3 4; do
-    poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-esr task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
-  done
+# for fold in 0 1 2 3 4; do
+#     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/esr-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-esr task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
+#   done
 
-for fold in 0 1 2 3 4; do
-    poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-ecg5000 task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
-  done
+# for fold in 0 1 2 3 4; do
+#     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-ecg5000 task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 data.fold=${fold} +fold=${fold}
+#   done
