@@ -196,6 +196,7 @@ class ECG5000Dataset(Dataset):
             print(f"Filtering to present labels {self.present_labels}: {len(filtered_indices)} samples remain.")
             self.X = self.X[filtered_indices]
             self.Y = np.array(filtered_labels)
+            # Use LabelEncoder to enforce label to range from 0 to num_classes-1 after filtering
             le = LabelEncoder()
             self.Y = le.fit_transform(self.Y)
 
@@ -204,6 +205,7 @@ class ECG5000Dataset(Dataset):
             list_of_split = list(skf.split(self.X, self.Y))
             self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
             self.Y = self.Y[list_of_split[fold][1]]
+            # Use LabelEncoder to enforce label to range from 0 to num_classes-1 after filtering
             le = LabelEncoder()
             self.Y = le.fit_transform(self.Y)
             self.present_labels = np.unique(self.Y)
