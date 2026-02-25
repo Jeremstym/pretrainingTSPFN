@@ -201,7 +201,7 @@ class ECG5000Dataset(Dataset):
             self.Y = le.fit_transform(self.Y)
 
         if fold is not None and split == "train":
-            skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
             list_of_split = list(skf.split(self.X, self.Y))
             self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
             self.Y = self.Y[list_of_split[fold][1]]
@@ -297,7 +297,7 @@ class ESRDataset(Dataset):
         self.Y = self.data[:, -1].astype(int) - 1
 
         if fold is not None and split == "train":
-            skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
             list_of_split = list(skf.split(self.X, self.Y))
             self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
             self.Y = self.Y[list_of_split[fold][1]]
@@ -459,7 +459,7 @@ class EICUCRDDataset(Dataset):
         # self.Y = self.data[:, -1].astype(int) - 1
 
         if fold is not None and split == "train":
-            skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
             list_of_split = list(
                 skf.split(
                     self.all_patients,
@@ -777,7 +777,7 @@ class CPSCDataset(Dataset):
 
         if fold is not None and split == "train":
             assert support_size is not None
-            skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
             list_of_split = list(skf.split(self.X, self.Y))
             self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
             self.Y = self.Y[list_of_split[fold][1]]
