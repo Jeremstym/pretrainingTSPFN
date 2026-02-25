@@ -2,7 +2,7 @@
 #SBATCH --partition=electronic
 #SBATCH --job-name=Ablations
 #SBATCH --nodes=1
-#SBATCH --nodelist=kavinsky
+#SBATCH --nodelist=modjo
 #SBATCH --gpus-per-node=1
 #SBATCH --time=1-23:00:00
 #SBATCH --output=/home/stympopper/bash/out/%x-%j.out
