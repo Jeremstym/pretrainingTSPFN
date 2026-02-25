@@ -22,6 +22,7 @@ from scipy.io import arff
 from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.preprocessing import LabelEncoder
 from pathlib import Path
 import argparse
 
@@ -195,12 +196,16 @@ class ECG5000Dataset(Dataset):
             print(f"Filtering to present labels {self.present_labels}: {len(filtered_indices)} samples remain.")
             self.X = self.X[filtered_indices]
             self.Y = np.array(filtered_labels)
+            le = LabelEncoder()
+            self.Y = le.fit_transform(self.Y)
 
         if fold is not None and split == "train":
             skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
             list_of_split = list(skf.split(self.X, self.Y))
             self.X = self.X[list_of_split[fold][1]]  # Use the specified fold's test indices for validation
             self.Y = self.Y[list_of_split[fold][1]]
+            le = LabelEncoder()
+            self.Y = le.fit_transform(self.Y)
             self.present_labels = np.unique(self.Y)
 
         print(f"Count labels in {split} split: {np.unique(self.Y, return_counts=True)}")

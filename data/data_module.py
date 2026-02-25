@@ -274,6 +274,9 @@ class ECG5000DataModule(TSPFNDataModule):
             support_size=self.support_size,
             fold=self.fold,
         )
+
+        # Only applies label filtering for XGBoost which needs to have the same labels in train and val sets
+        # Not for TSPFN which can handle different labels in train and val
         present_labels = self.train_dataset.present_labels if self.filter_labels else None
         self.val_dataset = ECG5000Dataset(root=self.data_roots, split="test", present_labels=present_labels)
 
