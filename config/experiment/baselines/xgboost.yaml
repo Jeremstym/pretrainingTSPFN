@@ -23,6 +23,7 @@ data:
   support_size: null # Number of samples to use for training in the support set (for few-shot learning). If null, use all available samples.
   fold: null # If not null, use this fold for validation in evaluation datasets (0-4)
   num_workers: 4 # try 4, 8, 16 depending on the system capabilities
+  filter_labels: True # Whether to filter the dataset to only include labels present in the training set (for evaluation datasets)
 
 task:
   _target_: tspfn.baselines.xgboost.XGBoostStaticBaseline
