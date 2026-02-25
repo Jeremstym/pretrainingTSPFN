@@ -245,6 +245,7 @@ class ECG5000DataModule(TSPFNDataModule):
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
+        filter_labels: Optional[bool] = False,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -258,6 +259,7 @@ class ECG5000DataModule(TSPFNDataModule):
             pin_memory=pin_memory,
             transform=transform,
             seed=seed,
+            filter_labels=filter_labels,
         )
 
         print(f"num workers: {self.num_workers}")
@@ -270,8 +272,8 @@ class ECG5000DataModule(TSPFNDataModule):
             support_size=self.support_size,
             fold=self.fold,
         )
-        scaler = self.train_dataset.scaler
-        self.val_dataset = ECG5000Dataset(root=self.data_roots, split="test", scaler=scaler)
+        present_labels = self.train_dataset.present_labels if self.filter_labels else None
+        self.val_dataset = ECG5000Dataset(root=self.data_roots, split="test", present_labels=present_labels)
 
         return
 
