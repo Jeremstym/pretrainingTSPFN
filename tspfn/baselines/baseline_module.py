@@ -374,7 +374,7 @@ class BaselineModule(TSPFNSystem):
     #         writer.writerows(output_data)
     #     logger.info("Test metrics saved to test_metrics.csv")
 
-def on_test_epoch_end(self):
+    def on_test_epoch_end(self):
         # 1. Standard Metric Logging (Your existing code)
         output_metrics = []
         if self.num_classes == 2:
@@ -428,3 +428,65 @@ def on_test_epoch_end(self):
             # Clear memory
             self.test_predictions_storage.clear()
             logger.info("Detailed test predictions saved to test_patient_predictions.csv")
+
+    # def on_test_epoch_end(self):
+    #         # 1. Standard Metric Logging
+    #         output_data = []
+    #         if self.num_classes == 2:
+    #             metrics_collection = self.metrics_binary
+    #         else:
+    #             metrics_collection = self.metrics
+
+    #         for target_task, collection in metrics_collection["test_metrics"].items():
+    #             results = collection.compute()  # This gets the aggregated metrics (Accuracy, etc.)
+    #             for metric_name, value in results.items():
+    #                 tag = f"{metric_name}/{target_task}"
+    #                 self.log(f"test_{tag}", value)
+    #                 output_data.append({"metric": tag, "value": value.item()})
+    #             collection.reset()
+
+    #         # Save aggregate metrics CSV
+    #         with open("test_metrics.csv", mode="w", newline="") as csv_file:
+    #             writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
+    #             writer.writeheader()
+    #             writer.writerows(output_data)
+
+    #         # 2. Detailed Probability Logging (The "Probits")
+    #         if hasattr(self, 'test_predictions_storage') and self.test_predictions_storage:
+    #             prediction_records = []
+    #             for batch_idx, batch_data in enumerate(self.test_predictions_storage):
+    #                 batch_probs = batch_data["probs"]     
+    #                 batch_targets = batch_data["targets"] 
+
+    #                 for i in range(batch_probs.size(0)):
+    #                     target_val = batch_targets[i].item() if batch_targets.ndim > 0 else batch_targets.item()
+    #                     row = {
+    #                         "batch_idx": batch_idx,
+    #                         "sample_idx_in_batch": i,
+    #                         "true_label": target_val
+    #                     }
+    #                     for class_id in range(batch_probs.size(1)):
+    #                         prob_val = batch_probs[i, class_id].item()
+    #                         # Ensure precision and handle scientific notation
+    #                         row[f"prob_class_{class_id}"] = prob_val if abs(prob_val) > 1e-9 else 0.0
+    #                     prediction_records.append(row)
+
+    #             # Save the patient-level CSV
+    #             pd.DataFrame(prediction_records).to_csv("test_patient_predictions.csv", index=False)
+    #             self.test_predictions_storage.clear() # Free memory
+                
+    #         logger.info("Metrics and patient predictions saved.")
+    # # Why the Metrics might be failing (The Logic Bug)
+    # # In your _prediction_shared_step, look at your binary classification block:
+
+    # # Python
+    # # # YOUR CURRENT CODE:
+    # # else:
+    # #     target = target.float()
+    # #     y_hat = y_hat[:, 1]  # <--- You overwrite y_hat with a 1D tensor of logits
+    # # # ...
+    # # if num_classes > 2:
+    # #     self.metrics[stage][target_task].update(y_hat, target)
+    # # else:
+    # #     target = target.long()
+    # #     self.metrics_binary[stage][target_task].update(y_hat, target) # <--- Using 1D log
