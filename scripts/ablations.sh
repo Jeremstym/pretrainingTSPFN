@@ -37,7 +37,6 @@ for fold in 0 1 2 3 4; do
     # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-xgboost/fold${fold}' data=evaluating-ecg5000 +experiment=baselines/xgboost seed=42 train=False test=True data.support_size=500 +supsize=500 data.fold=${fold} +fold=${fold}
     # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-TCN/fold${fold}' +experiment=baselines/baseline data=finetuning-ecg5000 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 +supsize=500 data.fold=${fold} +fold=${fold}
     # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ecg5000-labram/fold${fold}' +experiment=baselines/baseline data=finetuning-ecg5000 task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0 data.support_size=500 +supsize=500 data.fold=${fold} +fold=${fold}
-
   done
 
 for fold in 0 1 2 3 4; do

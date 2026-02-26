@@ -536,11 +536,11 @@ class TSPFNFineTuning(TSPFNSystem):
                     row = {
                         "batch_idx": batch_idx,
                         "sample_idx_in_batch": i,
-                        "true_label": targets[i].item()
+                        "true_label": targets[i]
                     }
                     # Add columns for each class probability
                     for class_id in range(probs.size(1)):
-                        row[f"prob_class_{class_id}"] = probs[i, class_id].item()
+                        row[f"prob_class_{class_id}"] = probs[i, class_id]
                     
                     records.append(row)
 
