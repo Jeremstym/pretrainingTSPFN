@@ -268,6 +268,20 @@ class BaselineModule(TSPFNSystem):
             pred = prediction_head(out_features)
             predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
 
+        if not self.trainer.training and not self.trainer.validating:
+            # Calculate Softmax probabilities
+            y_hat_raw = predictions["classification"]
+            if y_hat_raw.ndim == 1:
+                y_hat_raw = y_hat_raw.unsqueeze(dim=0)
+            
+            probs = torch.softmax(y_hat_raw, dim=-1)
+            
+            # Store detached CPU copies to avoid memory leaks
+            self.test_predictions_storage.append({
+                "probs": probs.detach().cpu(),
+                "targets": target_labels.detach().cpu()
+            })
+
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
 
@@ -331,27 +345,86 @@ class BaselineModule(TSPFNSystem):
         print("Fitting MiniRocket kernels on training sample...")
         self.encoder.fit_extractor(x.numpy())
 
-    def on_test_epoch_end(self):
-        output_data = []
+    def on_test_start(self):
+        # Initialize a custom attribute to store predictions
+        self.test_predictions_storage = []
+
+    # def on_test_epoch_end(self):
+    #     output_data = []
+    #     if self.num_classes == 2:
+    #         metrics_collection = self.metrics_binary
+    #     else:
+    #         metrics_collection = self.metrics
+    #     for target_task, collection in metrics_collection["test_metrics"].items():
+    #         # compute() returns a dict of results for this task
+    #         results = collection.compute()
+
+    #         for metric_name, value in results.items():
+    #             tag = f"{metric_name}/{target_task}"
+    #             self.log(f"test_{tag}", value)  # Log to logger
+    #             output_data.append({"metric": tag, "value": value.item()})
+
+    #         # Reset is handled by Lightning if logged, but manual reset is safe here
+    #         collection.reset()
+
+    #     # Save CSV once at the very end
+    #     with open("test_metrics.csv", mode="w", newline="") as csv_file:
+    #         writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
+    #         writer.writeheader()
+    #         writer.writerows(output_data)
+    #     logger.info("Test metrics saved to test_metrics.csv")
+
+def on_test_epoch_end(self):
+        # 1. Standard Metric Logging (Your existing code)
+        output_metrics = []
         if self.num_classes == 2:
             metrics_collection = self.metrics_binary
         else:
             metrics_collection = self.metrics
+            
         for target_task, collection in metrics_collection["test_metrics"].items():
-            # compute() returns a dict of results for this task
             results = collection.compute()
-
             for metric_name, value in results.items():
                 tag = f"{metric_name}/{target_task}"
-                self.log(f"test_{tag}", value)  # Log to logger
-                output_data.append({"metric": tag, "value": value.item()})
-
-            # Reset is handled by Lightning if logged, but manual reset is safe here
+                self.log(f"test_{tag}", value)
+                output_metrics.append({"metric": tag, "value": value.item()})
             collection.reset()
 
-        # Save CSV once at the very end
         with open("test_metrics.csv", mode="w", newline="") as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
             writer.writeheader()
-            writer.writerows(output_data)
-        logger.info("Test metrics saved to test_metrics.csv")
+            writer.writerows(output_metrics)
+
+        # 2. Detailed Probability Logging (New implementation)
+        if hasattr(self, 'test_predictions_storage') and self.test_predictions_storage:
+            prediction_records = []
+            
+            for batch_idx, batch_data in enumerate(self.test_predictions_storage):
+                batch_probs = batch_data["probs"]     # (N, Num_Classes)
+                batch_targets = batch_data["targets"] # (N,)
+
+                for i in range(batch_probs.size(0)):
+                    # Ensure targets are extracted as scalars
+                    target_val = batch_targets[i].item() if batch_targets.ndim > 0 else batch_targets.item()
+                    
+                    row = {
+                        "batch_idx": batch_idx,
+                        "sample_idx_in_batch": i,
+                        "true_label": target_val
+                    }
+                    
+                    # Store each class probability individually as a float
+                    for class_id in range(batch_probs.size(1)):
+                        prob_val = batch_probs[i, class_id].item()
+                        # Clean small values to 0 if they are essentially noise
+                        row[f"prob_class_{class_id}"] = prob_val if abs(prob_val) > 1e-9 else 0.0
+                    
+                    prediction_records.append(row)
+
+            # Save using Pandas for easy alignment later
+            df_preds = pd.DataFrame(prediction_records)
+            df_preds.to_csv("test_patient_predictions.csv", index=False)
+            
+            # Clear memory
+            self.test_predictions_storage.clear()
+            logger.info("Detailed test predictions saved to test_patient_predictions.csv")
