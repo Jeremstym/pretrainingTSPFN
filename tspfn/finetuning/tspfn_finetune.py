@@ -531,8 +531,7 @@ class TSPFNFineTuning(TSPFNSystem):
             for batch_idx, batch_data in enumerate(self.test_predictions_storage):
                 probs = batch_data["probs"]   # Shape: (Num_Queries, Num_Classes)
                 targets = batch_data["targets"] # Shape: (Num_Queries,)
-                print(f"Batch {batch_idx}: probs shape {probs.shape}, targets shape {targets.shape}")
-                raise ValueError("Stopping execution to check shapes of probs and targets before saving predictions.")
+                targets = targets.squeeze(dim=0)  # Remove batch dimension if present
 
                 for i in range(probs.size(0)):
                     row = {
