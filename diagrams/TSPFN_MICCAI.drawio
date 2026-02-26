@@ -3819,15 +3819,6 @@
         <mxCell id="RrynHkJUvxtklbxy9Nxb-4" connectable="0" parent="1" style="group" value="" vertex="1">
           <mxGeometry height="338.5" width="626" x="-2158.05" y="8627" as="geometry" />
         </mxCell>
-        <mxCell id="RrynHkJUvxtklbxy9Nxb-5" parent="RrynHkJUvxtklbxy9Nxb-4" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;sketch=1;curveFitting=1;jiggle=2;" value="" vertex="1">
-          <mxGeometry height="40" width="40" x="586" y="199.5" as="geometry" />
-        </mxCell>
-        <mxCell id="RrynHkJUvxtklbxy9Nxb-6" parent="RrynHkJUvxtklbxy9Nxb-4" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;sketch=1;curveFitting=1;jiggle=2;" value="" vertex="1">
-          <mxGeometry height="40" width="40" x="586" y="249" as="geometry" />
-        </mxCell>
-        <mxCell id="RrynHkJUvxtklbxy9Nxb-7" parent="RrynHkJUvxtklbxy9Nxb-4" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;sketch=1;curveFitting=1;jiggle=2;" value="" vertex="1">
-          <mxGeometry height="40" width="40" x="586" y="298.5" as="geometry" />
-        </mxCell>
         <mxCell id="RrynHkJUvxtklbxy9Nxb-8" parent="RrynHkJUvxtklbxy9Nxb-4" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;" value="" vertex="1">
           <mxGeometry height="40" width="40" x="2" y="197.5" as="geometry" />
         </mxCell>
@@ -3968,24 +3959,6 @@
         </mxCell>
         <mxCell id="RrynHkJUvxtklbxy9Nxb-54" parent="RrynHkJUvxtklbxy9Nxb-4" style="shape=orEllipse;perimeter=ellipsePerimeter;whiteSpace=wrap;html=1;backgroundOutline=1;" value="" vertex="1">
           <mxGeometry height="40" width="40" x="235.5" y="53" as="geometry" />
-        </mxCell>
-        <mxCell id="RrynHkJUvxtklbxy9Nxb-55" edge="1" parent="RrynHkJUvxtklbxy9Nxb-4" style="endArrow=none;html=1;rounded=0;strokeWidth=3;strokeColor=light-dark(#000000,#121212);" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="579" y="200.5" as="sourcePoint" />
-            <mxPoint x="563.0007361963183" y="239.0000000000009" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="RrynHkJUvxtklbxy9Nxb-56" edge="1" parent="RrynHkJUvxtklbxy9Nxb-4" style="endArrow=none;html=1;rounded=0;strokeWidth=3;strokeColor=light-dark(#000000,#121212);" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="579" y="250.5" as="sourcePoint" />
-            <mxPoint x="563.0007361963183" y="289.0000000000009" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="RrynHkJUvxtklbxy9Nxb-57" edge="1" parent="RrynHkJUvxtklbxy9Nxb-4" style="endArrow=none;html=1;rounded=0;strokeWidth=3;strokeColor=light-dark(#000000,#121212);" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="579" y="298.5" as="sourcePoint" />
-            <mxPoint x="563.0007361963183" y="337.0000000000009" as="targetPoint" />
-          </mxGeometry>
         </mxCell>
         <mxCell id="RrynHkJUvxtklbxy9Nxb-58" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;&lt;font face=&quot;Times New Roman&quot; style=&quot;font-size: 42px;&quot;&gt;Channel-Wise RoPE&lt;/font&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="182.5" width="481" x="-1428.0500000000002" y="8359" as="geometry" />
