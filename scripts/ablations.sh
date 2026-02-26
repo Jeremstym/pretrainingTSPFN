@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --partition=electronic
+#SBATCH --partition=heavy
 #SBATCH --job-name=Ablations
 #SBATCH --nodes=1
-#SBATCH --nodelist=modjo
+#SBATCH --nodelist=dc
 #SBATCH --gpus-per-node=1
 #SBATCH --time=1-23:00:00
 #SBATCH --output=/home/stympopper/bash/out/%x-%j.out
