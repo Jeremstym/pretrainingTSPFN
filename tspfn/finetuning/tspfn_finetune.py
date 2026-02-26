@@ -459,6 +459,13 @@ class TSPFNFineTuning(TSPFNSystem):
         for target_task, target_loss in self.predict_losses.items():
             if target_task == "classification":
                 y_hat = predictions[target_task]  # (N=Query, num_classes)
+                if not self.training:
+                    probabilities = torch.softmax(y_hat, dim=-1)
+                    self.test_predictions_storage.append({
+                        "probs": probabilities.detach().cpu(),
+                        "targets": target_batch.detach().cpu()
+                    })
+
                 if y_hat.ndim == 1:
                     y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_classes=1)
                 target = target_batch.squeeze(dim=0)  # (N=Query,)
@@ -489,27 +496,89 @@ class TSPFNFineTuning(TSPFNSystem):
 
         return metrics
 
-    def on_test_epoch_end(self):
-        output_data = []
-        if self.num_classes == 2:
-            metrics_collection = self.metrics_binary
-        else:
-            metrics_collection = self.metrics
-        for target_task, collection in metrics_collection["test_metrics"].items():
-            # compute() returns a dict of results for this task
-            results = collection.compute()
+    def on_test_start(self):
+        # Initialize a custom attribute to store predictions
+        self.test_predictions_storage = []
 
-            for metric_name, value in results.items():
-                tag = f"{metric_name}/{target_task}"
-                self.log(f"test_{tag}", value)  # Log to logger
-                output_data.append({"metric": tag, "value": value.item()})
+    # def on_test_epoch_end(self):
+    #     output_data = []
+    #     if self.num_classes == 2:
+    #         metrics_collection = self.metrics_binary
+    #     else:
+    #         metrics_collection = self.metrics
+    #     for target_task, collection in metrics_collection["test_metrics"].items():
+    #         # compute() returns a dict of results for this task
+    #         results = collection.compute()
 
-            # Reset is handled by Lightning if logged, but manual reset is safe here
-            collection.reset()
+    #         for metric_name, value in results.items():
+    #             tag = f"{metric_name}/{target_task}"
+    #             self.log(f"test_{tag}", value)  # Log to logger
+    #             output_data.append({"metric": tag, "value": value.item()})
 
-        # Save CSV once at the very end
-        with open("test_metrics.csv", mode="w", newline="") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
-            writer.writeheader()
-            writer.writerows(output_data)
-        logger.info("Test metrics saved to test_metrics.csv")
+    #         # Reset is handled by Lightning if logged, but manual reset is safe here
+    #         collection.reset()
+
+    #     # Save CSV once at the very end
+    #     with open("test_metrics.csv", mode="w", newline="") as csv_file:
+    #         writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
+    #         writer.writeheader()
+    #         writer.writerows(output_data)
+    #     logger.info("Test metrics saved to test_metrics.csv")
+
+def on_test_epoch_end(self):
+    # --- Part A: Your existing Metric CSV logic ---
+    output_metrics = []
+    # ... (your existing loop that writes test_metrics.csv) ...
+    output_data = []
+    if self.num_classes == 2:
+        metrics_collection = self.metrics_binary
+    else:
+        metrics_collection = self.metrics
+    for target_task, collection in metrics_collection["test_metrics"].items():
+        # compute() returns a dict of results for this task
+        results = collection.compute()
+
+        for metric_name, value in results.items():
+            tag = f"{metric_name}/{target_task}"
+            self.log(f"test_{tag}", value)  # Log to logger
+            output_data.append({"metric": tag, "value": value.item()})
+
+        # Reset is handled by Lightning if logged, but manual reset is safe here
+        collection.reset()
+
+    # Save CSV once at the very end
+    with open("test_metrics.csv", mode="w", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
+        writer.writeheader()
+        writer.writerows(output_data)
+    logger.info("Test metrics saved to test_metrics.csv")
+
+    # --- Part B: Your New Predictions CSV logic ---
+    if hasattr(self, 'test_predictions_storage') and self.test_predictions_storage:
+        records = []
+        
+        # Flatten the list of batches
+        for batch_idx, batch_data in enumerate(self.test_predictions_storage):
+            probs = batch_data["probs"]   # Shape: (Num_Queries, Num_Classes)
+            targets = batch_data["targets"] # Shape: (Num_Queries,)
+
+            for i in range(probs.size(0)):
+                row = {
+                    "batch_idx": batch_idx,
+                    "sample_idx_in_batch": i,
+                    "true_label": targets[i].item()
+                }
+                # Add columns for each class probability
+                for class_id in range(probs.size(1)):
+                    row[f"prob_class_{class_id}"] = probs[i, class_id].item()
+                
+                records.append(row)
+
+        # Save to a separate CSV using pandas (much easier for this structure)
+        df = pd.DataFrame(records)
+        df.to_csv("test_patient_predictions.csv", index=False)
+        
+        # Clean up memory
+        self.test_predictions_storage.clear()
+        
+    logger.info("Detailed predictions saved to test_patient_predictions.csv")
