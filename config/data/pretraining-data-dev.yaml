@@ -1,7 +1,7 @@
 defaults:
   - default
 
-_target_: data.data_module.PretrainingMantisDataModule
+_target_: data.data_module_mantis.PretrainingMantisDataModule
 train_datasets:
   2ChannelTUEV:
     _target_: data.pretraining_mantis.TUEV2ChannelDataset
