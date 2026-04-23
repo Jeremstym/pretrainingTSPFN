@@ -177,7 +177,7 @@ class MantisPretraining(TSPFNSystem):
         #     summary_mode = False
 
 
-        out_features = self.encode(time_series_attrs)  # (B, C, T) -> (B, E)
+        out_features = self.encode(time_series_attrs.squeeze(dim=0))  # (B, C, T) -> (B, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
