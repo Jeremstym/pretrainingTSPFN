@@ -24,7 +24,7 @@ data:
 task:
   _target_: tspfn.pretraining.mantis_pretrain.MantisPretraining
   embed_dim: 192
-  chunk_size: 512
+  chunk_size: ${data.chunk_size}
   contrastive_losses:
     contrastive:
       _target_: tspfn.losses.ContrastiveLoss
