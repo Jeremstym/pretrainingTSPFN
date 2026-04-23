@@ -36,7 +36,7 @@ from data.evaluation_datasets import (
     AtrialFibrillationDataset,
     CPSCDataset,
 )
-from data.pretraining_mantis import MantisMetaDataset
+from data.pretraining_mantis_ds import MantisMetaDataset
 from data.utils.sampler import StratifiedBatchSampler
 from data.utils.processing_csv import load_csv
 
