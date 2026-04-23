@@ -1,6 +1,7 @@
 import torch
 
 from torch import nn
+import torch.nn.functional as F
 from einops import repeat, pack, unpack, rearrange
 from huggingface_hub import PyTorchModelHubMixin
 
@@ -61,6 +62,8 @@ class TokenGeneratorUnit(nn.Module):
     def forward(self, x):
         with torch.no_grad():
             # compute statistics for each patch
+            if x.shape[2] % self.num_patches != 0:
+                x = F.interpolate(x, size=self.num_patches * (x.shape[2] // self.num_patches), mode='linear', align_corners=False)
             x_patched = x.reshape(x.shape[0], self.num_patches, -1)
             mean_patched = torch.mean(x_patched, axis=-1, keepdim=True)
             std_patched = torch.std(x_patched, axis=-1, keepdim=True)
@@ -182,18 +185,18 @@ class MantisV1(
 
     Parameters
     ----------
-    seq_len: int, default 512
+    seq_len: int, default 250
         The sequence length, i.e., the length of each time series. This model does not support data with non-fixed
         sequence length, please make all the time series to be of a fixed length by resizing or padding.
     hidden_dim: int, default=256
         Size of a patch (token), i.e., what the hidden dimension each patch is projected to. At the same time,
         ``hidden_dim`` corresponds to the dimension of the embedding space.
-    num_patches: int, default=32
+    num_patches: int, default=25
         Number of patches (tokens).
     scalar_scales: list, default=None
         List of scales used for MultiScaledScalarEncoder in TokenGeneratorUnit. By default, initialized as [1e-4, 1e-3,
         1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4].
-    hidden_dim_scalar_enc: int, default=32
+    hidden_dim_scalar_enc: int, default=25
         Hidden dimension of a scalar encoder used for MultiScaledScalarEncoder in TokenGeneratorUnit.
     epsilon_scalar_enc: float, default=1.1
         A constant term used to tolerate the computational error in computation of scale weights for
@@ -202,7 +205,7 @@ class MantisV1(
         Number of transformer layers used for Transformer in TransformerUnit.
     transf_num_heads: int, default=8
         Number of self-attention heads used for Transformer in TransformerUnit.
-    transf_mlp_dim: int, default=512
+    transf_mlp_dim: int, default=250
         Hidden dimension of the MLP (feed-forward) transformer's part used for Transformer in TransformerUnit.
     transf_dim_head: int, default=128
         Hidden dimension of the keys, queries and values used for Transformer in TransformerUnit.
@@ -215,8 +218,8 @@ class MantisV1(
         InfoNCE contrastive loss.
     """
 
-    def __init__(self, seq_len=512, hidden_dim=192, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
-                 epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128,
+    def __init__(self, seq_len=250, hidden_dim=192, num_patches=25, scalar_scales=None, hidden_dim_scalar_enc=25,
+                 epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=250, transf_dim_head=128,
                  transf_dropout=0.1, device='cuda', pre_training=False, return_transf_layer=-1, output_token='cls_token'):
 
         super().__init__()
@@ -296,8 +299,8 @@ class Mantis8M(
     For new code, use MantisV1 instead.
     """
 
-    def __init__(self, seq_len=512, hidden_dim=192, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
-                 epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128,
+    def __init__(self, seq_len=250, hidden_dim=192, num_patches=25, scalar_scales=None, hidden_dim_scalar_enc=25,
+                 epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=250, transf_dim_head=128,
                  transf_dropout=0.1, device='cuda', pre_training=True):
 
         super().__init__()
