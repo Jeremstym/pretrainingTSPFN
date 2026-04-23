@@ -14,7 +14,7 @@ trainer:
   devices: ${sys.num_gpus:}
   accelerator: gpu
   precision: 32 #16-mixed, 32
-  max_epochs: 500
+  max_epochs: 100
   
 output_dir: ${sys.getcwd:}
 
@@ -23,7 +23,7 @@ data:
 
 task:
   _target_: tspfn.pretraining.mantis_pretrain.MantisPretraining
-  embed_dim: 192 # 192 for V2, 512 for V2.5
+  embed_dim: 192
   chunk_size: ${data.chunk_size}
   contrastive_losses:
     contrastive:
@@ -32,9 +32,9 @@ task:
   optim:
     optimizer:
       _target_: torch.optim.AdamW
-      lr: 5e-5              # Slightly higher than single-set tuning, but still cautious
-      weight_decay: 0.1     # Stronger decay is essential for multi-dataset meta-learning
-      eps: 1e-8
+      lr: 2e-4              # Follow Mantis paper setup
+      weight_decay: 0.05     # Follow Mantis paper setup
+      # eps: 1e-8
     # scheduler:
     #   _target_: transformers.get_cosine_schedule_with_warmup
     #   num_warmup_steps: 100 # Warmup should be step-based, not epoch-based
