@@ -1,7 +1,7 @@
 import torch
 
 from torch import nn
-from einops import repeat, pack, unpack
+from einops import repeat, pack, unpack, rearrange
 from huggingface_hub import PyTorchModelHubMixin
 
 from .tokgen_utils.convolution import Convolution
@@ -150,8 +150,8 @@ class ViTUnit(nn.Module):
         x_embeddings = self.pos_encoder(
             x_embeddings.transpose(0, 1)).transpose(0, 1)
         x_embeddings = self.transformer(x_embeddings)
-        cls_tokens, _ = unpack(x_embeddings, ps, 'b * d')
-        return cls_tokens.reshape(cls_tokens.shape[0], -1)
+        cls_tokens, x_embeddings = unpack(x_embeddings, ps, 'b * d')
+        return cls_tokens.reshape(cls_tokens.shape[0], -1), x_embeddings
 
 
 def rename_vit_unit_weights_hook(state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
@@ -215,7 +215,7 @@ class MantisV1(
         InfoNCE contrastive loss.
     """
 
-    def __init__(self, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
+    def __init__(self, seq_len=512, hidden_dim=192, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
                  epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128,
                  transf_dropout=0.1, device='cuda', pre_training=False, return_transf_layer=-1, output_token='cls_token'):
 
@@ -296,9 +296,9 @@ class Mantis8M(
     For new code, use MantisV1 instead.
     """
 
-    def __init__(self, seq_len=512, hidden_dim=256, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
+    def __init__(self, seq_len=512, hidden_dim=192, num_patches=32, scalar_scales=None, hidden_dim_scalar_enc=32,
                  epsilon_scalar_enc=1.1, transf_depth=6, transf_num_heads=8, transf_mlp_dim=512, transf_dim_head=128,
-                 transf_dropout=0.1, device='cuda', pre_training=False):
+                 transf_dropout=0.1, device='cuda', pre_training=True):
 
         super().__init__()
         assert (seq_len % num_patches) == 0, print(
@@ -336,12 +336,17 @@ class Mantis8M(
         return super().to(device)
 
     def forward(self, x):
+        # Collapse channel on batch dim
+        c_in = x.shape[1]
+        x = rearrange(x, 'b (c nc) t -> (b c) nc t', nc=1)
         x_embeddings = self.tokgen_unit(x)
-        vit_out = self.vit_unit(x_embeddings)
+        vit_out, x_tokens = self.vit_unit(x_embeddings)
+        # Unfold channel dim
         if self.pre_training:
             return self.prj(vit_out)
         else:
-            return vit_out
+            x_tokens = rearrange(x_tokens, '(b c) t d -> b c t d', c=c_in)
+            return x_tokens
 
     @classmethod
     def from_pretrained(cls, *args, **kwargs):
