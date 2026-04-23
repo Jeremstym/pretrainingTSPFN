@@ -169,20 +169,15 @@ class MantisPretraining(TSPFNSystem):
                 1 * (B, Query), Prediction for each target in `losses`.
         """
 
-        if hasattr(self, "example_input_array") and torch.equal(
-            time_series_attrs, self.example_input_array[0].to(time_series_attrs.device)
-        ):
-            summary_mode = True
-        else:
-            summary_mode = False
+        # if hasattr(self, "example_input_array") and torch.equal(
+        #     time_series_attrs, self.example_input_array[0].to(time_series_attrs.device)
+        # ):
+        #     summary_mode = True
+        # else:
+        #     summary_mode = False
 
-        y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
-            time_series_attrs=time_series_attrs,
-            labels=labels,
-            summary_mode=summary_mode,
-        )  # (B, Support, 1), (B, Query, 1), (B, S, C, T)
 
-        out_features = self.encode(y_batch_support, ts_support, ts_query)  # (B, S, C, T) -> (B, E)
+        out_features = self.encode(time_series_attrs)  # (B, C, T) -> (B, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
