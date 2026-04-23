@@ -37,6 +37,7 @@ from tspfn.utils import (
     z_scoring_per_channel,
     get_stratified_batch_split,
 )
+from tspfn.augmentation import RandomCropResize
 
 logger = logging.getLogger(__name__)
 
@@ -212,69 +213,68 @@ class MantisPretraining(TSPFNSystem):
 
         # Squeeze dataset dimension
         time_series_input = time_series_input.squeeze(dim=0) # -> (B, C, T)
+        seq_len = time_series_input.shape[-1]
 
-        embedding = self.encode(
-            ts_input=time_series_input,
+        augmentation_1 = RandomCropResize(crop_rate_range=[0, 0.2], size=seq_len)
+        augmentation_2 = RandomCropResize(crop_rate_range=[0, 0.2], size=seq_len)
+
+        ts_augmented_1 = augmentation_1(time_series_input)  # (B, C, T)
+        ts_augmented_2 = augmentation_2(time_series_input)  # (B, C, T)
+
+        embedding_1 = self.encode(
+            ts_input=ts_augmented_1,
+            y_input=target_labels,
+        )
+        embedding_2 = self.encode(
+            ts_input=ts_augmented_2,
             y_input=target_labels,
         )
 
+
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
+        
+        # if self.trainer.training:
+        #     stage = "train_metrics"
+        # elif self.trainer.validating:
+        #     stage = "val_metrics"
+        # else:
+        #     stage = "test_metrics"
 
-        target_batch = y_batch_query
-
-        if self.trainer.training:
-            stage = "train_metrics"
-        elif self.trainer.validating:
-            stage = "val_metrics"
-        else:
-            stage = "test_metrics"
-
-        # trainable_losses = []
-        for target_task, target_loss in self.contrastive_losses.items():
-            y_hat = predictions[target_task]  # Shape: (B, Q, num_classes)
-            target = target_batch.long()  # Shape: (B, Q)
-
-            # Flatten the batch and query dimensions
-            # y_hat -> (B * Q, num_classes)
-            # target -> (B * Q)
-            y_hat_flat = y_hat.view(-1, y_hat.size(-1))
-            target_flat = target.view(-1)
+        for contrastive_task, contrastive_loss in self.contrastive_losses.items():
 
             # Compute loss for the entire batch at once
-            loss_val = target_loss(y_hat_flat, target_flat)
-            # trainable_losses.append(loss_val)
+            loss_val = contrastive_loss(embedding_1, embedding_2)
 
-            loss_name = f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"
+            loss_name = f"{contrastive_loss.__class__.__name__.lower().replace('loss', '')}/{contrastive_task}"
             losses[loss_name] = loss_val
 
-            # Metrics are automatically updated inside the Metric objects
-            self.metrics[stage][target_task].update(y_hat_flat, target_flat)
+            # # Metrics are automatically updated inside the Metric objects
+            # self.metrics[stage][contrastive_task].update(y_hat_flat, target_flat)
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
-        # losses["s_loss"] = torch.stack(trainable_losses).mean()
         metrics.update(losses)
 
         return metrics
 
-    def on_test_epoch_end(self):
-        output_data = []
+    # def on_test_epoch_end(self):
+    #     output_data = []
 
-        for target_task, collection in self.metrics["test_metrics"].items():
-            # compute() returns a dict of results for this task
-            results = collection.compute()
+    #     for target_task, collection in self.metrics["test_metrics"].items():
+    #         # compute() returns a dict of results for this task
+    #         results = collection.compute()
 
-            for metric_name, value in results.items():
-                tag = f"{metric_name}/{target_task}"
-                self.log(f"test_{tag}", value)  # Log to logger
-                output_data.append({"metric": tag, "value": value.item()})
+    #         for metric_name, value in results.items():
+    #             tag = f"{metric_name}/{target_task}"
+    #             self.log(f"test_{tag}", value)  # Log to logger
+    #             output_data.append({"metric": tag, "value": value.item()})
 
-            # Reset is handled by Lightning if logged, but manual reset is safe here
-            collection.reset()
+    #         # Reset is handled by Lightning if logged, but manual reset is safe here
+    #         collection.reset()
 
-        # Save CSV once at the very end
-        with open("test_metrics.csv", mode="w", newline="") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
-            writer.writeheader()
-            writer.writerows(output_data)
-        logger.info("Test metrics saved to test_metrics.csv")
+    #     # Save CSV once at the very end
+    #     with open("test_metrics.csv", mode="w", newline="") as csv_file:
+    #         writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
+    #         writer.writeheader()
+    #         writer.writerows(output_data)
+    #     logger.info("Test metrics saved to test_metrics.csv")
