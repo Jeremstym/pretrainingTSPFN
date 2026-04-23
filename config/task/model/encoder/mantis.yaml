@@ -1,13 +1,13 @@
 _target_: tspfn.tokenizer.mantis.Mantis8M
-seq_len: 512
+seq_len: 250
 hidden_dim: 192
-num_patches: 32
+num_patches: 25
 scalar_scales: null
-hidden_dim_scalar_enc: 32
+hidden_dim_scalar_enc: 25
 epsilon_scalar_enc: 1.1
 transf_depth: 6
 transf_num_heads: 8
-transf_mlp_dim: 512
+transf_mlp_dim: 250
 transf_dim_head: 128
 transf_dropout: 0.1
 device: 'cuda'
