@@ -2,7 +2,7 @@
 
 defaults:
   # - /task/model/prediction_head: pfn-prediction-pretraining
-  - /task/model/encoder: tspfn-encoder
+  - /task/model/encoder: mantis-encoder
   - override /task/model: null
   - override /task/optim: adamw
   - override /data: pretraining-data
