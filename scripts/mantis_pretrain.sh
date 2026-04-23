@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --partition=hard
-###SBATCH --nodelist=punk
+#SBATCH --partition=electronic
+#SBATCH --nodelist=punk
 #SBATCH --job-name=Mantis-pretraining
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
