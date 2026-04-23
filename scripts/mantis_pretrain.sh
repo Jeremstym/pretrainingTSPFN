@@ -11,4 +11,4 @@
 uname -a
 nvidia-smi
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/Mantis/pretrain-25seq-192dim' +experiment=pretrainingMantis/mantis-pretraining seed=42 data=pretraining-data
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/Mantis/pretrain-25seq-192dim' +experiment=pretrainingMantis/mantis-pretraining seed=42 data=pretraining-data-mantis
