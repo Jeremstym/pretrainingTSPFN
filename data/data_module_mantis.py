@@ -108,7 +108,7 @@ class PretrainingMantisDataModule(pl.LightningDataModule):
             # test_instances = {
             #     name: instantiate(cfg) for name, cfg in self.test_datasets.items()
             # }
-            self.test_ds = MantisTestDataset(val_instances, self.chunk_size)
+            self.test_ds = MantisMetaDataset(val_instances, self.chunk_size)
 
     def train_dataloader(self):
         return DataLoader(
