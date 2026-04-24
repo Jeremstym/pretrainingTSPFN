@@ -51,6 +51,7 @@ class TSPFNFineTuning(TSPFNSystem):
         time_series_num_channels: int = 16,
         time_series_length: int = 1000,
         channel_handler: Literal["average", "flatten", "convolution", "labram"] = None,
+        use_tokenizer: bool = False,
         num_classes: int = 10,
         *args,
         **kwargs,
@@ -87,6 +88,13 @@ class TSPFNFineTuning(TSPFNSystem):
 
         # Initialize transformer encoder and self-supervised + prediction heads
         self.encoder, self.prediction_heads = self.configure_model()
+
+        if use_tokenizer:
+            self.ts_tokenizer = hydra.utils.instantiate(
+                self.hparams["model"]["tokenizer"],
+            )
+        else:
+            self.ts_tokenizer = None
 
         self.ts_num_channels = time_series_num_channels
         self.ts_length = time_series_length
@@ -135,20 +143,20 @@ class TSPFNFineTuning(TSPFNSystem):
             }
         )
         if channel_handler == "convolution":
-            self.ts_tokenizer = TimeSeriesConvolutionTokenizer(
+            self.ts_foundation = TimeSeriesConvolutionTokenizer(
                 ts_size=time_series_length,
                 ts_num_channels=time_series_num_channels,
             )
         elif channel_handler == "labram":
-            self.ts_tokenizer = TimeSeriesLabramEncoder(
+            self.ts_foundation = TimeSeriesLabramEncoder(
                 pretrained_weights="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
             )
         elif channel_handler == "average":
-            self.ts_tokenizer = lambda x, input_chans: x.mean(dim=1)  # Average over channels
+            self.ts_foundation = lambda x, input_chans: x.mean(dim=1)  # Average over channels
         elif channel_handler == "flatten":
-            self.ts_tokenizer = lambda x, input_chans: x.view(x.size(0), -1)  # Flatten all channels
+            self.ts_foundation = lambda x, input_chans: x.view(x.size(0), -1)  # Flatten all channels
         elif channel_handler is None:
-            self.ts_tokenizer = None
+            self.ts_foundation = None
         else:
             raise ValueError(f"Unknown foundation model name '{channel_handler}' provided.")
 
@@ -224,12 +232,12 @@ class TSPFNFineTuning(TSPFNSystem):
             y_batch_support = labels.to(self.device)  # (Support, 1)
             y_batch_query = labels.to(self.device)  # (Query, 1)
 
-        if self.ts_tokenizer is not None:
-            ts_batch_support = self.ts_tokenizer(
+        if self.ts_foundation is not None:
+            ts_batch_support = self.ts_foundation(
                 ts_batch_support,
                 input_chans=list(range(self.ts_num_channels)),
             )  # (Support, num_tokens)
-            ts_batch_query = self.ts_tokenizer(
+            ts_batch_query = self.ts_foundation(
                 ts_batch_query,
                 input_chans=list(range(self.ts_num_channels)),
             )  # (Query, num_tokens)
@@ -243,9 +251,13 @@ class TSPFNFineTuning(TSPFNSystem):
                 y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
             if y_batch_query.ndim == 1:
                 y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
-        
-        elif self.ts_tokenizer is None:
-            
+
+        elif self.ts_tokenizer is not None:
+            ts_batch_support = self.ts_tokenizer(ts_batch_support)  # (Support, C, num_tokens, E)
+            ts_batch_query = self.ts_tokenizer(ts_batch_query)  # (Query, C, num_tokens, E)
+
+        if self.ts_foundation is None:
+
             # Unsqueeze to comply with expected input shape for TabPFN encoder
             if ts_batch_support.ndim == 3:
                 ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C, T)
@@ -271,6 +283,7 @@ class TSPFNFineTuning(TSPFNSystem):
         ts_batch_query: Tensor,
         y_inference_support: Optional[Tensor] = None,
         ts_inference_support: Optional[Tensor] = None,
+        already_tokenized: bool = False,
     ) -> Tensor:
         """Embeds input sequences using the encoder model, optionally selecting/pooling output ts for the embedding.
 
@@ -284,7 +297,10 @@ class TSPFNFineTuning(TSPFNSystem):
             out_features = self.encoder(
                 ts.transpose(0, 1),
                 y_batch_support.transpose(0, 1),
-            )[:, :, -1, :] # Take last token as output feature
+                already_tokenized=already_tokenized,
+            )[
+                :, :, -1, :
+            ]  # Take last token as output feature
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
@@ -293,7 +309,10 @@ class TSPFNFineTuning(TSPFNSystem):
             out_features = self.encoder(
                 ts.transpose(0, 1),
                 y_train.transpose(0, 1),
-            )[:, :, -1, :] # Take last token as output feature
+                already_tokenized=already_tokenized,
+            )[
+                :, :, -1, :
+            ]  # Take last token as output feature
 
         else:
             raise ValueError("During inference, both support ts and labels must be provided.")
@@ -338,7 +357,10 @@ class TSPFNFineTuning(TSPFNSystem):
             summary_mode=summary_mode,
         )  # (B, Support, 1), (B, Query, 1), (B, S, C, T)
 
-        out_features = self.encode(y_batch_support, ts_support, ts_query)  # (B, S, E) -> (B, E)
+        already_tokenized = self.ts_tokenizer is not None
+        out_features = self.encode(
+            y_batch_support, ts_support, ts_query, already_tokenized=already_tokenized
+        )  # (B, S, E) -> (B, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
@@ -374,10 +396,12 @@ class TSPFNFineTuning(TSPFNSystem):
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input
         )  # (B, S, E), (B, S)
+        already_tokenized = self.ts_tokenizer is not None
         return self.encode(
             y_batch_support,
             ts_support,
             ts_query,
+            already_tokenized=already_tokenized
         )  # (B, S, E) -> (B, E)
 
     def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
@@ -420,7 +444,9 @@ class TSPFNFineTuning(TSPFNSystem):
 
         if time_series_support is not None:
             assert support_labels is not None, "Support labels must be provided for inference."
-            print(f"time_series_support shape: {time_series_support.shape}, support_labels shape: {support_labels.shape}")
+            print(
+                f"time_series_support shape: {time_series_support.shape}, support_labels shape: {support_labels.shape}"
+            )
             # Store inference data for val/test steps
             y_train_support, _, ts_train_support, _ = self.process_data(
                 time_series_attrs=time_series_support, labels=support_labels
@@ -433,12 +459,14 @@ class TSPFNFineTuning(TSPFNSystem):
             y_inference_support = None
             ts_train_support = None
 
+        already_tokenized = self.ts_tokenizer is not None
         prediction = self.encode(
             y_batch_support,
             ts_support,
             ts_query,
             y_inference_support=y_inference_support,
             ts_inference_support=ts_train_support,
+            already_tokenized=already_tokenized,
         )
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
@@ -460,10 +488,9 @@ class TSPFNFineTuning(TSPFNSystem):
             if target_task == "classification":
                 y_hat = predictions[target_task]  # (N=Query, num_classes)
                 probs = torch.softmax(y_hat, dim=-1)
-                self.test_predictions_storage.append({
-                    "probs": probs.detach().cpu(),
-                    "targets": target_batch.detach().cpu()
-                })
+                self.test_predictions_storage.append(
+                    {"probs": probs.detach().cpu(), "targets": target_batch.detach().cpu()}
+                )
                 if y_hat.ndim == 1:
                     y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_classes=1)
                 target = target_batch.squeeze(dim=0)  # (N=Query,)
@@ -472,7 +499,9 @@ class TSPFNFineTuning(TSPFNSystem):
                     target = target.long()
                 else:
                     target = target.float()
-                    y_prob = torch.softmax(y_hat, dim=-1)[:, 1]  # (N=Query,) Take positive class probabilities for binary classification
+                    y_prob = torch.softmax(y_hat, dim=-1)[
+                        :, 1
+                    ]  # (N=Query,) Take positive class probabilities for binary classification
                     y_hat = y_hat[:, 1]  # (N=Query,) Take positive class logits for binary classification
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                     y_hat,
@@ -523,33 +552,29 @@ class TSPFNFineTuning(TSPFNSystem):
             writer.writeheader()
             writer.writerows(output_data)
         logger.info("Test metrics saved to test_metrics.csv")
-        
-        if hasattr(self, 'test_predictions_storage') and self.test_predictions_storage:
+
+        if hasattr(self, "test_predictions_storage") and self.test_predictions_storage:
             records = []
-            
+
             # Flatten the list of batches
             for batch_idx, batch_data in enumerate(self.test_predictions_storage):
-                probs = batch_data["probs"]   # Shape: (Num_Queries, Num_Classes)
-                targets = batch_data["targets"] # Shape: (Num_Queries,)
+                probs = batch_data["probs"]  # Shape: (Num_Queries, Num_Classes)
+                targets = batch_data["targets"]  # Shape: (Num_Queries,)
                 targets = targets.squeeze(dim=0)  # Remove batch dimension if present
 
                 for i in range(probs.size(0)):
-                    row = {
-                        "batch_idx": batch_idx,
-                        "sample_idx_in_batch": i,
-                        "true_label": targets[i]
-                    }
+                    row = {"batch_idx": batch_idx, "sample_idx_in_batch": i, "true_label": targets[i]}
                     # Add columns for each class probability
                     for class_id in range(probs.size(1)):
                         row[f"prob_class_{class_id}"] = probs[i, class_id]
-                    
+
                     records.append(row)
 
             # Save to a separate CSV using pandas (much easier for this structure)
             df = pd.DataFrame(records)
             df.to_csv("test_patient_predictions.csv", index=False)
-            
+
             # Clean up memory
             self.test_predictions_storage.clear()
-            
+
         logger.info("Detailed predictions saved to test_patient_predictions.csv")
