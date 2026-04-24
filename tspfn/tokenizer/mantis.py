@@ -348,7 +348,7 @@ class Mantis8M(
         if self.pre_training:
             return self.prj(vit_out)
         else:
-            x_tokens = rearrange(x_tokens, '(b c) t d -> b c t d', c=c_in)
+            x_tokens = rearrange(x_tokens, '(b c) t e -> b c t e', c=c_in)
             return x_tokens
 
     @classmethod
