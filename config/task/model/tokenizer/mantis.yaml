@@ -12,3 +12,4 @@ transf_dim_head: 128
 transf_dropout: 0.1
 device: 'cuda'
 pre_training: False
+path_pretrained: "pretraining_mantis" 
