@@ -42,6 +42,7 @@ task:
     #   _target_: torch.nn.BCEWithLogitsLoss
   time_series_positional_encoding: none
   channel_handler: null
+  use_tokenizer: True
   seed : ${seed}
   max_batches_stored_for_inference: 256
   model:
