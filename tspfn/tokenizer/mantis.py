@@ -329,6 +329,7 @@ class Mantis8M(
         transf_dropout=0.1,
         device="cuda",
         pre_training=True,
+        path_pretrained=None,
     ):
 
         super().__init__()
@@ -365,6 +366,9 @@ class Mantis8M(
 
         self.prj = nn.Sequential(nn.LayerNorm(self.hidden_dim), nn.Linear(self.hidden_dim, self.hidden_dim))
 
+        if path_pretrained is not None:
+            self.load_local_checkpoint(path_pretrained)
+
         self.to(device)
 
     def to(self, device):
@@ -383,6 +387,36 @@ class Mantis8M(
         else:
             x_tokens = rearrange(x_tokens, "(b c) t e -> b c t e", c=c_in)
             return x_tokens
+
+    def load_local_checkpoint(self, path):
+            """
+            Internal helper to load weights into the current instance.
+            """
+            print(f"Loading weights from {path}...")
+            
+            # Load the file (map to CPU first to avoid OOM or CUDA errors)
+            checkpoint = torch.load(path, map_location='cpu')
+
+            # Handle cases where the checkpoint is a dict with 'state_dict' key 
+            # (common in PyTorch Lightning or custom saves)
+            if isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
+                state_dict = checkpoint['state_dict']
+            else:
+                state_dict = checkpoint
+
+            # Backward Compatibility Logic: 
+            # If your checkpoint has 'transf_unit' but this class uses 'vit_unit', 
+            # rename the keys here.
+            new_state_dict = {}
+            for k, v in state_dict.items():
+                # Example: Rename old keys to match self.vit_unit
+                new_key = k.replace('transf_unit.', 'vit_unit.')
+                new_state_dict[new_key] = v
+
+            # Load the processed state dict into the model
+            # strict=False is safer if you are only partially loading weights
+            msg = self.load_state_dict(new_state_dict, strict=True)
+            print(f"Successfully loaded weights. Report: {msg}")
 
     @classmethod
     def from_pretrained(cls, *args, **kwargs):
