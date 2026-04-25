@@ -411,7 +411,7 @@ class Mantis8M(
             for k, v in state_dict.items():
                 # Example: Rename old keys to match self.vit_unit
                 new_key = k.replace('transf_unit.', 'vit_unit.')
-                new_key = "encoder." + new_key
+                new_key = k.replace("encoder.", "")
                 new_state_dict[new_key] = v
 
             # Load the processed state dict into the model
