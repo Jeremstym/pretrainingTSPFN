@@ -304,7 +304,10 @@ class TSPFNFineTuning(TSPFNSystem):
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
-            ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
+            if self.ts_tokenizer is None:
+                ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
+            else:
+                ts = torch.cat([ts_inference_support, ts_batch_query], dim=0)
             y_train = y_inference_support
             out_features = self.encoder(
                 ts.transpose(0, 1),
