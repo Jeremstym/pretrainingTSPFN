@@ -163,7 +163,9 @@ class TSPFNEncoder(nn.Module, ABC):
 
         if not already_tokenized:
             X = einops.rearrange(X, "s b (f n) -> b s f n", n=self.features_per_group)
-            
+        else:
+            X = einops.rearrange(X, "s b f e -> b s f e")
+
         y = torch.cat(
             (
                 y,
@@ -201,15 +203,18 @@ class TSPFNEncoder(nn.Module, ABC):
                 "s (b f) e -> b s f e",
                 b=embedded_y.shape[0],
             )
-        else:
-            X = einops.rearrange(X, "s b f e -> b s f e")
+        # else:
+        #     X = einops.rearrange(X, "s b f e -> b s f e")
         return embedded_x, embedded_y, single_eval_pos_
 
     def forward(
         self, X_full: torch.Tensor, y_train: torch.Tensor, already_tokenized: bool = False, *args, **kwargs
     ) -> Tuple[torch.torch.Tensor, torch.torch.Tensor]:
 
-        seq_len, batch_size, num_channels, num_features = X_full.shape
+        if not already_tokenized:
+            seq_len, batch_size, num_channels, num_features = X_full.shape
+        else:
+            seq_len, num_channels, num_features, embed_dim = X_full.shape
         if self.positional_encoding == "rope" or self.positional_encoding == "cwpe+rope":
             for layer in self.transformer_encoder.layers:
                 layer.self_attn_between_features.time_points = num_features * num_channels
@@ -220,7 +225,7 @@ class TSPFNEncoder(nn.Module, ABC):
             X_full = X_full.view(seq_len, batch_size, num_channels * num_features)  # (Seq, B, C*F)
             emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
         else:
-            X_full = X_full.view(seq_len, 1, num_channels * num_features, -1)  # (Seq, B, C*T, E)
+            X_full = X_full.view(seq_len, 1, num_channels * num_features, embed_dim)  # (Seq, B, C*T, E)
             emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train, already_tokenized=True)
 
         if self.positional_encoding == "none" or self.positional_encoding == "rope":
