@@ -203,8 +203,8 @@ class TSPFNEncoder(nn.Module, ABC):
                 "s (b f) e -> b s f e",
                 b=embedded_y.shape[0],
             )
-        # else:
-        #     X = einops.rearrange(X, "s b f e -> b s f e")
+        else:
+            embedded_x = X
         return embedded_x, embedded_y, single_eval_pos_
 
     def forward(
