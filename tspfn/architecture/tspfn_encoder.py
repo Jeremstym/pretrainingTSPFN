@@ -211,11 +211,10 @@ class TSPFNEncoder(nn.Module, ABC):
         self, X_full: torch.Tensor, y_train: torch.Tensor, already_tokenized: bool = False, *args, **kwargs
     ) -> Tuple[torch.torch.Tensor, torch.torch.Tensor]:
 
-        print(f"Input X_full shape: {X_full.shape}, y_train shape: {y_train.shape}, already_tokenized: {already_tokenized}")
         if not already_tokenized:
             seq_len, batch_size, num_channels, num_features = X_full.shape
         else:
-            seq_len, num_channels, num_features, embed_dim = X_full.shape
+            num_channels, seq_len, num_features, embed_dim = X_full.shape
         if self.positional_encoding == "rope" or self.positional_encoding == "cwpe+rope":
             for layer in self.transformer_encoder.layers:
                 layer.self_attn_between_features.time_points = num_features * num_channels
