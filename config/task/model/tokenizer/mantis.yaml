@@ -12,4 +12,4 @@ transf_dim_head: 128
 transf_dropout: 0.1
 device: 'cuda'
 pre_training: False
-path_pretrained: "pretraining_mantis" 
+path_pretrained: "/data/stympopper/Mantis/pretrain-25seq-192dim/checkpoints/epoch\=97-step\=89964.ckpt" 
