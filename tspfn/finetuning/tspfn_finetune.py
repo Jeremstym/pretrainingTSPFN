@@ -303,7 +303,6 @@ class TSPFNFineTuning(TSPFNSystem):
             ]  # Take last token as output feature
 
         elif y_inference_support is not None and ts_inference_support is not None:
-            print(f"ts_inference_support shape: {ts_inference_support.shape}, ts_batch_query shape: {ts_batch_query.shape}")
             # Use train set as context for predicting the query set on val/test inference
             if self.ts_tokenizer is None:
                 ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
