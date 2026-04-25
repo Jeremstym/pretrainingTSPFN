@@ -255,6 +255,7 @@ class TSPFNFineTuning(TSPFNSystem):
         elif self.ts_tokenizer is not None:
             ts_batch_support = self.ts_tokenizer(ts_batch_support)  # (Support, C, num_tokens, E)
             ts_batch_query = self.ts_tokenizer(ts_batch_query)  # (Query, C, num_tokens, E)
+            print(f"After tokenization, ts_batch_support shape: {ts_batch_support.shape}, ts_batch_query shape: {ts_batch_query.shape}")
 
         if self.ts_foundation is None:
 
