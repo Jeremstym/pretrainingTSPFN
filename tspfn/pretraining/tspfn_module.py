@@ -421,6 +421,8 @@ class TSPFNPretraining(TSPFNSystem):
                 # batch_dict, _, _ = batch
                 time_series_input, target_labels = batch["query"]  # (N, C, T), (N,)
                 time_series_support, support_labels = batch["support"]  # (N, C, T), (N,)
+            else:
+                raise ValueError(f"Unexpected batch format: {type(batch)}")
 
 
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
