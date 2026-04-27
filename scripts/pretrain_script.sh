@@ -24,7 +24,7 @@ nvidia-smi
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zscoring' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zscoring-5CHANS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zscoring-5CHANS+hird-nowarmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=none
+#? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zscoring-5CHANS+hird-nowarmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=none
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-Real' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-csv task.time_series_positional_encoding=rope+channel
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring-2CHANS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
@@ -50,4 +50,4 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zsco
 
 #! Custom tokenizer (eg. Mantis) pretraining runs
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/TSPFN-Mantis' +experiment=pretrainingTSPFN/tspfn-pretraining task.use_tokenizer=True seed=42 data=pretraining-data-dev task.time_series_positional_encoding=cwpe+rope
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/TSPFN-Mantis' +experiment=pretrainingTSPFN/tspfn-pretraining task.use_tokenizer=True seed=42 data=pretraining-data task.time_series_positional_encoding=cwpe+rope
