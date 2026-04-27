@@ -38,7 +38,7 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zsco
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE-zscoring-5CHANS+hird-nowarmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-zscoring-5CHANS-nowarmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=cwpe+rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-zscoring-5CHANS-nowarmup-shuffle' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=cwpe+rope
-# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=cwpe+rope
+#! poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=cwpe+rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/RoPE+CWPE-noPFNPE-zscoring-5CHANS-nowarmup' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 data=pretraining-data task.time_series_positional_encoding=cwpe+rope
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_v2-RoPE' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 task.time_series_positional_encoding=rope task.optim.scheduler=null ckpt="/data/stympopper/TSPFN_v2-RoPE/checkpoints/epoch\=499-step\=37500_FL.ckpt" trainer.max_epochs=1000
@@ -47,3 +47,7 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/Baseline-zsco
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/BatchTrainingNOHUGEDS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/ShortBatchTrainingNOHUGEDS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 trainer.max_epochs=100
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/SinusBatchTrainingNOHUGEDS' +experiment=pretrainingTSPFN/tspfn-pretraining seed=42 task.time_series_positional_encoding=sinusoidal trainer.max_epochs=100
+
+#! Custom tokenizer (eg. Mantis) pretraining runs
+
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_FM/TSPFN-Mantis' +experiment=pretrainingTSPFN/tspfn-pretraining task.use_tokenizer=True seed=42 data=pretraining-data-dev task.time_series_positional_encoding=cwpe+rope
