@@ -3,6 +3,7 @@
 defaults:
   - /task/model/prediction_head: pfn-prediction-pretraining
   - /task/model/encoder: tspfn-encoder
+  - /task/model/tokenizer: mantis
   - override /task/model: null
   - override /task/optim: adamw
   - override /data: pretraining-data
@@ -40,6 +41,7 @@ task:
     classification:
       _target_: torch.nn.CrossEntropyLoss
   time_series_positional_encoding: none
+  use_tokenizer: False
   seed : ${seed}
   # model:
   #   freeze_encoder: False # Whether to freeze the TabPFN encoder during training
