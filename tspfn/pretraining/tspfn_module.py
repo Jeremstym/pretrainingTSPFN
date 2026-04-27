@@ -45,6 +45,7 @@ class TSPFNPretraining(TSPFNSystem):
         split_finetuning: float = 0.5,
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
         chunk_size: int = 10000,
+        use_tokenizer: bool = False,
         # time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         *args,
         **kwargs,
@@ -96,6 +97,14 @@ class TSPFNPretraining(TSPFNSystem):
 
         # Initialize transformer encoder and self-supervised + prediction heads
         self.encoder, self.prediction_heads = self.configure_model()
+
+        if use_tokenizer:
+            self.ts_tokenizer = hydra.utils.instantiate(
+                self.hparams["model"]["tokenizer"],
+            )
+        else:
+            self.ts_tokenizer = None
+
 
         # Initialize inference storage tensors
         # self.ts_train_for_inference = torch.Tensor().to(self.device)
@@ -210,6 +219,10 @@ class TSPFNPretraining(TSPFNSystem):
                 label_query=y_batch_query,
             )
 
+        if self.ts_tokenizer is not None:
+            ts_batch_support = self.ts_tokenizer(ts_batch_support)  # (Support, C, num_tokens, E)
+            ts_batch_query = self.ts_tokenizer(ts_batch_query)  # (Query, C, num_tokens, E)
+        
         # Unsqueeze to comply with expected input shape for TabPFN encoder
         if ts_batch_support.ndim == 3:
             ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C, T)
@@ -235,6 +248,7 @@ class TSPFNPretraining(TSPFNSystem):
         ts_batch_query: Tensor,
         y_inference_support: Optional[Tensor] = None,
         ts_inference_support: Optional[Tensor] = None,
+        already_tokenized: bool = False,
     ) -> Tensor:
         """Embeds input sequences using the encoder model, optionally selecting/pooling output ts for the embedding.
 
@@ -257,21 +271,29 @@ class TSPFNPretraining(TSPFNSystem):
         #     )[:, :, -1, :]
 
         if self.training or y_inference_support is None:
-            ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, C, T)
+            if not already_tokenized:
+                ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, C, T)
+            else:
+                ts = torch.cat([ts_batch_support, ts_batch_query], dim=0)
             out_features = self.encoder(
                 ts.transpose(0, 1),
                 y_batch_support.transpose(0, 1),
+                already_tokenized=already_tokenized,
             )[
                 :, :, -1, :
             ]  # Select last token's features
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
-            ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
+            if not already_tokenized:
+                ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
+            else:
+                ts = torch.cat([ts_inference_support, ts_batch_query], dim=0)
             y_train = y_inference_support
             out_features = self.encoder(
                 ts.transpose(0, 1),
                 y_train.transpose(0, 1),
+                already_tokenized=already_tokenized,
             )[
                 :, :, -1, :
             ]  # Select last token's features
@@ -319,7 +341,9 @@ class TSPFNPretraining(TSPFNSystem):
             summary_mode=summary_mode,
         )  # (B, Support, 1), (B, Query, 1), (B, S, C, T)
 
-        out_features = self.encode(y_batch_support, ts_support, ts_query)  # (B, S, C, T) -> (B, E)
+        already_tokenized = self.ts_tokenizer is not None
+
+        out_features = self.encode(y_batch_support, ts_support, ts_query, already_tokenized=already_tokenized)  # (B, S, C, T) -> (B, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
@@ -355,10 +379,12 @@ class TSPFNPretraining(TSPFNSystem):
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input
         )  # (B, S, E), (B, S)
+        already_tokenized = self.ts_tokenizer is not None
         return self.encode(
             y_batch_support,
             ts_support,
             ts_query,
+            already_tokenized=already_tokenized
         )  # (B, S, E) -> (B, E)
 
     def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
@@ -409,23 +435,26 @@ class TSPFNPretraining(TSPFNSystem):
                 time_series_attrs=time_series_support, labels=support_labels
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
-            # Zscoring
-            ts_train_support, ts_query, y_inference_support, y_batch_query = z_scoring_per_channel(
-                data_support=ts_train_support,
-                data_query=ts_query,
-                label_support=y_inference_support,
-                label_query=y_batch_query,
-            )
+            if self.ts_tokenizer is None:
+                # Zscoring
+                ts_train_support, ts_query, y_inference_support, y_batch_query = z_scoring_per_channel(
+                    data_support=ts_train_support,
+                    data_query=ts_query,
+                    label_support=y_inference_support,
+                    label_query=y_batch_query,
+                )
         else:
             y_inference_support = None
             ts_train_support = None
 
+        already_tokenized = self.ts_tokenizer is not None
         prediction = self.encode(
             y_batch_support,
             ts_support,
             ts_query,
             y_inference_support=y_inference_support,
             ts_inference_support=ts_train_support,
+            already_tokenized=already_tokenized
         )
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
