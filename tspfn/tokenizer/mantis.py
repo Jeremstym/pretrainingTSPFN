@@ -377,7 +377,7 @@ class Mantis8M(
 
     def forward(self, x):
         # Collapse channel on batch dim
-        if x.ndim() == 4:
+        if x.ndim == 4:
             x = x.squeeze(0) # Remove meta batch dim if it exists
         c_in = x.shape[1]
         x = rearrange(x, "b (c nc) t -> (b c) nc t", nc=1)
