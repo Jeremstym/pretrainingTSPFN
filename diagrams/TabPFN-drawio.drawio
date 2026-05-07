@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.1.1 Chrome/132.0.6834.210 Electron/34.3.3 Safari/537.36">
   <diagram name="Page-1" id="3VRRpWP2H01rMZoYaf9y">
-    <mxGraphModel dx="5677" dy="302" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
+    <mxGraphModel dx="5829" dy="402" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -2709,6 +2709,9 @@
         </mxCell>
         <mxCell id="maZNB7tCBUuu9bB9-xzo-202" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FF0000;strokeWidth=4;rotation=-45;" value="" vertex="1">
           <mxGeometry height="43" width="167.04" x="278.55" y="5930.53" as="geometry" />
+        </mxCell>
+        <mxCell id="maZNB7tCBUuu9bB9-xzo-206" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^c = \{t^i_{j,c}\}_{c=1}^C \in \mathbb{R}^{C \times D}$$" vertex="1">
+          <mxGeometry height="43" width="687" x="674.25" y="6120.25" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
