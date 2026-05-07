@@ -1725,12 +1725,6 @@
         <mxCell id="LcxntNgJyzT6uDNehvPc-62" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^{i} \in \mathbb{R}^{T \times D}$$" vertex="1">
           <mxGeometry height="43" width="444" x="2224" y="5634" as="geometry" />
         </mxCell>
-        <mxCell id="LcxntNgJyzT6uDNehvPc-64" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;strokeColor=#FF0000;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="807" y="5467.13" as="sourcePoint" />
-            <mxPoint x="807" y="5544.13" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
         <mxCell id="LcxntNgJyzT6uDNehvPc-65" parent="1" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;font style=&quot;font-size: 26px;&quot;&gt;$$T$$&lt;/font&gt;" vertex="1">
           <mxGeometry height="58" width="187" x="438.21000000000004" y="5361.75" as="geometry" />
         </mxCell>
@@ -2288,12 +2282,6 @@
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <mxPoint x="789" y="5531.63" as="sourcePoint" />
             <mxPoint x="789" y="5608.63" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="maZNB7tCBUuu9bB9-xzo-70" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;strokeColor=#FF0000;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="773" y="5598" as="sourcePoint" />
-            <mxPoint x="773" y="5675" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="maZNB7tCBUuu9bB9-xzo-71" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;font style=&quot;font-size: 22px;&quot;&gt;$$t^1_{1,1}$$&lt;/font&gt;" vertex="1">
