@@ -227,6 +227,7 @@ class MantisV1(
         transf_dropout=0.1,
         device="cuda",
         pre_training=False,
+        fine_tuning=False,
         return_transf_layer=-1,
         output_token="cls_token",
     ):
@@ -242,6 +243,7 @@ class MantisV1(
         self.epsilon_scalar_enc = epsilon_scalar_enc
         self.seq_len = seq_len
         self.pre_training = pre_training
+        self.fine_tuning = fine_tuning
         self.return_transf_layer = return_transf_layer
         self.output_token = output_token
 
@@ -386,6 +388,8 @@ class Mantis8M(
         # Unfold channel dim
         if self.pre_training:
             return self.prj(vit_out)
+        elif self.fine_tuning:
+            return vit_out
         else:
             x_tokens = rearrange(x_tokens, "(b c) t e -> b c t e", c=c_in)
             return x_tokens
