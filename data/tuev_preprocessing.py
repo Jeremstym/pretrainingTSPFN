@@ -108,9 +108,9 @@ def convert_signals(signals, Rawdata):
 
 
 def BuildEvents(signals, times, EventData, keep_channels):
-    fs = 200.0
-    # To get exactly 400 points at 200Hz, we need a 2.0s window
-    target_pre_resample_points = 400 
+    fs = 256.0
+    # To get exactly 512 points at 256Hz, we need a 2.0s window
+    target_pre_resample_points = 512  # 2s * 256Hz = 512 points 
     window_samples = target_pre_resample_points 
     pad_width = int(fs * 2) # Increased padding to be safe for 2s windows
 
@@ -136,11 +136,11 @@ def BuildEvents(signals, times, EventData, keep_channels):
         idx_start = np.searchsorted(times, t_start)
         
         # Centering the 2s window: 0.5s before the 'start' marker
-        # This gives you 400 points total
+        # This gives you 512 points total
         start_slice = pad_width + idx_start - int(0.5 * fs)
         end_slice = start_slice + window_samples
 
-        # 1. Extract the segment for ALL 16 channels first -> Shape (16, 400)
+        # 1. Extract the segment for ALL 16 channels first -> Shape (16, 512)
         segment = signals_padded[:, start_slice:end_slice]
         
         if segment.shape[1] < target_pre_resample_points:
@@ -166,11 +166,12 @@ def BuildEvents(signals, times, EventData, keep_channels):
         # indices = [chan_map[15], chan_map[19], chan_map[2]]  # C3, C4, P3 as an example
         # indices = [chan_map[15], chan_map[19]]  # C3, C4, P3 as an example
         
-        # 3. Reduce to (5, 400)
+        # 3. Reduce to (5, 512) by selecting the chosen channels
         reduced_segment = segment[indices, :] 
 
-        # 4. Resample from 400 points to 100 points -> Shape (5, 100)
-        resampled_segment = sgn.resample(reduced_segment, 100, axis=1)
+        # 4. Resample from 512 points to 100 points -> Shape (5, 100)
+        # resampled_segment = sgn.resample(reduced_segment, 100, axis=1)
+        resampled_segment = reduced_segment
 
         all_segments.append(resampled_segment)
         final_labels.append(label)
@@ -193,7 +194,7 @@ def readEDF(fileName):
 
     Rawdata.filter(l_freq=0.1, h_freq=75.0)
     Rawdata.notch_filter(50.0)
-    Rawdata.resample(200, n_jobs=5)
+    Rawdata.resample(512, n_jobs=5)
 
     _, times = Rawdata[:]
     signals = Rawdata.get_data(units="uV")
@@ -244,8 +245,8 @@ if __name__ == "__main__":
     """
 
     root = "/data/stympopper/TUEV/edf"
-    train_out_dir = os.path.join(root, "fivechannels", "processed_train")
-    eval_out_dir = os.path.join(root, "fivechannels", "processed_eval")
+    train_out_dir = os.path.join(root, "512-5channels", "processed_train")
+    eval_out_dir = os.path.join(root, "512-5channels", "processed_eval")
     if not os.path.exists(train_out_dir):
         os.makedirs(train_out_dir)
     if not os.path.exists(eval_out_dir):
@@ -262,13 +263,13 @@ if __name__ == "__main__":
     seed = 4523
     np.random.seed(seed)
 
-    train_files_path = os.listdir(os.path.join(root, "fivechannels", "processed_train"))
-    test_files_path = os.listdir(os.path.join(root, "fivechannels", "processed_eval"))
+    train_files_path = os.listdir(os.path.join(root, "512-5channels", "processed_train"))
+    test_files_path = os.listdir(os.path.join(root, "512-5channels", "processed_eval"))
     train_sub = list(set([f.split("_")[0] for f in train_files_path]))
     print("train sub", len(train_sub))
-    target_train_dir = os.path.join(root, "fivechannels", "train")
-    # target_eval_dir = os.path.join(root, "fivechannels", "val")
-    target_test_dir = os.path.join(root, "fivechannels", "val")
+    target_train_dir = os.path.join(root, "512-5channels", "train")
+    # target_eval_dir = os.path.join(root, "512-5channels", "val")
+    target_test_dir = os.path.join(root, "512-5channels", "val")
     if not os.path.exists(target_train_dir):
         os.makedirs(target_train_dir)
     # if not os.path.exists(target_eval_dir):
@@ -284,15 +285,15 @@ if __name__ == "__main__":
 
     for file in train_files:
         os.system(
-            f"mv {os.path.join(root, 'fivechannels', 'processed_train', file)} {target_train_dir}"
+            f"mv {os.path.join(root, '512-5channels', 'processed_train', file)} {target_train_dir}"
         )
     # for file in val_files:
     #     os.system(
-    #         f"mv {os.path.join(root, 'fivechannels', 'processed_train', file)} {target_eval_dir}"
+    #         f"mv {os.path.join(root, '512-5channels', 'processed_train', file)} {target_eval_dir}"
     #     )
     for file in test_files_path:
         os.system(
-            f"mv {os.path.join(root, 'fivechannels', 'processed_eval', file)} {target_test_dir}"
+            f"mv {os.path.join(root, '512-5channels', 'processed_eval', file)} {target_test_dir}"
         )
 
     # root = "/data/stympopper/TUEV/edf/processed"
