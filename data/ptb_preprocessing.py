@@ -274,7 +274,7 @@ if __name__ == "__main__":
     print(X_test.shape, y_test.shape)
     print(count_occurrences(y_test))
 
-    target_path = path + "fivechannels/"
+    target_path = path + "512-5channels/"
     os.makedirs(target_path, exist_ok=True)
     np.save(target_path + "train.npy", X_train)
     # np.save(target_path + "heldout.npy", X_val)
