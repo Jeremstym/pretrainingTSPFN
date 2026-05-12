@@ -26,8 +26,9 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class PTB2ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=250):
         self.root = root
+        self.length = length
         # self.files = glob(os.path.join(root, f"{split}/*.pkl"))
 
         self.X = np.load(os.path.join(root, f"{split}.npy"))
@@ -47,29 +48,30 @@ class PTB2ChannelDataset(Dataset):
             self.X.shape[1] == 2
         ), f"Expected 2 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 250:
-            self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
-        elif self.X.shape[2] == 250:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*{length}]
+        elif self.X.shape[2] == self.length:
             pass
-        # elif self.X.shape[2] == 250:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
+        # elif self.X.shape[2] == {length}:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*{length}]
         else:
             raise ValueError(
-                f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
         return len(self.X)
 
     def __getitem__(self, index):
-        # ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*250+1]
+        # ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*{length}+1]
         return self.X[index], self.Y[index]
 
 
 class PTB3ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=166):
         self.root = root
+        self.length = length
 
         self.X = np.load(os.path.join(root, f"{split}.npy"))
         # Subsample time series
@@ -87,29 +89,30 @@ class PTB3ChannelDataset(Dataset):
             self.X.shape[1] == 3
         ), f"Expected 3 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 166:
-            self.X = F.pad(self.X, (0, 166 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 166]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*166]
-        elif self.X.shape[2] == 166:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*{length}]
+        elif self.X.shape[2] == self.length:
             pass
-        # elif self.X.shape[2] == 166:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*166]
+        # elif self.X.shape[2] == {length}:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*{length}]
         else:
             raise ValueError(
-                f"Expected signal length of 166, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
         return len(self.X)
 
     def __getitem__(self, index):
-        # ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*166+1]
+        # ds = torch.cat((self.X[index], self.Y[index]), dim=-1)  # Shape [Batch, Channels*{length}+1]
         return self.X[index], self.Y[index]
 
 
 class PTB4ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=125):
         self.root = root
+        self.length = length
 
         self.X = np.load(os.path.join(root, f"{split}.npy"))
         # Subsample time series
@@ -127,13 +130,13 @@ class PTB4ChannelDataset(Dataset):
             self.X.shape[1] == 4
         ), f"Expected 4 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 125:
-            self.X = F.pad(self.X, (0, 125 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 125]
-        elif self.X.shape[2] == 125:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        elif self.X.shape[2] == self.length:
             pass
         else:
             raise ValueError(
-                f"Expected signal length of 125, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -144,8 +147,9 @@ class PTB4ChannelDataset(Dataset):
 
 
 class PTB5ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=100):
         self.root = root
+        self.length = length
 
         self.X = np.load(os.path.join(root, f"{split}.npy"))
         # Subsample time series
@@ -163,13 +167,13 @@ class PTB5ChannelDataset(Dataset):
             self.X.shape[1] == 5
         ), f"Expected 5 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 100:
-            self.X = F.pad(self.X, (0, 100 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 100]
-        elif self.X.shape[2] == 100:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        elif self.X.shape[2] == self.length:
             pass
         else:
             raise ValueError(
-                f"Expected signal length of 100, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -180,8 +184,9 @@ class PTB5ChannelDataset(Dataset):
 
 
 class TUAB2ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=250):
         self.root = root
+        self.length = length
         self.files = glob(os.path.join(root, f"{split}/*.pkl"))
 
         all_x = []
@@ -201,16 +206,16 @@ class TUAB2ChannelDataset(Dataset):
             self.X.shape[1] == 2
         ), f"Expected 2 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 250:
-            self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
-        elif self.X.shape[2] == 250:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*{length}]
+        elif self.X.shape[2] == self.length:
             pass
-        # elif self.X.shape[2] == 250:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
+        # elif self.X.shape[2] == self.length:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*{length}]
         else:
             raise ValueError(
-                f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -223,8 +228,9 @@ class TUAB2ChannelDataset(Dataset):
 
 
 class TUAB3ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=166):
         self.root = root
+        self.length = length
         self.files = glob(os.path.join(root, f"{split}/*.pkl"))
 
         all_x = []
@@ -244,16 +250,16 @@ class TUAB3ChannelDataset(Dataset):
             self.X.shape[1] == 3
         ), f"Expected 3 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 166:
-            self.X = F.pad(self.X, (0, 166 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 166]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*166]
-        # elif self.X.shape[2] == 166:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*166]
-        elif self.X.shape[2] == 166:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*{length}]
+        # elif self.X.shape[2] == self.length:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*{length}]
+        elif self.X.shape[2] == self.length:
             pass
         else:
             raise ValueError(
-                f"Expected signal length of 166, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -265,8 +271,9 @@ class TUAB3ChannelDataset(Dataset):
 
 
 class TUAB4ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=125):
         self.root = root
+        self.length = length
         self.files = glob(os.path.join(root, f"{split}/*.pkl"))
 
         all_x = []
@@ -286,16 +293,16 @@ class TUAB4ChannelDataset(Dataset):
             self.X.shape[1] == 4
         ), f"Expected 4 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 125:
-            self.X = F.pad(self.X, (0, 125 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 125]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*125]
-        # elif self.X.shape[2] == 125:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*125]
-        elif self.X.shape[2] == 125:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*{length}]
+        # elif self.X.shape[2] == self.length:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*{length}]
+        elif self.X.shape[2] == self.length:
             pass
         else:
             raise ValueError(
-                f"Expected signal length of 125, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -307,8 +314,9 @@ class TUAB4ChannelDataset(Dataset):
 
 
 class TUAB5ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=100):
         self.root = root
+        self.length = length
         self.files = glob(os.path.join(root, f"{split}/*.pkl"))
 
         all_x = []
@@ -328,16 +336,16 @@ class TUAB5ChannelDataset(Dataset):
             self.X.shape[1] == 5
         ), f"Expected 5 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 100:
-            self.X = F.pad(self.X, (0, 100 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 100]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*100]
-        # elif self.X.shape[2] == 100:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*100]
-        elif self.X.shape[2] == 100:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*{length}]
+        # elif self.X.shape[2] == {length}:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*{length}]
+        elif self.X.shape[2] == self.length:
             pass
         else:
             raise ValueError(
-                f"Expected signal length of 100, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -349,9 +357,10 @@ class TUAB5ChannelDataset(Dataset):
 
 
 class TUEV2ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=250):
         self.root = root
         self.files = glob(os.path.join(root, f"{split}/*.pkl"))
+        self.length = length
 
         all_x = []
         all_y = []
@@ -371,16 +380,16 @@ class TUEV2ChannelDataset(Dataset):
             self.X.shape[1] == 2
         ), f"Expected 2 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 250:
-            self.X = F.pad(self.X, (0, 250 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 250]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*250]
-        elif self.X.shape[2] == 250:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*{length}]
+        elif self.X.shape[2] == self.length:
             pass
-        # elif self.X.shape[2] == 250:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*250]
+        # elif self.X.shape[2] == {length}:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*{length}]
         else:
             raise ValueError(
-                f"Expected signal length of 250, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -392,9 +401,10 @@ class TUEV2ChannelDataset(Dataset):
 
 
 class TUEV3ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=166):
         self.root = root
         self.files = glob(os.path.join(root, f"{split}/*.pkl"))
+        self.length = length
 
         all_x = []
         all_y = []
@@ -414,16 +424,16 @@ class TUEV3ChannelDataset(Dataset):
             self.X.shape[1] == 3
         ), f"Expected 3 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 166:
-            self.X = F.pad(self.X, (0, 166 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 166]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*166]
-        elif self.X.shape[2] == 166:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*{length}]
+        elif self.X.shape[2] == self.length:
             pass
-        # elif self.X.shape[2] == 166:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*166]
+        # elif self.X.shape[2] == {length}:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*{length}]
         else:
             raise ValueError(
-                f"Expected signal length of 166, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -435,9 +445,10 @@ class TUEV3ChannelDataset(Dataset):
 
 
 class TUEV4ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=125):
         self.root = root
         self.files = glob(os.path.join(root, f"{split}/*.pkl"))
+        self.length = length
 
         all_x = []
         all_y = []
@@ -457,16 +468,16 @@ class TUEV4ChannelDataset(Dataset):
             self.X.shape[1] == 4
         ), f"Expected 4 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 125:
-            self.X = F.pad(self.X, (0, 125 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 125]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*125]
-        elif self.X.shape[2] == 125:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*{length}]
+        elif self.X.shape[2] == self.length:
             pass
-        # elif self.X.shape[2] == 125:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*125]
+        # elif self.X.shape[2] == {length}:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*{length}]
         else:
             raise ValueError(
-                f"Expected signal length of 125, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -478,9 +489,10 @@ class TUEV4ChannelDataset(Dataset):
 
 
 class TUEV5ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=100):
         self.root = root
         self.files = glob(os.path.join(root, f"{split}/*.pkl"))
+        self.length = length
 
         all_x = []
         all_y = []
@@ -500,16 +512,16 @@ class TUEV5ChannelDataset(Dataset):
             self.X.shape[1] == 5
         ), f"Expected 5 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
 
-        if self.X.shape[2] < 100:
-            self.X = F.pad(self.X, (0, 100 - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, 100]
-        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*100]
-        elif self.X.shape[2] == 100:
+        if self.X.shape[2] < self.length:
+            self.X = F.pad(self.X, (0, self.length - self.X.shape[2]), "constant", 0)  # New shape [Batch, Channels, {length}]
+        #     self.X = self.X.flatten(start_dim=1)  # New shape [Batch, Channels*{length}]
+        elif self.X.shape[2] == self.length:
             pass
-        # elif self.X.shape[2] == 100:
-        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*100]
+        # elif self.X.shape[2] == {length}:
+        #     self.X = self.X.flatten(start_dim=1)  # Shape [Batch, Channels*{length}]
         else:
             raise ValueError(
-                f"Expected signal length of 100, but got {self.X.shape[2]}. Please check the data preprocessing."
+                f"Expected signal length of {self.length}, but got {self.X.shape[2]}. Please check the data preprocessing."
             )
 
     def __len__(self):
@@ -521,7 +533,7 @@ class TUEV5ChannelDataset(Dataset):
 
 
 class HIRID2ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=100):
         self.root = root
         self.files = glob(os.path.join(root, f"{split}/*.npy"))
         self.label_directory = os.path.dirname(self.root)
@@ -553,7 +565,7 @@ class HIRID2ChannelDataset(Dataset):
 
 
 class HIRID3ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=100):
         self.root = root
         self.files = glob(os.path.join(root, f"{split}/*.npy"))
         self.label_directory = os.path.dirname(self.root)
@@ -585,7 +597,7 @@ class HIRID3ChannelDataset(Dataset):
 
 
 class HIRID4ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=100):
         self.root = root
         self.files = glob(os.path.join(root, f"{split}/*.npy"))
         self.label_directory = os.path.dirname(self.root)
@@ -617,7 +629,7 @@ class HIRID4ChannelDataset(Dataset):
 
 
 class HIRID5ChannelDataset(Dataset):
-    def __init__(self, root, split):
+    def __init__(self, root, split, length=100):
         self.root = root
         self.files = glob(os.path.join(root, f"{split}/*.npy"))
         self.label_directory = os.path.dirname(self.root)

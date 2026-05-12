@@ -7,35 +7,43 @@ train_datasets:
     _target_: data.pretraining_mantis_ds.HIRID5ChannelDataset
     root: ${oc.env:HIRID_512_5CHANS_DATA_PATH}
     split: train
+    length: 512
   5ChannelTUAB:
     _target_: data.pretraining_mantis_ds.TUAB5ChannelDataset 
     root: ${oc.env:TUAB_512_5CHANS_DATA_PATH}
     split: train
+    length: 512
   5ChannelTUEV:
     _target_: data.pretraining_mantis_ds.TUEV5ChannelDataset
     root: ${oc.env:TUEV_512_5CHANS_DATA_PATH}
     split: train
+    length: 512
   5ChannelPTB:
     _target_: data.pretraining_mantis_ds.PTB5ChannelDataset
     root: ${oc.env:PTB_512_5CHANS_DATA_PATH}
     split: train
+    length: 512
 val_datasets:
   5ChannelHIRID:
     _target_: data.pretraining_mantis_ds.HIRID5ChannelDataset
     root: ${oc.env:HIRID_512_5CHANS_DATA_PATH}
     split: val
+    length: 512
   5ChannelTUAB:
     _target_: data.pretraining_mantis_ds.TUAB5ChannelDataset 
     root: ${oc.env:TUAB_512_5CHANS_DATA_PATH}
     split: val
+    length: 512
   5ChannelTUEV:
     _target_: data.pretraining_mantis_ds.TUEV5ChannelDataset
     root: ${oc.env:TUEV_512_5CHANS_DATA_PATH}
     split: val
+    length: 512
   5ChannelPTB:
     _target_: data.pretraining_mantis_ds.PTB5ChannelDataset
     root: ${oc.env:PTB_512_5CHANS_DATA_PATH}
     split: val
+    length: 512
 
 # test_datasets:
 #   2ChannelTUAB:
