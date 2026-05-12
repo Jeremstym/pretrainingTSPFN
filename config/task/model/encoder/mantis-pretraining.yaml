@@ -7,7 +7,7 @@ hidden_dim_scalar_enc: 32
 epsilon_scalar_enc: 1.1
 transf_depth: 6
 transf_num_heads: 8
-transf_mlp_dim: 250
+transf_mlp_dim: 512
 transf_dim_head: 128
 transf_dropout: 0.1
 device: 'cuda'
