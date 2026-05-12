@@ -330,7 +330,8 @@ class Mantis8M(
         transf_dim_head=128,
         transf_dropout=0.1,
         device="cuda",
-        pre_training=True,
+        pre_training=False,
+        fine_tuning=False,
         path_pretrained=None,
     ):
 
