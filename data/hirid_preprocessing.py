@@ -88,39 +88,39 @@ def split_hirid_data(output_dir, train_ratio=0.8, seed=42, labels_path=PATH_TO_L
 if __name__ == "__main__":
     preprocess_hirid_data(
         origin_dir=ORIGIN_DIRECTORY,
-        output_dir=OUTPUT_DIRECTORY + "/fivechannels",
+        output_dir=OUTPUT_DIRECTORY + "/512-5channels",
         keep_channels=KEEP_5CHANNELS,
-        window_size=100,
+        window_size=512,
         path_to_labels=PATH_TO_LABELS,
     )
     split_hirid_data(
-        output_dir=OUTPUT_DIRECTORY + "/fivechannels", train_ratio=0.8, seed=42, labels_path=PATH_TO_LABELS
+        output_dir=OUTPUT_DIRECTORY + "/512-5channels", train_ratio=0.8, seed=42, labels_path=PATH_TO_LABELS
     )
-    preprocess_hirid_data(
-        origin_dir=ORIGIN_DIRECTORY,
-        output_dir=OUTPUT_DIRECTORY + "/fourchannels",
-        keep_channels=KEEP_4CHANNELS,
-        window_size=125,
-        path_to_labels=PATH_TO_LABELS,
-    )
-    split_hirid_data(
-        output_dir=OUTPUT_DIRECTORY + "/fourchannels", train_ratio=0.8, seed=42, labels_path=PATH_TO_LABELS
-    )
-    preprocess_hirid_data(
-        origin_dir=ORIGIN_DIRECTORY,
-        output_dir=OUTPUT_DIRECTORY + "/threechannels",
-        keep_channels=KEEP_3CHANNELS,
-        window_size=166,
-        path_to_labels=PATH_TO_LABELS,
-    )
-    split_hirid_data(
-        output_dir=OUTPUT_DIRECTORY + "/threechannels", train_ratio=0.8, seed=42, labels_path=PATH_TO_LABELS
-    )
-    preprocess_hirid_data(
-        origin_dir=ORIGIN_DIRECTORY,
-        output_dir=OUTPUT_DIRECTORY + "/twochannels",
-        keep_channels=KEEP_2CHANNELS,
-        window_size=250,
-        path_to_labels=PATH_TO_LABELS,
-    )
-    split_hirid_data(output_dir=OUTPUT_DIRECTORY + "/twochannels", train_ratio=0.8, seed=42, labels_path=PATH_TO_LABELS)
+    # preprocess_hirid_data(
+    #     origin_dir=ORIGIN_DIRECTORY,
+    #     output_dir=OUTPUT_DIRECTORY + "/fourchannels",
+    #     keep_channels=KEEP_4CHANNELS,
+    #     window_size=125,
+    #     path_to_labels=PATH_TO_LABELS,
+    # )
+    # split_hirid_data(
+    #     output_dir=OUTPUT_DIRECTORY + "/fourchannels", train_ratio=0.8, seed=42, labels_path=PATH_TO_LABELS
+    # )
+    # preprocess_hirid_data(
+    #     origin_dir=ORIGIN_DIRECTORY,
+    #     output_dir=OUTPUT_DIRECTORY + "/threechannels",
+    #     keep_channels=KEEP_3CHANNELS,
+    #     window_size=166,
+    #     path_to_labels=PATH_TO_LABELS,
+    # )
+    # split_hirid_data(
+    #     output_dir=OUTPUT_DIRECTORY + "/threechannels", train_ratio=0.8, seed=42, labels_path=PATH_TO_LABELS
+    # )
+    # preprocess_hirid_data(
+    #     origin_dir=ORIGIN_DIRECTORY,
+    #     output_dir=OUTPUT_DIRECTORY + "/twochannels",
+    #     keep_channels=KEEP_2CHANNELS,
+    #     window_size=250,
+    #     path_to_labels=PATH_TO_LABELS,
+    # )
+    # split_hirid_data(output_dir=OUTPUT_DIRECTORY + "/twochannels", train_ratio=0.8, seed=42, labels_path=PATH_TO_LABELS)
