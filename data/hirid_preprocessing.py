@@ -34,7 +34,9 @@ def preprocess_hirid_data(
             df = pd.read_csv(f)
             # Keep only pids in label df
             df = df[df["patientid"].isin(labels_df.index)]
-            print(df.columns)
+        if "reldatetime" not in df.columns:
+            print(f"Warning: 'reldatetime' column not found in {file}. Skipping this file.")
+            continue
         df_group = df.groupby(["patientid", "reldatetime"])[keep_channels[2:]].mean()
         patient_matrices = []
         for patient_id, group in df_group.groupby(level=0):
