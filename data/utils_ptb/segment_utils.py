@@ -60,7 +60,7 @@ import pandas as pd
 #     return zero_crossings
 
 
-def detect_rpeaks(ecg, rate=200, ransac_window_size=5.0, lowfreq=5.0, highfreq=15.0):
+def detect_rpeaks(ecg, rate=500, ransac_window_size=5.0, lowfreq=5.0, highfreq=15.0):
     import warnings
 
     warnings.filterwarnings("ignore")
@@ -183,8 +183,8 @@ def find_rpeaks_clean_ecgs_in_dataframe(data: pd.DataFrame, ref_channel_idx: int
 def segment_ecg_in_clean_dataframe(
     ROOT: str = ".",
     data: pd.DataFrame = None,
-    size_before_index: int = 200,
-    size_after_index: int = 300,
+    size_before_index: int = 206,
+    size_after_index: int = 306,
     signal_length: int = 5000,
 ) -> pd.DataFrame:
 
@@ -230,7 +230,7 @@ def segment_ecg_in_clean_dataframe(
     return df
 
 
-def get_heartbeats_indexes(indexes, size_before_index=200, size_after_index=300):
+def get_heartbeats_indexes(indexes, size_before_index=206, size_after_index=306):
     if len(indexes) == 0:
         return []
     indexes_ = [x for x in indexes if 5000 - size_after_index >= x >= size_before_index]
@@ -238,7 +238,7 @@ def get_heartbeats_indexes(indexes, size_before_index=200, size_after_index=300)
     return indexes_new
 
 
-def split_ecgs(ecg, indexes, size_before_index=200, size_after_index=300):
+def split_ecgs(ecg, indexes, size_before_index=206, size_after_index=306):
     import itertools
 
     if len(indexes) == 0:
