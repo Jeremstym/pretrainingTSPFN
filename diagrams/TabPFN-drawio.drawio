@@ -1646,8 +1646,8 @@
         <mxCell id="LcxntNgJyzT6uDNehvPc-36" parent="1" style="text;html=1;strokeColor=#36393d;fillColor=#DEDEDE;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;" value="&lt;b style=&quot;color: rgb(0, 0, 0);&quot;&gt;&lt;font style=&quot;font-size: 36px;&quot;&gt;Attention over time points&lt;/font&gt;&lt;/b&gt;" vertex="1">
           <mxGeometry height="59" width="868" x="1343.5" y="5361.25" as="geometry" />
         </mxCell>
-        <mxCell id="LcxntNgJyzT6uDNehvPc-37" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^i = \{t^i_{j,c}\}_{j=1}^T \in \mathbb{R}^{T \times D}$$" vertex="1">
-          <mxGeometry height="43" width="666" x="688.5" y="5632" as="geometry" />
+        <mxCell id="LcxntNgJyzT6uDNehvPc-37" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^i_c = \{t^i_{j,c}\}_{j=1}^T \in \mathbb{R}^{T \times D}$$" vertex="1">
+          <mxGeometry height="43" width="693" x="675.5" y="5632" as="geometry" />
         </mxCell>
         <mxCell id="LcxntNgJyzT6uDNehvPc-38" connectable="0" parent="1" style="group;strokeWidth=3;" value="" vertex="1">
           <mxGeometry height="80" width="99" x="967.5" y="5529.25" as="geometry" />
@@ -1722,8 +1722,8 @@
             <mxPoint x="2606.5" y="5569.25" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="LcxntNgJyzT6uDNehvPc-62" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^{i} \in \mathbb{R}^{T \times D}$$" vertex="1">
-          <mxGeometry height="43" width="444" x="2224" y="5634" as="geometry" />
+        <mxCell id="LcxntNgJyzT6uDNehvPc-62" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^{i}_c \in \mathbb{R}^{T \times D}$$" vertex="1">
+          <mxGeometry height="43" width="471" x="2211" y="5634" as="geometry" />
         </mxCell>
         <mxCell id="LcxntNgJyzT6uDNehvPc-65" parent="1" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;font style=&quot;font-size: 26px;&quot;&gt;$$T$$&lt;/font&gt;" vertex="1">
           <mxGeometry height="58" width="187" x="438.21000000000004" y="5361.75" as="geometry" />
@@ -1731,8 +1731,8 @@
         <mxCell id="LcxntNgJyzT6uDNehvPc-66" parent="1" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;font style=&quot;font-size: 26px;&quot;&gt;$$S$$&lt;/font&gt;" vertex="1">
           <mxGeometry height="58" width="59" x="233" y="5586.63" as="geometry" />
         </mxCell>
-        <mxCell id="LcxntNgJyzT6uDNehvPc-83" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=#000000;" value="&lt;span style=&quot;font-size: 26px;&quot;&gt;&lt;b&gt;For \(j \in [1,F]\) do&lt;/b&gt;&lt;/span&gt;" vertex="1">
-          <mxGeometry height="89" width="260" x="830" y="6356.88" as="geometry" />
+        <mxCell id="LcxntNgJyzT6uDNehvPc-83" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=#000000;" value="&lt;span style=&quot;font-size: 26px;&quot;&gt;&lt;b&gt;For \(c,j \in [1,C] \times [1,F]\) do&lt;/b&gt;&lt;/span&gt;" vertex="1">
+          <mxGeometry height="89" width="352" x="833.25" y="6355" as="geometry" />
         </mxCell>
         <mxCell id="LcxntNgJyzT6uDNehvPc-84" parent="1" style="text;html=1;strokeColor=#36393d;fillColor=#DEDEDE;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;" value="&lt;b style=&quot;color: rgb(0, 0, 0);&quot;&gt;&lt;font style=&quot;font-size: 36px;&quot;&gt;Attention over samples&lt;/font&gt;&lt;/b&gt;" vertex="1">
           <mxGeometry height="59" width="868" x="1501.5" y="6348" as="geometry" />
@@ -1876,8 +1876,8 @@
         <mxCell id="LcxntNgJyzT6uDNehvPc-126" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^{j} \in \mathbb{R}^{S \times D}$$" vertex="1">
           <mxGeometry height="43" width="446" x="2716" y="6617" as="geometry" />
         </mxCell>
-        <mxCell id="LcxntNgJyzT6uDNehvPc-127" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^j = \{z^i_j\}_{i=1}^S \in \mathbb{R}^{S \times D}$$" vertex="1">
-          <mxGeometry height="43" width="638" x="705.5" y="6617" as="geometry" />
+        <mxCell id="LcxntNgJyzT6uDNehvPc-127" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^j_c = \{z^i_{j,c}\}_{i=1}^S \in \mathbb{R}^{S \times D}$$" vertex="1">
+          <mxGeometry height="43" width="703" x="673.5" y="6617" as="geometry" />
         </mxCell>
         <mxCell id="LcxntNgJyzT6uDNehvPc-129" edge="1" parent="1" source="LcxntNgJyzT6uDNehvPc-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeWidth=3;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="LcxntNgJyzT6uDNehvPc-128" value="">
           <mxGeometry relative="1" as="geometry">
@@ -2648,19 +2648,20 @@
         <mxCell id="maZNB7tCBUuu9bB9-xzo-200" parent="1" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;font style=&quot;font-size: 26px;&quot;&gt;$$C$$&lt;/font&gt;" vertex="1">
           <mxGeometry height="58" width="59" x="271.84999999999997" y="5903.62" as="geometry" />
         </mxCell>
-        <mxCell id="maZNB7tCBUuu9bB9-xzo-201" edge="1" parent="1" source="LcxntNgJyzT6uDNehvPc-62" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.891;entryY=1.101;entryDx=0;entryDy=0;entryPerimeter=0;strokeWidth=3;" target="maZNB7tCBUuu9bB9-xzo-117">
+        <mxCell id="maZNB7tCBUuu9bB9-xzo-201" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.891;entryY=1.101;entryDx=0;entryDy=0;entryPerimeter=0;strokeWidth=3;" target="maZNB7tCBUuu9bB9-xzo-117">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="2446" y="5804" />
               <mxPoint x="548" y="5804" />
             </Array>
+            <mxPoint x="2446" y="5692" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="maZNB7tCBUuu9bB9-xzo-202" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FF0000;strokeWidth=4;rotation=-45;" value="" vertex="1">
           <mxGeometry height="43" width="167.04" x="278.55" y="5930.53" as="geometry" />
         </mxCell>
-        <mxCell id="maZNB7tCBUuu9bB9-xzo-206" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^c = \{t^i_{j,c}\}_{c=1}^C \in \mathbb{R}^{C \times D}$$" vertex="1">
-          <mxGeometry height="43" width="687" x="674.25" y="6120.25" as="geometry" />
+        <mxCell id="maZNB7tCBUuu9bB9-xzo-206" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^i_j = \{t^i_{j,c}\}_{c=1}^C \in \mathbb{R}^{C \times D}$$" vertex="1">
+          <mxGeometry height="43" width="700" x="668.25" y="6120.25" as="geometry" />
         </mxCell>
         <mxCell id="_2HLlOSv0v51w5g5aktc-1" parent="1" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;font style=&quot;font-size: 26px;&quot;&gt;$$T$$&lt;/font&gt;" vertex="1">
           <mxGeometry height="58" width="187" x="381.45000000000005" y="6361.75" as="geometry" />
@@ -2921,6 +2922,15 @@
               <mxPoint x="545" y="6311" />
             </Array>
           </mxGeometry>
+        </mxCell>
+        <mxCell id="_2HLlOSv0v51w5g5aktc-88" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="598" y="6219" as="sourcePoint" />
+            <mxPoint x="648" y="6169" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_2HLlOSv0v51w5g5aktc-89" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=26;" value="$$z^{i}_j \in \mathbb{R}^{C \times D}$$" vertex="1">
+          <mxGeometry height="43" width="467" x="2206" y="6119.25" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
