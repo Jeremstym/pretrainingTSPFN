@@ -6,7 +6,7 @@ from typing import Type, Union
 import pytorch_lightning as pl
 import torch
 from tspfn.pretraining.tspfn_module import TSPFNPretraining
-from data.utils.importlib import import_from_module
+from data.utils.importlib_from_module import import_from_module
 from packaging.version import InvalidVersion, Version
 from torch.types import Device
 
