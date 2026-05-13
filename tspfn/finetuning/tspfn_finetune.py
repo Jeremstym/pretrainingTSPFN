@@ -207,6 +207,7 @@ class TSPFNFineTuning(TSPFNSystem):
         time_series_attrs: Tensor,
         labels: Tensor,
         summary_mode: bool = False,
+        evaluation: bool = False,
     ) -> Tuple[Tensor, Tensor, Tensor]:
         """Tokenizes the input time-series attributes, providing a mask of non-missing attributes.
 
@@ -221,7 +222,7 @@ class TSPFNFineTuning(TSPFNSystem):
         """
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        if self.training or summary_mode:
+        if not evaluation or summary_mode:
             ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = half_batch_split(
                 data=time_series_attrs,
                 labels=labels,
@@ -284,6 +285,7 @@ class TSPFNFineTuning(TSPFNSystem):
         y_inference_support: Optional[Tensor] = None,
         ts_inference_support: Optional[Tensor] = None,
         already_tokenized: bool = False,
+        evaluation: bool = False,
     ) -> Tensor:
         """Embeds input sequences using the encoder model, optionally selecting/pooling output ts for the embedding.
 
@@ -292,7 +294,7 @@ class TSPFNFineTuning(TSPFNSystem):
             ts: (B, S (=Support+Query), C, T), Tokens to feed to the encoder.
         Returns: (B, Query, E), Embeddings of the input sequences.
         """
-        if self.training or y_inference_support is None:
+        if not evaluation or y_inference_support is None:
             ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, C, T)
             out_features = self.encoder(
                 ts.transpose(0, 1),
@@ -327,13 +329,18 @@ class TSPFNFineTuning(TSPFNSystem):
         self,
         time_series_attrs: Tensor,
         labels: Tensor,
+        time_series_test: Optional[Tensor] = None,
+        labels_test: Optional[Tensor] = None,
         # mask: Tensor,
-        task: Literal["encode", "predict"] = "encode",
+        task: Literal["encode", "predict", "evaluate"] = "encode",
     ) -> Tensor | Dict[str, Tensor]:
         """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the prediction head.
 
         Args:
             time_series_attrs: (B, S, C, T): time series inputs.
+            labels: (B, S, 1): labels for the support set.
+            time_series_test: (B, Q, C, T): time series inputs for the test set.
+            labels_test: (B, Q, 1): labels for the test set.
             task: Flag indicating which type of inference task to perform.
 
         Returns:
@@ -341,6 +348,8 @@ class TSPFNFineTuning(TSPFNSystem):
                 (B, Query, E), Batch of features extracted by the encoder.
             if `task` == 'predict' (and the model includes prediction heads):
                 1 * (B, Query), Prediction for each target in `losses`.
+            if `task` == 'evaluate':
+                Dict[str, Tensor], Evaluation metrics for the test set.
         """
         if task != "encode" and not self.prediction_heads:
             raise ValueError(
@@ -358,31 +367,60 @@ class TSPFNFineTuning(TSPFNSystem):
             time_series_attrs=time_series_attrs,
             labels=labels,
             summary_mode=summary_mode,
+            evaluation=(task == "evaluate"),
         )  # (B, Support, 1), (B, Query, 1), (B, S, C, T)
 
-        already_tokenized = self.ts_tokenizer is not None
-        out_features = self.encode(
-            y_batch_support, ts_support, ts_query, already_tokenized=already_tokenized
-        )  # (B, S, E) -> (B, E)
+        if time_series_test is not None and labels_test is not None:
+            _, y_batch_query, _, ts_query = self.process_data(
+                time_series_attrs=time_series_test,
+                labels=labels_test,
+                summary_mode=summary_mode,
+                evaluation=True,
+            )  # (B, Support, 1), (B, Query, 1), (B, S, C, T)
+
+            #Z-scoring
+            if self.ts_tokenizer is None and self.ts_foundation is None:
+                ts_support, ts_query, y_test_support, y_test_query = z_scoring_per_channel(
+                    ts_support, ts_query, y_batch_support, y_batch_query
+                )
+            already_tokenized = self.ts_tokenizer is not None
+            out_features = self.encode(
+                y_test_support,
+                ts_support,
+                ts_query,
+                already_tokenized=already_tokenized,
+                evaluation=True,
+                y_inference_support=y_test_support,
+                ts_inference_support=ts_support,
+            )  # (B, S, E) -> (B, E)
+
+        else:
+            already_tokenized = self.ts_tokenizer is not None
+            out_features = self.encode(
+                y_batch_support,
+                ts_support,
+                ts_query,
+                already_tokenized=already_tokenized,
+            )  # (B, S, E) -> (B, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
             return out_features
 
-        elif task == "predict":
+        elif task == "predict" or task == "evaluate":
             assert (
                 self.prediction_heads is not None
             ), "You requested to perform a prediction task, but the model does not include any prediction heads."
 
             # Forward pass through each target's prediction head
-            predictions = {
-                target_task: prediction_head(out_features)
-                for target_task, prediction_head in self.prediction_heads.items()
-            }
+            predictions = {}
+            for target_task, prediction_head in self.prediction_heads.items():
+                pred = prediction_head(prediction)
+                predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
 
-            # Squeeze out the singleton dimension from the predictions' features (only relevant for scalar predictions)
-            predictions = {target_task: prediction.squeeze(dim=1) for target_task, prediction in predictions.items()}
-            return predictions
+            # # Squeeze out the singleton dimension from the predictions' features (only relevant for scalar predictions)
+            # predictions = {target_task: prediction.squeeze(dim=1) for target_task, prediction in predictions.items()}
+            # return predictions
 
         else:
             raise ValueError(f"Unknown task '{task}' requested for forward pass.")
@@ -401,10 +439,7 @@ class TSPFNFineTuning(TSPFNSystem):
         )  # (B, S, E), (B, S)
         already_tokenized = self.ts_tokenizer is not None
         return self.encode(
-            y_batch_support,
-            ts_support,
-            ts_query,
-            already_tokenized=already_tokenized
+            y_batch_support, ts_support, ts_query, already_tokenized=already_tokenized, evaluation=True
         )  # (B, S, E) -> (B, E)
 
     def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
@@ -441,7 +476,7 @@ class TSPFNFineTuning(TSPFNSystem):
 
         print(f"time_series_input shape: {time_series_input.shape}, target_labels shape: {target_labels.shape}")
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
-            time_series_attrs=time_series_input, labels=target_labels
+            time_series_attrs=time_series_input, labels=target_labels, evaluation=(not self.training)
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
         # B not equal to N (dataset batch size = 1 here)
 
@@ -452,7 +487,7 @@ class TSPFNFineTuning(TSPFNSystem):
             )
             # Store inference data for val/test steps
             y_train_support, _, ts_train_support, _ = self.process_data(
-                time_series_attrs=time_series_support, labels=support_labels
+                time_series_attrs=time_series_support, labels=support_labels, evaluation=True
             )  # (B, Support, 1), (B, Query, 1), (B, S, T)
             y_inference_support = y_train_support
             if self.ts_tokenizer is None and self.ts_foundation is None:
@@ -471,6 +506,7 @@ class TSPFNFineTuning(TSPFNSystem):
             y_inference_support=y_inference_support,
             ts_inference_support=ts_train_support,
             already_tokenized=already_tokenized,
+            evaluation=(not self.training),
         )
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
