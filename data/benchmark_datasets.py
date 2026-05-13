@@ -130,7 +130,7 @@ class ECG5000Dataset(Dataset):
 class ECG200Dataset(Dataset):
     def __init__(self, root, split: str):
         self.root = root
-        self.file_path = os.path.join(self.root, f"{split}", f"{split}.csv")
+        self.file_path = os.path.join(self.root, f"{split}.csv")
 
         df = pd.read_csv(self.file_path, index_col=0)
         self.data = df.values
