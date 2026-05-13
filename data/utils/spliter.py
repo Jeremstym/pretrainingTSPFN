@@ -1,40 +1,42 @@
 import os
-import numpy as np
 import pandas as pd
-import torch
 import click
 from sklearn.model_selection import train_test_split
 
 @click.command()
-@click.option("--input_csv", type=str, required=True, help="Path to the input CSV file containing the dataset.")
-@click.option("--output_dir", type=str, required=True, help="Directory where the split datasets will be saved.")
-@click.option("--test_size", type=float, default=0.2, help="Proportion of the dataset to include in the test split.")
-@click.option("--random_state", type=int, default=42, help="Random seed for reproducibility.")
-def split_dataset(input_csv: str, output_dir: str, test_size: float, random_state: int):
-    # Load the dataset from the CSV file
+@click.option("--input_csv", type=click.Path(exists=True), required=True, help="Path to the input CSV.")
+@click.option("--output_dir", type=str, required=True, help="Directory to save the splits.")
+@click.option("--test_size", type=float, default=0.2, help="Proportion of test data.")
+@click.option("--seed", type=int, default=42, help="Random seed.")
+def split_dataset(input_csv: str, output_dir: str, test_size: float, seed: int):
+    """Splits a CSV into stratified train and test sets."""
+    
     df = pd.read_csv(input_csv)
-    labels = df.iloc[:, -1].values  # Assuming the last column contains labels
-    features = df.iloc[:, :-1].values  # All columns except the last one are features
-
-    # Check if the dataset is empty
+    
     if df.empty:
-        print("The input dataset is empty. Please provide a valid CSV file.")
+        click.echo("Error: The input dataset is empty.")
         return
 
-    # Split the dataset into training and testing sets
-    train_df, test_df = train_test_split(df, test_size=test_size, random_state=random_state, stratify=labels)
-
-    # Ensure the output directory exists
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Save the split datasets to new CSV files
-    train_output_path = os.path.join(output_dir, "train.csv")
-    test_output_path = os.path.join(output_dir, "test.csv")
+    # Using -1 for labels is fine, but we ensure stratify gets the values correctly
+    y = df.iloc[:, -1]
     
-    train_df.to_csv(train_output_path, index=False)
-    test_df.to_csv(test_output_path, index=False)
+    try:
+        train_df, test_df = train_test_split(
+            df, 
+            test_size=test_size, 
+            random_state=seed, 
+            stratify=y
+        )
+    except ValueError as e:
+        click.echo(f"Split failed: {e}. (Hint: Check if a class has only 1 member)")
+        return
 
-    print(f"Dataset successfully split and saved to {output_dir}")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    train_df.to_csv(os.path.join(output_dir, "train.csv"), index=False)
+    test_df.to_csv(os.path.join(output_dir, "test.csv"), index=False)
+
+    click.secho(f"🚀 Success! Files saved to: {output_dir}", fg="green")
 
 if __name__ == "__main__":
     split_dataset()
