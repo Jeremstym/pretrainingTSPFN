@@ -305,6 +305,8 @@ class Mantis8M(
     pipeline_tag="time-series-foundation-model",
     license="mit",
     tags=["time-series-foundation-model"],
+    *args,
+    **kwargs
 ):
     """
     Legacy class name for MantisV1. Maintains exact backward compatibility
