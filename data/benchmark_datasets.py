@@ -157,6 +157,36 @@ class ECG200Dataset(Dataset):
         return x_tensor, y_tensor
 
 
+class ECGFiveDaysDataset(Dataset):
+    def __init__(self, root, split: str):
+        self.root = root
+        self.file_path = os.path.join(self.root, f"{split}.csv")
+
+        df = pd.read_csv(self.file_path, index_col=0)
+        self.data = df.values
+        print(f"Count labels in {split} split before subsampling: {np.unique(self.data[:, -1], return_counts=True)}")
+
+        self.X = self.data[:, :-1]
+        self.Y = (self.data[:, -1].astype(int) + 1) / 2 # Convert from {-1, 1} to {0, 1}
+
+        if self.X.ndim == 2:
+            self.X = self.X.reshape(
+                self.X.shape[0], 1, -1
+            )  # Add unichannel dimension if missing, shape becomes (N, 1, Time)
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        x_sample = self.X[index]
+        y_sample = self.Y[index]
+
+        x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
+        y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+
+        return x_tensor, y_tensor
+
+
 class ESRDataset(Dataset):
     def __init__(self, root, split: str, support_size=None, fold=None):  # Added scaler argument
         self.root = root
