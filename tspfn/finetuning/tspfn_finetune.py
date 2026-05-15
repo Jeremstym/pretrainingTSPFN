@@ -100,48 +100,11 @@ class TSPFNFineTuning(TSPFNSystem):
         self.ts_length = time_series_length
         self.num_classes = num_classes
 
+        self.configure_metrics()
+
         # self.time_series_positional_encoding = time_series_positional_encoding
 
-        # Use ModuleDict so metrics move to GPU automatically
-        metrics_template = MetricCollection(
-            [
-                MulticlassAccuracy(num_classes=self.num_classes, average="micro"),
-                MulticlassAUROC(num_classes=self.num_classes, average="macro"),
-                MulticlassAveragePrecision(num_classes=self.num_classes, average="macro"),
-                MulticlassF1Score(num_classes=self.num_classes, average="macro"),
-                MulticlassCohenKappa(num_classes=self.num_classes),
-                MulticlassRecall(num_classes=self.num_classes, average="macro"),
-            ]
-        )
-        binary_metrics_template = MetricCollection(
-            [
-                BinaryAccuracy(),
-                BinaryAUROC(),
-                BinaryAveragePrecision(),
-                BinaryF1Score(),
-                BinaryCohenKappa(),
-                BinaryRecall(),
-            ]
-        )
-        # Store them in a dict of ModuleDicts
-        self.metrics = nn.ModuleDict(
-            {
-                "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
-                "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
-                "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
-            }
-        )
-        self.metrics_binary = nn.ModuleDict(
-            {
-                "train_metrics": nn.ModuleDict(
-                    {t: binary_metrics_template.clone(prefix="train/") for t in predict_losses}
-                ),
-                "val_metrics": nn.ModuleDict({t: binary_metrics_template.clone(prefix="val/") for t in predict_losses}),
-                "test_metrics": nn.ModuleDict(
-                    {t: binary_metrics_template.clone(prefix="test/") for t in predict_losses}
-                ),
-            }
-        )
+       
         if channel_handler == "convolution":
             self.ts_foundation = TimeSeriesConvolutionTokenizer(
                 ts_size=time_series_length,
@@ -192,6 +155,50 @@ class TSPFNFineTuning(TSPFNSystem):
                 )
 
         return encoder, prediction_heads
+
+    def configure_metrics(self) -> Dict[str, MetricCollection]:
+        """Configure metrics to compute at each train/val/test step."""
+        # Use ModuleDict so metrics move to GPU automatically
+        metrics_template = MetricCollection(
+            [
+                MulticlassAccuracy(num_classes=self.num_classes, average="micro"),
+                MulticlassAUROC(num_classes=self.num_classes, average="macro"),
+                MulticlassAveragePrecision(num_classes=self.num_classes, average="macro"),
+                MulticlassF1Score(num_classes=self.num_classes, average="macro"),
+                MulticlassCohenKappa(num_classes=self.num_classes),
+                MulticlassRecall(num_classes=self.num_classes, average="macro"),
+            ]
+        )
+        # Store them in a dict of ModuleDicts
+        self.metrics = nn.ModuleDict(
+            {
+                "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
+                "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
+                "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
+            }
+        )
+
+        binary_metrics_template = MetricCollection(
+            [
+                BinaryAccuracy(),
+                BinaryAUROC(),
+                BinaryAveragePrecision(),
+                BinaryF1Score(),
+                BinaryCohenKappa(),
+                BinaryRecall(),
+            ]
+        )
+        self.metrics_binary = nn.ModuleDict(
+            {
+                "train_metrics": nn.ModuleDict(
+                    {t: binary_metrics_template.clone(prefix="train/") for t in predict_losses}
+                ),
+                "val_metrics": nn.ModuleDict({t: binary_metrics_template.clone(prefix="val/") for t in predict_losses}),
+                "test_metrics": nn.ModuleDict(
+                    {t: binary_metrics_template.clone(prefix="test/") for t in predict_losses}
+                ),
+            }
+        )
 
     def configure_optimizers(self) -> OptimizerLRSchedulerConfig:
         """Configure optimizer to ignore parameters that should remain frozen (e.g. tokenizers)."""
@@ -535,6 +542,13 @@ class TSPFNFineTuning(TSPFNSystem):
                     y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_classes=1)
                 target = target_batch.squeeze(dim=0)  # (N=Query,)
                 # Convert target to long if classification with >2 classes, float otherwise
+                y_num_classes = np.unique(target.cpu()).shape[0]
+                if y_num_classes != self.num_classes:
+                    num_classes = y_num_classes
+                    self.num_classes = num_classes
+                    # Re instance metrics
+                    self.configure_metrics()
+                    
                 if num_classes > 2:
                     target = target.long()
                 else:
