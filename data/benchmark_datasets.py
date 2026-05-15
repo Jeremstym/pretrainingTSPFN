@@ -445,6 +445,8 @@ class UCRUnivariateDataset(Dataset):
         self.root = root
         self.dataset = dataset
 
+        print(f"Loading UCR Univariate dataset: {dataset}, split: {split}")
+
         le = LabelEncoder()
 
         self.X = np.load(os.path.join(self.root, self.dataset, f"X_{split}.npy"))
