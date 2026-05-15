@@ -227,6 +227,7 @@ class UCRUnivariateDataModule(TSPFNDataModule):
     ) -> None:
         super().__init__(
             data_roots=data_roots,
+            dataset=dataset,
             num_workers=num_workers,
             batch_size=batch_size,
             test_batch_size=test_batch_size,
