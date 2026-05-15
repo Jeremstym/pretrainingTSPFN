@@ -471,7 +471,7 @@ class UCRUnivariateDataset(Dataset):
         le = LabelEncoder()
         self.Y = le.fit_transform(self.Y)
         
-        print(f"Final labels in {split} split: {np.unique(self.Y, return_counts=True)}")
+        print(f"Final labels in {split} split: {np.unique(self.Y).shape[0]}")
 
     def __len__(self):
         return len(self.X)
