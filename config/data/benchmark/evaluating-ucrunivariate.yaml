@@ -7,7 +7,7 @@ dataset: null
 time_series_length: null
 time_points: null
 num_channels: null
-num_classes: null
+num_classes: 10
 
 predict_losses:
   classification:
