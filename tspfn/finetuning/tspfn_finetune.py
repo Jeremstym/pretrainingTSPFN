@@ -174,9 +174,9 @@ class TSPFNFineTuning(TSPFNSystem):
         # Store them in a dict of ModuleDicts
         self.metrics = nn.ModuleDict(
             {
-                "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
-                "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
-                "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
+                "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in self.predict_losses}),
+                "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in self.predict_losses}),
+                "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in self.predict_losses}),
             }
         )
 
@@ -193,11 +193,11 @@ class TSPFNFineTuning(TSPFNSystem):
         self.metrics_binary = nn.ModuleDict(
             {
                 "train_metrics": nn.ModuleDict(
-                    {t: binary_metrics_template.clone(prefix="train/") for t in predict_losses}
+                    {t: binary_metrics_template.clone(prefix="train/") for t in self.predict_losses}
                 ),
-                "val_metrics": nn.ModuleDict({t: binary_metrics_template.clone(prefix="val/") for t in predict_losses}),
+                "val_metrics": nn.ModuleDict({t: binary_metrics_template.clone(prefix="val/") for t in self.predict_losses}),
                 "test_metrics": nn.ModuleDict(
-                    {t: binary_metrics_template.clone(prefix="test/") for t in predict_losses}
+                    {t: binary_metrics_template.clone(prefix="test/") for t in self.predict_losses}
                 ),
             }
         )
