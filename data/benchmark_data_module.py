@@ -26,6 +26,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from lightning.pytorch.utilities.combined_loader import CombinedLoader
 from data.benchmark_datasets import (
+    UCRUnivariateDataset,
     ECG5000Dataset,
     ECG200Dataset,
     ECGFiveDaysDataset,
@@ -151,14 +152,11 @@ class TSPFNDataModule(pl.LightningDataModule):
     def __init__(
         self,
         data_roots: str,
-        subsets: Dict[Union[str, Subset], Union[str, Path]] = None,
+        dataset: Optional[str] = None,
         num_workers: int = 0,
         batch_size: int = 32,
         test_batch_size: Optional[int] = None,
         support_size: Optional[int] = None,
-        fold: Optional[int] = None,
-        filter_labels: bool = False,
-        meta_batch_size: int = 1,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
@@ -166,9 +164,9 @@ class TSPFNDataModule(pl.LightningDataModule):
     ) -> None:
         super().__init__()
         self.data_roots = data_roots
+        self.dataset = dataset
         self.batch_size = batch_size
         self.test_batch_size = test_batch_size
-        self.filter_labels = filter_labels
         self.num_workers = num_workers
         self.pin_memory = pin_memory
         self.transform = transform
@@ -204,6 +202,63 @@ class TSPFNDataModule(pl.LightningDataModule):
         test_loader = self._dataloader(self.test_dataset, shuffle=False, batch_size=self.meta_batch_size)
         train_loader = self._dataloader(self.train_dataset, shuffle=False, batch_size=self.meta_batch_size)
         return CombinedLoader({"query": test_loader, "support": train_loader}, "min_size")
+
+
+class UCRUnivariateDataModule(TSPFNDataModule):
+    """LightningDataModule for UCR datasets.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        data_roots: str,
+        dataset: str,
+        num_workers: int = 0,
+        batch_size: int = 32,
+        test_batch_size: Optional[int] = None,
+        pin_memory: bool = True,
+        transform: Optional[Callable] = None,
+        seed: int = 42,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            data_roots=data_roots,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            test_batch_size=test_batch_size,
+            pin_memory=pin_memory,
+            transform=transform,
+            seed=seed,
+        )
+
+        print(f"num workers: {self.num_workers}")
+
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Create datasets. Called on every process in distributed settings."""
+        self.train_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="train")
+        self.val_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="test")
+
+        return
+
+    def train_dataloader(self):
+        return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
+
+    def val_dataloader(self):
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.val_dataset)
+        loaders = {
+            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
+            "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
+        }
+        return CombinedLoader(loaders, mode="max_size_cycle")
+
+    def test_dataloader(self):
+        # This is identical to val_dataloader for the final evaluation
+        return self.val_dataloader()
 
 
 class ECG5000DataModule(TSPFNDataModule):

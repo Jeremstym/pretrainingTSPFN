@@ -440,6 +440,30 @@ class BlinkDataset(Dataset):
         return x_tensor, y_tensor
 
 
+class UCRUnivariateDataset(Dataset):
+    def __init__(self, root, dataset, split: str):
+        self.root = root
+        self.dataset = dataset
+
+        le = LabelEncoder()
+
+        self.X = np.load(os.path.join(self.root, self.dataset, f"X_{split}.npy"))
+        self.Y = np.load(os.path.join(self.root, self.dataset, f"y_{split}.npy")).astype(int)
+        self.Y = le.fit_transform(self.Y)  # Ensure labels are contiguous integers starting from 0
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        x_sample = self.X[index]
+        y_sample = self.Y[index]
+
+        x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
+        y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
+
+        return x_tensor, y_tensor
+
+
 class EOSDataset(Dataset):
     def __init__(self, root, split: str, support_size=None, fold=None):
         self.root = root
