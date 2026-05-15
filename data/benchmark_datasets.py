@@ -472,6 +472,7 @@ class UCRUnivariateDataset(Dataset):
         self.Y = le.fit_transform(self.Y)
         
         print(f"Final labels in {split} split: {np.unique(self.Y).shape[0]}")
+        print(f"Class counts in {split} split: {np.unique(self.Y, return_counts=True)}")
 
     def __len__(self):
         return len(self.X)
