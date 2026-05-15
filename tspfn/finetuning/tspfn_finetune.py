@@ -202,6 +202,10 @@ class TSPFNFineTuning(TSPFNSystem):
             }
         )
 
+        # Set to device
+        self.metrics = self.metrics.to(self.device)
+        self.metrics_binary = self.metrics_binary.to(self.device)
+
     def configure_optimizers(self) -> OptimizerLRSchedulerConfig:
         """Configure optimizer to ignore parameters that should remain frozen (e.g. tokenizers)."""
         # Frozen tabpfn encoder
