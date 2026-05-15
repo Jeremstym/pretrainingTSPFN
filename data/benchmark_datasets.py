@@ -167,7 +167,7 @@ class ECGFiveDaysDataset(Dataset):
         print(f"Count labels in {split} split before subsampling: {np.unique(self.data[:, -1], return_counts=True)}")
 
         self.X = self.data[:, :-1]
-        self.Y = (self.data[:, -1].astype(int) + 1) / 2 # Convert from {-1, 1} to {0, 1}
+        self.Y = self.data[:, -1].astype(int) - 1
 
         if self.X.ndim == 2:
             self.X = self.X.reshape(

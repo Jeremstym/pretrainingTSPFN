@@ -1,0 +1,13 @@
+defaults:
+  - default
+
+_target_: data.benchmark_data_module.ECGFiveDaysDataModule
+data_roots: ${oc.env:ECG5Days_DATA_PATH}
+time_series_length: 136
+time_points: null
+num_channels: null
+num_classes: 2
+
+predict_losses:
+  classification:
+    _target_: torch.nn.CrossEntropyLoss
