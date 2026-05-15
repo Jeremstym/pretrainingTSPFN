@@ -452,6 +452,7 @@ class UCRUnivariateDataset(Dataset):
         self.X = np.load(os.path.join(self.root, self.dataset, f"X_{split}.npy"))
         self.Y = np.load(os.path.join(self.root, self.dataset, f"y_{split}.npy")).astype(int)
         self.Y = le.fit_transform(self.Y)  # Ensure labels are contiguous integers starting from 0
+        print(f"Count labels in {split} split after fold selection: {np.unique(self.Y, return_counts=True)}")
 
     def __len__(self):
         return len(self.X)
