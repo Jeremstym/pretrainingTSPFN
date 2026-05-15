@@ -53,6 +53,7 @@ class TSPFNFineTuning(TSPFNSystem):
         channel_handler: Literal["average", "flatten", "convolution", "labram"] = None,
         use_tokenizer: bool = False,
         num_classes: int = 10,
+        adaptable_metrics: bool = False,
         *args,
         **kwargs,
     ):
@@ -99,6 +100,7 @@ class TSPFNFineTuning(TSPFNSystem):
         self.ts_num_channels = time_series_num_channels
         self.ts_length = time_series_length
         self.num_classes = num_classes
+        self.adaptable_metrics = adaptable_metrics
 
         self.configure_metrics()
 
@@ -543,7 +545,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 target = target_batch.squeeze(dim=0)  # (N=Query,)
                 # Convert target to long if classification with >2 classes, float otherwise
                 y_num_classes = np.unique(target.cpu()).shape[0]
-                if y_num_classes != self.num_classes:
+                if y_num_classes != self.num_classes and self.adaptable_metrics:
                     num_classes = y_num_classes
                     self.num_classes = num_classes
                     # Re instance metrics
