@@ -4,7 +4,7 @@ import pandas as pd
 from aeon.datasets import load_classification
 from tqdm import tqdm
 
-UCR2019 = univariate = [
+UCR2019_univariate = [
     "ACSF1",
     "Adiac",
     "AllGestureWiimoteX",
@@ -135,9 +135,42 @@ UCR2019 = univariate = [
     "Yoga",
 ]
 
+UEA_multivariate = [
+    "ArticularyWordRecognition",
+    "AtrialFibrillation",
+    "BasicMotions",
+    "CharacterTrajectories",
+    "Cricket",
+    "DuckDuckGeese",
+    "EigenWorms",
+    "Epilepsy",
+    "EthanolConcentration",
+    "ERing",
+    "FaceDetection",
+    "FingerMovements",
+    "HandMovementDirection",
+    "Handwriting",
+    "Heartbeat",
+    "InsectWingbeat",
+    "JapaneseVowels",
+    "Libras",
+    "LSST",
+    "MotorImagery",
+    "NATOPS",
+    "PenDigits",
+    "PEMS-SF",
+    "PhonemeSpectra",
+    "RacketSports",
+    "SelfRegulationSCP1",
+    "SelfRegulationSCP2",
+    "SpokenArabicDigits",
+    "StandWalkJump",
+    "UWaveGestureLibrary",
+]
+
 def main():
-    path = "/data/stympopper/UCR/"
-    for dataset in tqdm(UCR2019, desc="Processing UCR datasets", unit="dataset", total=len(UCR2019)):
+    path = "/data/stympopper/UEA/"
+    for dataset in tqdm(UEA_multivariate, desc="Processing UEA datasets", unit="dataset", total=len(UEA_multivariate)):
         if not os.path.exists(f"{path}/{dataset}"):
             os.mkdir(f"{path}/{dataset}")
             X_train, y_train = load_classification(dataset, split="train")
