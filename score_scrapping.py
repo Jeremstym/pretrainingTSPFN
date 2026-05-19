@@ -7,6 +7,27 @@ import pandas as pd
 from tqdm import tqdm
 
 
+def simplify_csv_pandas(df: pd.DataFrame) -> pd.DataFrame:
+    name_mapping = {
+        # --- Multiclass Metrics ---
+        "test/MulticlassAccuracy/classification": "accuracy",
+        "test/MulticlassAUROC/classification": "auroc",
+        "test/MulticlassAveragePrecision/classification": "average_precision",
+        "test/MulticlassF1Score/classification": "f1_score",
+        "test/MulticlassCohenKappa/classification": "cohen_kappa",
+        "test/MulticlassRecall/classification": "recall",
+        # --- Binary Metrics ---
+        "test/BinaryAccuracy/classification": "accuracy",
+        "test/BinaryAUROC/classification": "auroc",
+        "test/BinaryAveragePrecision/classification": "average_precision",
+        "test/BinaryF1Score/classification": "f1_score",
+        "test/BinaryCohenKappa/classification": "cohen_kappa",
+        "test/BinaryRecall/classification": "recall",
+    }
+
+    df["metric"] = df["metric"].map(name_mapping).fillna(df["metric"])
+    return df[["metric", "value"]]
+
 def main():
     # Define the path to the directory containing the results
     results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate")
@@ -30,18 +51,16 @@ def main():
                     if metrics_file.exists():
                         # Read the metrics file (assuming it's a CSV)
                         df = pd.read_csv(metrics_file)
+                        df = simplify_csv_pandas(df)
 
                         # Extract relevant metrics (e.g., accuracy, F1-score)
-                        accuracy = df.loc[df['metric'] == 'accuracy', 'value'].values[0]
-                        f1_score = df.loc[df['metric'] == 'f1_score', 'value'].values[0]
+                        accuracy = df.loc[df["metric"] == "accuracy", "value"].values[0]
+                        f1_score = df.loc[df["metric"] == "f1_score", "value"].values[0]
 
                         # Append the results to the list
-                        results.append({
-                            "dataset": dataset_name,
-                            "seed": seed_value,
-                            "accuracy": accuracy,
-                            "f1_score": f1_score
-                        })
+                        results.append(
+                            {"dataset": dataset_name, "seed": seed_value, "accuracy": accuracy, "f1_score": f1_score}
+                        )
                     else:
                         print(f"Metrics file not found for {dataset_name} with seed {seed_value}")
 
@@ -50,6 +69,7 @@ def main():
     output_dir = "/data/stympopper/TSPFN-Benchmark"
     results_df.to_csv(f"{output_dir}/ucr_univariate_results_summary.csv", index=False)
     print("Results summary saved to ucr_univariate_results_summary.csv")
+
 
 if __name__ == "__main__":
     main()
