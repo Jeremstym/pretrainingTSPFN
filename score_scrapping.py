@@ -24,8 +24,8 @@ def main():
                 if seed_dir.is_dir() and seed_dir.name.startswith("seed"):
                     seed_value = seed_dir.name.split("seed")[1]  # Extract seed value
 
-                    # Define the path to the metrics file (assuming it's named "metrics.csv")
-                    metrics_file = seed_dir / "metrics.csv"
+                    # Define the path to the metrics file (assuming it's named "test_metrics.csv")
+                    metrics_file = seed_dir / "test_metrics.csv"
 
                     if metrics_file.exists():
                         # Read the metrics file (assuming it's a CSV)
