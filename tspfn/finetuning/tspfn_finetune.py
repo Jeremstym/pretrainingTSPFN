@@ -570,7 +570,7 @@ class TSPFNFineTuning(TSPFNSystem):
 
                 # Metrics are automatically updated inside the Metric objects
                 if num_classes > 2:
-                    print(f"Num classes: {num_classes}, target: {target}, y_hat: {y_hat}")
+                    print(f"Num classes: {num_classes}, target: {target}, y_hat: {y_hat.shape}")
                     self.metrics[stage][target_task].update(y_hat, target)
                 else:
                     target = target.long()
