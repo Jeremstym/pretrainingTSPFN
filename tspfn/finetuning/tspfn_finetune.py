@@ -521,15 +521,25 @@ class TSPFNFineTuning(TSPFNSystem):
             already_tokenized=already_tokenized,
             evaluation=(not self.training),
         )
-        predictions = {}
-        for target_task, prediction_head in self.prediction_heads.items():
-            pred = prediction_head(prediction)
-            predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
 
         target_batch = y_batch_query
+        target = target_batch.squeeze(dim=0)  # (N=Query,)
+        # Convert target to long if classification with >2 classes, float otherwise
+        y_num_classes = np.unique(target.cpu()).shape[0]
+        if y_num_classes != self.num_classes and self.adaptable_metrics:
+            num_classes = y_num_classes
+            self.num_classes = num_classes
+            # Re instance metrics
+            self.configure_metrics()
+
+        predictions = {}
+        for target_task, prediction_head in self.prediction_heads.items():
+            pred = prediction_head(prediction, num_classes=self.num_classes)
+            predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
+
 
         if self.trainer.training:
             stage = "train_metrics"
@@ -546,14 +556,6 @@ class TSPFNFineTuning(TSPFNSystem):
                 )
                 if y_hat.ndim == 1:
                     y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_classes=1)
-                target = target_batch.squeeze(dim=0)  # (N=Query,)
-                # Convert target to long if classification with >2 classes, float otherwise
-                y_num_classes = np.unique(target.cpu()).shape[0]
-                if y_num_classes != self.num_classes and self.adaptable_metrics:
-                    num_classes = y_num_classes
-                    self.num_classes = num_classes
-                    # Re instance metrics
-                    self.configure_metrics()
                     
                 if num_classes > 2:
                     target = target.long()

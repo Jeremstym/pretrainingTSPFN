@@ -56,15 +56,18 @@ class PFNPredictionHead(nn.Module):
 
         self.head = model.decoder_dict["standard"]
     
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor, num_classes: Optional[int] = None) -> Tensor:
         """Predicts unnormalized features from a feature vector input.
 
         Args:
             x: (N, `in_features`), Batch of feature vectors.
+            num_classes: Number of classes for prediction.
 
         Returns:
             - (N, `out_features`), Batch of output features.
         """
+        if num_classes is not None:
+            self.n_classes = num_classes
         x = self.head(x.unsqueeze(1)).squeeze(1)
         # x = x[:, :n_class]  # Original TabPFN prediction head outputs 10 classes by default, reduce to n_class
         x = x[:, :, :self.n_classes]  # Original TabPFN prediction head outputs 10 classes by default, reduce to n_class
