@@ -24,6 +24,7 @@ def main():
             "num_train_samples": X_train.shape[0],
             "num_test_samples": X_test.shape[0],
             "num_features": X_train.shape[1],
+            "sequence_length": X_train.shape[2],
             "num_classes": len(np.unique(y_train)),
         }
         # print(data_info)
