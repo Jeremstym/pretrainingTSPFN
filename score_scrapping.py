@@ -18,8 +18,6 @@ def main():
     for dataset_dir in tqdm(results_dir.iterdir(), desc="Processing datasets"):
         if dataset_dir.is_dir():
             dataset_name = dataset_dir.name.split("-TSPFN")[0]  # Extract dataset name
-            print(f"Processing dataset: {dataset_name}")
-            raise NotImplementedError("This script is not yet implemented. Please implement the logic to read metrics from the results directories and summarize them.")
 
             # Iterate over each seed directory within the dataset directory
             for seed_dir in dataset_dir.iterdir():
@@ -49,7 +47,8 @@ def main():
 
     # Convert results to a DataFrame and save to a CSV file
     results_df = pd.DataFrame(results)
-    results_df.to_csv("ucr_univariate_results_summary.csv", index=False)
+    output_dir = "/data/stympopper/TSPFN-Benchmark"
+    results_df.to_csv(f"{output_dir}/ucr_univariate_results_summary.csv", index=False)
     print("Results summary saved to ucr_univariate_results_summary.csv")
 
 if __name__ == "__main__":
