@@ -34,5 +34,22 @@ def main():
     df.to_csv("/data/stympopper/UCR/univariate_dataset_info.csv", index=False)
 
 
+def label_counter():
+    path_datasets = Path("/data/stympopper/UCR/univariate")
+    dataset_names = [d.name for d in path_datasets.iterdir() if d.is_dir()]
+
+    more_than_10_classes = []
+    for dataset in tqdm(dataset_names, desc="Processing datasets"):
+        dataset_path = path_datasets / dataset
+        y_train = np.load(dataset_path / "y_train.npy")
+        num_classes = len(np.unique(y_train))
+        if num_classes > 10:
+            more_than_10_classes.append((dataset, num_classes))
+    print("Datasets with more than 10 classes:")
+    print(more_than_10_classes)
+    return more_than_10_classes
+
+
 if __name__ == "__main__":
-    main()
+    # main()
+    label_counter()

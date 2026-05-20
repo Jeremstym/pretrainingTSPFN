@@ -7,6 +7,9 @@ import pandas as pd
 from tqdm import tqdm
 
 
+
+label_10_filter = ["dataset1", "dataset2", "dataset3"]  # Replace with actual dataset names
+
 def simplify_csv_pandas(df: pd.DataFrame) -> pd.DataFrame:
     name_mapping = {
         # --- Multiclass Metrics ---
