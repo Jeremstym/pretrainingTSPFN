@@ -15,7 +15,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-    
+
 ModuleType = Union[str, Callable[..., nn.Module]]
 
 
@@ -44,9 +44,9 @@ class PFNPredictionHead(nn.Module):
         
         if random_init:
             model.apply(self._init_weights)
-            logging.info("Randomly initialized TabPFN model weights")
+            logger.info("Randomly initialized TabPFN model weights")
         else:
-            logging.info("Loaded pretrained TabPFN model weights")
+            logger.info("Loaded pretrained TabPFN model weights")
 
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
