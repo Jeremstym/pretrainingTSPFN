@@ -11,6 +11,11 @@ from torch.nn import init
 
 from tabpfn.model_loading import load_model_criterion_config
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+    
 ModuleType = Union[str, Callable[..., nn.Module]]
 
 
