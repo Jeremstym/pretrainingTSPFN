@@ -43,6 +43,13 @@ class TSPFNEncoder(nn.Module, ABC):
 
         list_model, _, self.model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
         self.model = list_model[0]
+        
+        if random_init:  # random_init:
+            self.model.apply(self._init_weights)
+            logging.info("Randomly initialized TabPFN model weights")
+        else:
+            logging.info("Loaded pretrained TabPFN model weights")
+
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
             logging.info(f"Loading updated TabPFN model weights from {updated_pfn_path}")
@@ -109,12 +116,6 @@ class TSPFNEncoder(nn.Module, ABC):
             #     layer.self_attn_between_features.compute_attention_heads = partial(
             #         rope_compute_heads_wrapper, num_channels=self.num_channels
             #     )
-
-        if random_init:  # random_init:
-            self.model.apply(self._init_weights)
-            logging.info("Randomly initialized TabPFN model weights")
-        else:
-            logging.info("Loaded pretrained TabPFN model weights")
 
     def _init_weights(self, module):
         # Initialize Linear layers (with or without bias)

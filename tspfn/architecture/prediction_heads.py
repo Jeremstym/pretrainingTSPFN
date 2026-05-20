@@ -23,6 +23,7 @@ class PFNPredictionHead(nn.Module):
         tabpfn_kwargs: dict,
         num_classes: int = 10, # Default to 10 classes as in original TabPFN
         updated_pfn_path: Union[Path, None] = None,
+        random_init: bool = False,
         **kwargs,
     ):
         """Initializes class instance.
@@ -36,6 +37,12 @@ class PFNPredictionHead(nn.Module):
         model = list_model[0]
         self.n_classes = num_classes
         
+        if random_init:
+            model.apply(self._init_weights)
+            logging.info("Randomly initialized TabPFN model weights")
+        else:
+            logging.info("Loaded pretrained TabPFN model weights")
+
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
             state_dict = torch.load(updated_pfn_path, map_location="cuda:0")
@@ -55,6 +62,22 @@ class PFNPredictionHead(nn.Module):
             model.load_state_dict(state_dict, strict=True)
 
         self.head = model.decoder_dict["standard"]
+
+    def _init_weights(self, module):
+        # Initialize Linear layers (with or without bias)
+        if isinstance(module, nn.Linear):
+            nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        # Initialize LayerNorm layers (weight to 1, bias to 0)
+        elif isinstance(module, nn.LayerNorm):
+            if module.weight is not None:
+                nn.init.ones_(module.weight)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        # Initialize embeddings using normal distribution if any
+        elif isinstance(module, nn.Embedding):
+            nn.init.normal_(module.weight, mean=0, std=1)
     
     def forward(self, x: Tensor, num_classes: Optional[int] = None) -> Tensor:
         """Predicts unnormalized features from a feature vector input.

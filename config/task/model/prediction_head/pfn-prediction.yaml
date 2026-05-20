@@ -3,3 +3,4 @@ in_features: ${task.embed_dim}
 tabpfn_kwargs: ${task.model.encoder.tabpfn_kwargs}
 updated_pfn_path: ${task.model.encoder.updated_pfn_path}
 num_classes: ${data.num_classes}
+random_init: ${task.model.encoder.random_init}
