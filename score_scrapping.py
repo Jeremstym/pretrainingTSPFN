@@ -65,7 +65,7 @@ def main():
                         print(f"Metrics file not found for {dataset_name} with seed {seed_value}")
 
     # Convert results to a DataFrame and save to a CSV file
-    results_df = pd.DataFrame(results)
+    results_df = pd.DataFrame(results).sort_index()
     output_dir = "/data/stympopper/TSPFN-Benchmark"
     results_df.to_csv(f"{output_dir}/ucr_univariate_results_summary.csv", index=False)
     print("Results summary saved to ucr_univariate_results_summary.csv")
