@@ -44,7 +44,7 @@ def label_counter():
         y_train = np.load(dataset_path / "y_train.npy")
         num_classes = len(np.unique(y_train))
         if num_classes > 10:
-            more_than_10_classes.append((dataset, num_classes))
+            more_than_10_classes.append(dataset)
     print("Datasets with more than 10 classes:")
     print(more_than_10_classes)
     return more_than_10_classes
