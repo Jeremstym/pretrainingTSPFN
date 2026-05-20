@@ -6,9 +6,34 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+label_10_filter = [
+    "Crop",
+    "PLAID",
+    "PigArtPressure",
+    "ShapesAll",
+    "GestureMidAirD3",
+    "NonInvasiveFetalECGThorax1",
+    "InsectWingbeatSound",
+    "PigCVP",
+    "GestureMidAirD1",
+    "CricketX",
+    "CricketZ",
+    "GestureMidAirD2",
+    "FacesUCR",
+    "Fungi",
+    "Adiac",
+    "NonInvasiveFetalECGThorax2",
+    "Phoneme",
+    "FiftyWords",
+    "CricketY",
+    "EOGHorizontalSignal",
+    "PigAirwayPressure",
+    "SwedishLeaf",
+    "FaceAll",
+    "EOGVerticalSignal",
+    "WordSynonyms",
+]
 
-
-label_10_filter = ["dataset1", "dataset2", "dataset3"]  # Replace with actual dataset names
 
 def simplify_csv_pandas(df: pd.DataFrame) -> pd.DataFrame:
     name_mapping = {
@@ -30,6 +55,12 @@ def simplify_csv_pandas(df: pd.DataFrame) -> pd.DataFrame:
 
     df["metric"] = df["metric"].map(name_mapping).fillna(df["metric"])
     return df[["metric", "value"]]
+
+
+def filter_datasets_by_class_count(df: pd.DataFrame) -> pd.DataFrame:
+    filtered_df = df[~df["dataset"].isin(label_10_filter)]
+    return filtered_df
+
 
 def main():
     # Define the path to the directory containing the results
@@ -69,9 +100,10 @@ def main():
 
     # Convert results to a DataFrame and save to a CSV file
     results_df = pd.DataFrame(results).sort_values(by=["dataset", "seed"])
+    results_df = filter_datasets_by_class_count(results_df)
     output_dir = "/data/stympopper/TSPFN-Benchmark"
-    results_df.to_csv(f"{output_dir}/ucr_univariate_results_summary.csv", index=False)
-    print("Results summary saved to ucr_univariate_results_summary.csv")
+    results_df.to_csv(f"{output_dir}/less_10_ucr_univariate_results_summary.csv", index=False)
+    print("Results summary saved to less_10_ucr_univariate_results_summary.csv")
 
 
 if __name__ == "__main__":
