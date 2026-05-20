@@ -13,9 +13,6 @@ from tabpfn.model_loading import load_model_criterion_config
 
 import logging
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 ModuleType = Union[str, Callable[..., nn.Module]]
 
 
@@ -44,9 +41,9 @@ class PFNPredictionHead(nn.Module):
         
         if random_init:
             model.apply(self._init_weights)
-            logger.info("Randomly initialized TabPFN model weights")
+            logging.info("Randomly initialized TabPFN model weights")
         else:
-            logger.info("Loaded pretrained TabPFN model weights")
+            logging.info("Loaded pretrained TabPFN model weights")
 
         if updated_pfn_path is not None:
             # Load updated model weights after pretraining
