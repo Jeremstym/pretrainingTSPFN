@@ -8,6 +8,7 @@ import einops
 import torch
 import torch.nn as nn
 from functools import partial
+import types
 from tabpfn.model_loading import load_model_criterion_config
 from tspfn.architecture.pe_utils import rope_compute_heads_wrapper, interpolate_pos_encoding
 from tabpfn.architectures.base.attention.full_attention import MultiHeadAttention
@@ -75,7 +76,9 @@ class TSPFNEncoder(nn.Module, ABC):
         self.encoder = model.encoder
         self.y_encoder = model.y_encoder
         self.transformer_encoder = model.transformer_encoder
-        self.add_embeddings = model.add_embeddings
+        unbound_func = model.__class__.add_embeddings
+        self.add_embeddings = types.MethodType(unbound_func, self)
+        # self.add_embeddings = model.add_embeddings
         self.features_per_group = features_per_group  # 1 for TabPFN v2, 3 for TabPFN v2.5
         self.recompute_layer = recompute_layer
         self.num_channels = num_channels
