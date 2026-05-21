@@ -74,6 +74,7 @@ class TSPFNEncoder(nn.Module, ABC):
             model.load_state_dict(clean_state_dict, strict=True)
 
         self.random_embedding_seed = getattr(model, "random_embedding_seed", None)
+        self.feature_positional_embedding = getattr(model, "feature_positional_embedding", None)
         # TabPFN often uses a configuration object inside 'c'
         if hasattr(model, "c"):
             self.c = model.c
