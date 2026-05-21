@@ -70,7 +70,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 if k not in ["pe", "channel_positional_encoding", "cwpe.weight", "cwpe"]
             }
         
-        model.load_state_dict(clean_state_dict, strict=True)
+            model.load_state_dict(clean_state_dict, strict=True)
 
         self.encoder = model.encoder
         self.y_encoder = model.y_encoder
