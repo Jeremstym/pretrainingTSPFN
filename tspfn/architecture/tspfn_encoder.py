@@ -41,11 +41,11 @@ class TSPFNEncoder(nn.Module, ABC):
         self.cwpe = nn.Embedding(5, embed_dim)
         nn.init.normal_(self.cwpe.weight, mean=0, std=embed_dim**-0.5)
 
-        list_model, _, self.model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
-        self.model = list_model[0]
+        list_model, _, model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
+        model = list_model[0]
         
         if random_init:  # random_init:
-            self.model.apply(self._init_weights)
+            model.apply(self._init_weights)
             logging.info("Randomly initialized TabPFN model weights")
         else:
             logging.info("Loaded pretrained TabPFN model weights")
@@ -55,22 +55,27 @@ class TSPFNEncoder(nn.Module, ABC):
             logging.info(f"Loading updated TabPFN model weights from {updated_pfn_path}")
             state_dict = torch.load(updated_pfn_path, map_location="cuda:0")  # updated_pfn_path is already a state dict
             if positional_encoding == "learned" and "pe" in state_dict:
-                pe_state = state_dict.pop("pe")
                 with torch.no_grad():
-                    self.pe.copy_(pe_state)
+                    self.pe.copy_(state_dict["pe"])
             if "channel_positional_encoding" in state_dict:
-                channel_pe_state = state_dict.pop("channel_positional_encoding")
                 with torch.no_grad():
-                    self.channel_positional_encoding.copy_(channel_pe_state)
+                    self.channel_positional_encoding.copy_(state_dict["channel_positional_encoding"])
             if "cwpe.weight" in state_dict:
-                cwpe_state = state_dict.pop("cwpe.weight")
                 with torch.no_grad():
-                    self.cwpe.weight.copy_(cwpe_state)
-            self.model.load_state_dict(state_dict, strict=True)
+                    self.cwpe.weight.copy_(state_dict["cwpe.weight"])
+                    
+            # Filter out custom parameters so strict=True ignores them cleanly
+            clean_state_dict = {
+                k: v for k, v in state_dict.items() 
+                if k not in ["pe", "channel_positional_encoding", "cwpe.weight", "cwpe"]
+            }
+        
+        model.load_state_dict(clean_state_dict, strict=True)
 
-        self.encoder = self.model.encoder
-        self.y_encoder = self.model.y_encoder
-        self.transformer_encoder = self.model.transformer_encoder
+        self.encoder = model.encoder
+        self.y_encoder = model.y_encoder
+        self.transformer_encoder = model.transformer_encoder
+        self.add_embeddings = model.add_embeddings
         self.features_per_group = features_per_group  # 1 for TabPFN v2, 3 for TabPFN v2.5
         self.recompute_layer = recompute_layer
         self.num_channels = num_channels
@@ -235,7 +240,7 @@ class TSPFNEncoder(nn.Module, ABC):
 
         if self.positional_encoding == "none" or self.positional_encoding == "rope":
             # Use PE from TabPFN model
-            emb_x, emb_y = self.model.add_embeddings(
+            emb_x, emb_y = self.add_embeddings(
                 emb_x,
                 emb_y,
                 data_dags=None,
@@ -246,7 +251,7 @@ class TSPFNEncoder(nn.Module, ABC):
         elif self.positional_encoding == "cwpe+rope" or self.positional_encoding == "cwpe":
             # Use PE from TabPFN model and add channel-wise positional encodings
             if self.use_tabpfn_pe:
-                emb_x, emb_y = self.model.add_embeddings(
+                emb_x, emb_y = self.add_embeddings(
                     emb_x,
                     emb_y,
                     data_dags=None,
@@ -287,7 +292,7 @@ class TSPFNEncoder(nn.Module, ABC):
             emb_x += pos_broadcasted
 
         elif self.positional_encoding == "learned":
-            emb_x, emb_y = self.model.add_embeddings(
+            emb_x, emb_y = self.add_embeddings(
                 emb_x,
                 emb_y,
                 data_dags=None,
