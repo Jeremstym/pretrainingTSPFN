@@ -9446,6 +9446,39 @@
         <mxCell id="v4VXHcU3Qn0Kn59_KNIM-88" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;CLS&lt;/font&gt;" vertex="1">
           <mxGeometry height="41" width="40.5" x="1171.51" y="8491" as="geometry" />
         </mxCell>
+        <mxCell id="v4VXHcU3Qn0Kn59_KNIM-89" parent="1" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;font style=&quot;font-size: 22px;&quot;&gt;$$y_1$$&lt;/font&gt;" vertex="1">
+          <mxGeometry height="40" width="40" x="968" y="8570" as="geometry" />
+        </mxCell>
+        <mxCell id="v4VXHcU3Qn0Kn59_KNIM-90" parent="1" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;font style=&quot;font-size: 22px;&quot;&gt;$$y_2$$&lt;/font&gt;" vertex="1">
+          <mxGeometry height="40" width="40" x="968" y="8622.25" as="geometry" />
+        </mxCell>
+        <mxCell id="v4VXHcU3Qn0Kn59_KNIM-91" parent="1" style="labelPosition=right;align=left;strokeWidth=1;shape=mxgraph.mockup.markup.curlyBrace;html=1;shadow=0;dashed=0;strokeColor=#999999;direction=north;rotation=-180;" value="" vertex="1">
+          <mxGeometry height="100" width="20" x="1020" y="8567" as="geometry" />
+        </mxCell>
+        <mxCell id="v4VXHcU3Qn0Kn59_KNIM-92" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1051" y="8617" as="sourcePoint" />
+            <mxPoint x="1089" y="8617" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v4VXHcU3Qn0Kn59_KNIM-93" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#fff2cc;strokeColor=#d6b656;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="1103.5" y="8589" as="geometry" />
+        </mxCell>
+        <mxCell id="v4VXHcU3Qn0Kn59_KNIM-94" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="1131.5" y="8589" as="geometry" />
+        </mxCell>
+        <mxCell id="v4VXHcU3Qn0Kn59_KNIM-95" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="1103.5" y="8624" as="geometry" />
+        </mxCell>
+        <mxCell id="v4VXHcU3Qn0Kn59_KNIM-96" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#fff2cc;strokeColor=#d6b656;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="1131.5" y="8624" as="geometry" />
+        </mxCell>
+        <mxCell id="v4VXHcU3Qn0Kn59_KNIM-97" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="one-hot encoding" vertex="1">
+          <mxGeometry height="30" width="60" x="1040" y="8563" as="geometry" />
+        </mxCell>
+        <mxCell id="v4VXHcU3Qn0Kn59_KNIM-98" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="True labels" vertex="1">
+          <mxGeometry height="30" width="60" x="887" y="8602" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
