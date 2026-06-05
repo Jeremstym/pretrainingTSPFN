@@ -2457,4 +2457,7 @@ class TSPFNEncoder(nn.Module, ABC):
         output = self.model(x, y)
         if isinstance(output, dict):
             return output["test_embeddings"]
+        
+        print(f"Output shape is {output.shape}")
+        raise Exception("Expected output to be a dict with 'test_embeddings' key.")
         return output
