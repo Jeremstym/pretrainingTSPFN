@@ -305,7 +305,7 @@ class TSPFNFineTuning(TSPFNSystem):
         ts_inference_support: Optional[Tensor] = None,
         already_tokenized: bool = False,
         evaluation: bool = False,
-        return_logits: bool = self.return_logits,
+        return_logits: bool = False,
     ) -> Tensor:
         """Embeds input sequences using the encoder model, optionally selecting/pooling output ts for the embedding.
 
@@ -533,6 +533,7 @@ class TSPFNFineTuning(TSPFNSystem):
             ts_inference_support=ts_train_support,
             already_tokenized=already_tokenized,
             evaluation=(not self.training),
+            return_logits=self.return_logits,   
         )
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
