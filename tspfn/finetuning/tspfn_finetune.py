@@ -551,7 +551,10 @@ class TSPFNFineTuning(TSPFNSystem):
 
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
-            pred = prediction_head(prediction, num_classes=self.num_classes)
+            if prediction_head is not torch.nn.Identity:
+                pred = prediction_head(prediction, num_classes=self.num_classes)
+            else:
+                pred = prediction
             predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
 
         if self.trainer.training:
