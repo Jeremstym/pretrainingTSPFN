@@ -32,5 +32,5 @@ tabpfn_kwargs:
     inference_col_chunk_size: 4
   task_type: multiclass
   n_out: 160
-  device: cuda
-  dtype: torch.float32
+  device: "cuda"
+  dtype: "float32"
