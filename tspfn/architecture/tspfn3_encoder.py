@@ -471,6 +471,8 @@ class ManyClassDecoder(nn.Module):
             .expand(-1, -1, self.num_heads, -1)
             .contiguous()
         )
+        print(f"one_hot_targets_BNHT shape: {one_hot_targets_BNHT.shape}")
+        print(f"one hot target values {one_hot_targets_BNHT}")
         test_output_BMHT = _chunked_class_attention(
             q_BMHD,
             k_BNHD,
