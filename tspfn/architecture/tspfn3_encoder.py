@@ -459,8 +459,11 @@ class ManyClassDecoder(nn.Module):
             return empty + (q_BME.sum() + k_BNE.sum()) * 0.0
 
         print(f"Decoder input shapes: q_BME {q_BME.shape}, k_BNE {k_BNE.shape}, targets {targets.shape}")
+        num_classes_in_batch = targets.max().item() + 1
+        print(f"Number of classes in batch: {num_classes_in_batch}")
         one_hot_targets_BNT = (
-            F.one_hot(targets.long(), num_classes=self.max_num_classes)
+            # F.one_hot(targets.long(), num_classes=self.max_num_classes)
+            F.one_hot(targets.long(), num_classes=num_classes_in_batch)
             .to(dtype=q_BME.dtype)
             .contiguous()
         )
