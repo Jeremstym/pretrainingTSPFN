@@ -2432,7 +2432,7 @@ class TSPFNEncoder(nn.Module, ABC):
         # model = list_model[0]
         
         # resolved = str(tabpfn_kwargs["model_path"].resolve())
-        resolved = str(tabpfn_kwargs["model_path"])
+        resolved = str(tabpfn_kwargs["path"])
         checkpoint = _load_checkpoint_cached(resolved, Checkpoint(resolved).identity())
 
         # try:
