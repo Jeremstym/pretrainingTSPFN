@@ -32,6 +32,7 @@ from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
+
 # from tspfn.foundationals.labram import TimeSeriesLabramEncoder
 from tspfn.foundationals.convolution import TimeSeriesConvolutionTokenizer
 from tspfn.utils import get_sizes_per_class, stratified_batch_split, half_batch_split, z_scoring, z_scoring_per_channel
@@ -54,6 +55,7 @@ class TSPFNFineTuning(TSPFNSystem):
         use_tokenizer: bool = False,
         num_classes: int = 10,
         adaptable_metrics: bool = False,
+        return_logits: bool = False,
         *args,
         **kwargs,
     ):
@@ -101,12 +103,12 @@ class TSPFNFineTuning(TSPFNSystem):
         self.ts_length = time_series_length
         self.num_classes = num_classes
         self.adaptable_metrics = adaptable_metrics
+        self.return_logits = return_logits
 
         self.configure_metrics()
 
         # self.time_series_positional_encoding = time_series_positional_encoding
 
-       
         if channel_handler == "convolution":
             self.ts_foundation = TimeSeriesConvolutionTokenizer(
                 ts_size=time_series_length,
@@ -174,7 +176,9 @@ class TSPFNFineTuning(TSPFNSystem):
         # Store them in a dict of ModuleDicts
         self.metrics = nn.ModuleDict(
             {
-                "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in self.predict_losses}),
+                "train_metrics": nn.ModuleDict(
+                    {t: metrics_template.clone(prefix="train/") for t in self.predict_losses}
+                ),
                 "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in self.predict_losses}),
                 "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in self.predict_losses}),
             }
@@ -195,7 +199,9 @@ class TSPFNFineTuning(TSPFNSystem):
                 "train_metrics": nn.ModuleDict(
                     {t: binary_metrics_template.clone(prefix="train/") for t in self.predict_losses}
                 ),
-                "val_metrics": nn.ModuleDict({t: binary_metrics_template.clone(prefix="val/") for t in self.predict_losses}),
+                "val_metrics": nn.ModuleDict(
+                    {t: binary_metrics_template.clone(prefix="val/") for t in self.predict_losses}
+                ),
                 "test_metrics": nn.ModuleDict(
                     {t: binary_metrics_template.clone(prefix="test/") for t in self.predict_losses}
                 ),
@@ -299,6 +305,7 @@ class TSPFNFineTuning(TSPFNSystem):
         ts_inference_support: Optional[Tensor] = None,
         already_tokenized: bool = False,
         evaluation: bool = False,
+        return_logits: bool = self.return_logits,
     ) -> Tensor:
         """Embeds input sequences using the encoder model, optionally selecting/pooling output ts for the embedding.
 
@@ -324,14 +331,20 @@ class TSPFNFineTuning(TSPFNSystem):
             else:
                 ts = torch.cat([ts_inference_support, ts_batch_query], dim=0)
             y_train = y_inference_support
-            out_features = self.encoder(
-                ts.transpose(0, 1),
-                y_train.transpose(0, 1),
-                already_tokenized=already_tokenized,
-            )[
-                :, :, -1, :
-            ]  # Take last token as output feature
-
+            if not return_logits:
+                out_features = self.encoder(
+                    ts.transpose(0, 1),
+                    y_train.transpose(0, 1),
+                    already_tokenized=already_tokenized,
+                )[
+                    :, :, -1, :
+                ]  # Take last token as output feature
+            else:
+                out_features = self.encoder(
+                    ts.transpose(0, 1),
+                    y_train.transpose(0, 1),
+                    already_tokenized=already_tokenized,
+                )
         else:
             raise ValueError("During inference, both support ts and labels must be provided.")
 
@@ -391,7 +404,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 evaluation=True,
             )  # (B, Support, 1), (B, Query, 1), (B, S, C, T)
 
-            #Z-scoring
+            # Z-scoring
             if self.ts_tokenizer is None and self.ts_foundation is None:
                 ts_support, ts_query, y_test_support, y_test_query = z_scoring_per_channel(
                     ts_support, ts_query, y_batch_support, y_batch_query
@@ -540,7 +553,6 @@ class TSPFNFineTuning(TSPFNSystem):
             pred = prediction_head(prediction, num_classes=self.num_classes)
             predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
 
-
         if self.trainer.training:
             stage = "train_metrics"
         elif self.trainer.validating:
@@ -556,7 +568,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 )
                 if y_hat.ndim == 1:
                     y_hat = y_hat.unsqueeze(dim=0)  # (N=Query, num_classes=1)
-                    
+
                 if num_classes > 2:
                     target = target.long()
                 else:
