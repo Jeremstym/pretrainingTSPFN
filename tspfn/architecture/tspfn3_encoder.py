@@ -471,8 +471,6 @@ class ManyClassDecoder(nn.Module):
             .expand(-1, -1, self.num_heads, -1)
             .contiguous()
         )
-        print(f"one_hot_targets_BNHT shape: {one_hot_targets_BNHT.shape}")
-        print(f"one hot target values {one_hot_targets_BNHT}")
         test_output_BMHT = _chunked_class_attention(
             q_BMHD,
             k_BNHD,
@@ -1702,7 +1700,8 @@ class TabPFNV3(Architecture):
             y = torch.zeros(0, device=x.device, dtype=x.dtype)
         if y.dim() == 3 and y.shape[-1] == 1:
             y = y.squeeze(-1)
-
+        
+        print(f"Target shape after processing: {y.shape}")
         if performance_options is None:
             performance_options = self.get_default_performance_options()
 
@@ -1828,6 +1827,7 @@ class TabPFNV3(Architecture):
         # ---- Decoder -----------------------------------------------------------
         if self.task_type == "multiclass":
             y_BN = y.transpose(0, 1) if y.dim() == 2 else y.unsqueeze(0)
+            print(f"y_BN shape for decoder: {y_BN.shape}")
             test_out: torch.Tensor = self.many_class_decoder(
                 train_emb,
                 test_emb,
