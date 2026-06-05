@@ -23,7 +23,7 @@ tabpfn_kwargs:
     icl_num_kv_heads_test: null
     decoder_head_dim: 64
     decoder_num_heads: 6
-    decoder_use_softmax_scaling: False
+    decoder_use_softmax_scaling: True
     ff_factor: 2
     dropout: 0.0
     softmax_scaling_mlp_hidden_dim: 64
