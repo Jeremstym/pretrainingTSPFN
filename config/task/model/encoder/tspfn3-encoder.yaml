@@ -32,9 +32,5 @@ tabpfn_kwargs:
     inference_col_chunk_size: 4
   task_type: multiclass
   n_out: 160
-  device:
-    _target_: torch.device
-    device: "cuda"
-  dtype:
-    _target_: hydra.utils.get_class
-    path: torch.float32
+  # device: cuda
+  # dtype: torch.float32

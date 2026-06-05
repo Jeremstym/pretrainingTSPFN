@@ -2443,7 +2443,7 @@ class TSPFNEncoder(nn.Module, ABC):
         full_state = checkpoint["state_dict"]
         criterion_state_keys = [k for k in full_state if "criterion." in k]
 
-        model = TabPFNV3(**tabpfn_kwargs)
+        model = TabPFNV3(**tabpfn_kwargs, device="cuda", dtype=torch.float32)
 
         if use_checkpoint:
             model_state = {k: v for k, v in full_state.items() if k not in criterion_state_keys}
