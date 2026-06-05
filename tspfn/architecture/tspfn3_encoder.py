@@ -2431,7 +2431,8 @@ class TSPFNEncoder(nn.Module, ABC):
         # list_model, _, model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
         # model = list_model[0]
         
-        resolved = str(tabpfn_kwargs["model_path"].resolve())
+        # resolved = str(tabpfn_kwargs["model_path"].resolve())
+        resolved = str(tabpfn_kwargs["model_path"])
         checkpoint = _load_checkpoint_cached(resolved, Checkpoint(resolved).identity())
 
         # try:
