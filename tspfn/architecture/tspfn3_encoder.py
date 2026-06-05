@@ -458,6 +458,7 @@ class ManyClassDecoder(nn.Module):
             empty = test_embeddings.new_empty((0, B, self.max_num_classes))
             return empty + (q_BME.sum() + k_BNE.sum()) * 0.0
 
+        print(f"Decoder input shapes: q_BME {q_BME.shape}, k_BNE {k_BNE.shape}, targets {targets.shape}")
         one_hot_targets_BNT = (
             F.one_hot(targets.long(), num_classes=self.max_num_classes)
             .to(dtype=q_BME.dtype)
@@ -471,6 +472,7 @@ class ManyClassDecoder(nn.Module):
             .expand(-1, -1, self.num_heads, -1)
             .contiguous()
         )
+        print(f"one_hot_targets_BNHT shape: {one_hot_targets_BNHT.shape}")
         test_output_BMHT = _chunked_class_attention(
             q_BMHD,
             k_BNHD,
