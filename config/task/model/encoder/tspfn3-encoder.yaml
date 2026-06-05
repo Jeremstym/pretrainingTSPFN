@@ -2,7 +2,7 @@ _target_: tspfn.architecture.tspfn3_encoder.TSPFNEncoder
 seed: ${seed}
 use_checkpoint: True
 tabpfn_kwargs:
-  path: ${oc.env:TABPFN3_MODEL_PATH}
+  model_path: ${oc.env:TABPFN3_MODEL_PATH}
   config: 
     _target_: tabpfn.architectures.tabpfn_v3.TabPFNV3Config
     name: "TabPFN-v3"
