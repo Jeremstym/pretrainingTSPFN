@@ -458,9 +458,7 @@ class ManyClassDecoder(nn.Module):
             empty = test_embeddings.new_empty((0, B, self.max_num_classes))
             return empty + (q_BME.sum() + k_BNE.sum()) * 0.0
 
-        print(f"Decoder input shapes: q_BME {q_BME.shape}, k_BNE {k_BNE.shape}, targets {targets.shape}")
         num_classes_in_batch = targets.max().item() + 1
-        print(f"Number of classes in batch: {num_classes_in_batch}")
         one_hot_targets_BNT = (
             # F.one_hot(targets.long(), num_classes=self.max_num_classes)
             F.one_hot(targets.long(), num_classes=num_classes_in_batch)
@@ -475,7 +473,6 @@ class ManyClassDecoder(nn.Module):
             .expand(-1, -1, self.num_heads, -1)
             .contiguous()
         )
-        print(f"one_hot_targets_BNHT shape: {one_hot_targets_BNHT.shape}")
         test_output_BMHT = _chunked_class_attention(
             q_BMHD,
             k_BNHD,
@@ -1706,7 +1703,6 @@ class TabPFNV3(Architecture):
         if y.dim() == 3 and y.shape[-1] == 1:
             y = y.squeeze(-1)
         
-        print(f"Target shape after processing: {y.shape}")
         if performance_options is None:
             performance_options = self.get_default_performance_options()
 
@@ -1832,7 +1828,6 @@ class TabPFNV3(Architecture):
         # ---- Decoder -----------------------------------------------------------
         if self.task_type == "multiclass":
             y_BN = y.transpose(0, 1) if y.dim() == 2 else y.unsqueeze(0)
-            print(f"y_BN shape for decoder: {y_BN.shape}")
             test_out: torch.Tensor = self.many_class_decoder(
                 train_emb,
                 test_emb,
@@ -2464,7 +2459,6 @@ class TSPFNEncoder(nn.Module, ABC):
         output = self.model(x, y)
         if isinstance(output, dict):
             return output["test_embeddings"]
-        
-        print(f"Output shape is {output.shape}")
-        raise Exception("Expected output to be a dict with 'test_embeddings' key.")
+        if output.dim() == 3:
+            return output.squeeze(1) # (B, 1, T) -> (B, T)
         return output
