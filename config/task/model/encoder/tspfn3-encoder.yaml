@@ -6,6 +6,7 @@ tabpfn_kwargs:
   config: 
     _target_: tabpfn.architectures.tabpfn_v3.TabPFNV3Config
     name: "TabPFN-v3"
+    max_num_classes: 160
     embed_dim: 128
     dist_embed_num_blocks: 3
     dist_embed_num_heads: 8
