@@ -551,7 +551,7 @@ class TSPFNFineTuning(TSPFNSystem):
 
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
-            if prediction_head is not torch.nn.Identity:
+            if not isinstance(prediction_head, nn.Identity):
                 pred = prediction_head(prediction, num_classes=self.num_classes)
             else:
                 pred = prediction
