@@ -2414,15 +2414,16 @@ class TSPFNEncoder(nn.Module, ABC):
         self,
         seed: int,
         tabpfn_kwargs: dict,
-        features_per_group: int,
-        embed_dim: int,
-        updated_pfn_path: Union[Path, None] = None,
-        random_init: bool = False,
-        recompute_layer: bool = True,
-        num_channels: int = None,
-        time_points: int = None,
-        use_tabpfn_pe: bool = True,
-        positional_encoding: Literal["none", "sinusoidal", "rope", "learned", "cwpe", "cwpe+rope"] = "none",
+        use_checkpoint: bool = True,
+        # features_per_group: int,
+        # embed_dim: int,
+        # updated_pfn_path: Union[Path, None] = None,
+        # random_init: bool = False,
+        # recompute_layer: bool = True,
+        # num_channels: int = None,
+        # time_points: int = None,
+        # use_tabpfn_pe: bool = True,
+        # positional_encoding: Literal["none", "sinusoidal", "rope", "learned", "cwpe", "cwpe+rope"] = "none",
         **kwargs,
     ):
         super().__init__()
@@ -2441,13 +2442,7 @@ class TSPFNEncoder(nn.Module, ABC):
         full_state = checkpoint["state_dict"]
         criterion_state_keys = [k for k in full_state if "criterion." in k]
 
-        model = TabPFNV3(
-            config=TabPFNV3Config(),
-            task_type="multiclass",
-            n_out=max_class,
-            device="cuda",
-            dtype=torch.float32,
-        )
+        model = TabPFNV3(**tabpfn_kwargs)
 
         if use_checkpoint:
             model_state = {k: v for k, v in full_state.items() if k not in criterion_state_keys}
