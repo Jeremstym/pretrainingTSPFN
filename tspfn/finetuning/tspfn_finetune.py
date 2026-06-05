@@ -32,7 +32,7 @@ from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
-from tspfn.foundationals.labram import TimeSeriesLabramEncoder
+# from tspfn.foundationals.labram import TimeSeriesLabramEncoder
 from tspfn.foundationals.convolution import TimeSeriesConvolutionTokenizer
 from tspfn.utils import get_sizes_per_class, stratified_batch_split, half_batch_split, z_scoring, z_scoring_per_channel
 
@@ -112,10 +112,10 @@ class TSPFNFineTuning(TSPFNSystem):
                 ts_size=time_series_length,
                 ts_num_channels=time_series_num_channels,
             )
-        elif channel_handler == "labram":
-            self.ts_foundation = TimeSeriesLabramEncoder(
-                pretrained_weights="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
-            )
+        # elif channel_handler == "labram":
+        #     self.ts_foundation = TimeSeriesLabramEncoder(
+        #         pretrained_weights="/home/stympopper/pretrainingTSPFN/ckpts/labram-base.pth",
+        #     )
         elif channel_handler == "average":
             self.ts_foundation = lambda x, input_chans: x.mean(dim=1)  # Average over channels
         elif channel_handler == "flatten":
