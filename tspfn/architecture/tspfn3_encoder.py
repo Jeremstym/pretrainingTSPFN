@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 from typing import Tuple, Union, Literal
 from shutil import copy2
@@ -43,7 +44,6 @@ S: sequence length
 Copyright (c) Prior Labs GmbH 2026.
 """
 
-from __future__ import annotations
 
 import dataclasses
 import logging as _logging
