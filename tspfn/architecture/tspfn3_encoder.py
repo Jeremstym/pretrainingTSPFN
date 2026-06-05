@@ -1550,9 +1550,6 @@ class TabPFNV3(Architecture):
         in_features = config.feature_group_size
         if self.use_nan_indicators:
             in_features *= 2
-        print(f"Cell embedding input features: {in_features}")
-        print(f"Cell embedding output features: {config.embed_dim}")
-        print(f"Feature device: {device}, dtype: {dtype}")
         self.x_embed = nn.Linear(in_features, config.embed_dim, **kw)
 
         # ---- Target-aware col embedding ----
