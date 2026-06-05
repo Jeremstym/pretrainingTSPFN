@@ -2453,6 +2453,7 @@ class TSPFNEncoder(nn.Module, ABC):
 
     def forward(self, x: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
         # x is (B, Ri, C) and y is (train_size, B)
+        x = x.flatten(-2) # (Ri, B, Ch, C) -> (Ri, B, Ch*C)
         output = self.model(x, y)
         if isinstance(output, dict):
             return output["test_embeddings"]
