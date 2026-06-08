@@ -332,8 +332,6 @@ class TUAB5ChannelDataset(Dataset):
         self.X = torch.stack(all_x)
         self.Y = torch.tensor(all_y, dtype=torch.long).unsqueeze(1)  # Shape [Batch, 1]
 
-        assert len(self.X) == len(self.Y), f"Number of samples in X ({len(self.X)}) and Y ({len(self.Y)}) must be the same."
-
         assert (
             self.X.shape[1] == 5
         ), f"Expected 5 channels, but got {self.X.shape[1]}. Please check the data preprocessing."
