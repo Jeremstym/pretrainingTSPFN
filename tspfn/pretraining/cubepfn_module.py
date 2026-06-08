@@ -494,7 +494,7 @@ class CubePFNPretraining(TSPFNSystem):
             num_classes = y_num_classes
             self.num_classes = num_classes
             # Re instance metrics
-            self.configure_metrics()
+            # self.configure_metrics()
 
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
