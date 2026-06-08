@@ -2208,6 +2208,7 @@ class TabPFNV3(Architecture):
         # Number of train rows in this chunk, not overall dataset.
         num_train_rows = max(0, min(effective_num_train - chunk_start, row_chunk_range))
 
+        print(f"x grouped chunk BRjCG shape: {x_grouped_chunk_BRjCG.shape}, num_train_rows: {num_train_rows}")
         x_emb = self.x_embed(x_grouped_chunk_BRjCG)
 
         if y_col_emb is not None and num_train_rows > 0:
