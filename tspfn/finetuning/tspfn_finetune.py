@@ -563,6 +563,7 @@ class TSPFNFineTuning(TSPFNSystem):
             stage = "val_metrics"
         else:
             stage = "test_metrics"
+
         for target_task, target_loss in self.predict_losses.items():
             if target_task == "classification":
                 y_hat = predictions[target_task]  # (N=Query, num_classes)
