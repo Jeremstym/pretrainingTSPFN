@@ -1701,7 +1701,7 @@ class TabPFNV3(Architecture):
         else:
             if num_train > 0:
                 flatten_num_train = num_train * num_channels
-                y_icl = self._prepare_y(y, flatten_num_train, B)
+                y_icl = self._prepare_y(y, flatten_num_train, B, num_channels)
                 y_icl_emb = self._embed_icl_y(y_icl)
                 x_BRiD[:, :flatten_num_train] = x_BRiD[:, :flatten_num_train] + y_icl_emb
 
@@ -1806,6 +1806,7 @@ class TabPFNV3(Architecture):
         y: torch.Tensor,
         num_train: int,
         batch_size: int,
+        num_channels: int = 1,
     ) -> torch.Tensor:
         """Prepare y_train for either target-embedding stage.
 
@@ -1815,7 +1816,7 @@ class TabPFNV3(Architecture):
         if num_train == 0:
             raise ValueError("No training rows available for target embedding.")
 
-        y_NB1 = _prepare_targets(y, num_train, batch_size)[:num_train]
+        y_NB1 = _prepare_targets(y, num_train, batch_size, num_channels)[:num_train]
         y_NB1 = _impute_target_nan_and_inf(
             y_NB1=y_NB1,
             task_type=self.task_type,
@@ -1963,10 +1964,11 @@ class TabPFNV3(Architecture):
         the `(B, N_train, E)` y embedding.
         """
         B = rows_RiBAC.shape[1]
+        num_channels = rows_RiBAC.shape[2]
         x_BRiAC, nan_ind_BRiAC = self._preprocess_raw(rows_RiBAC, num_train, scaler_cache)
         y_col_emb_BNE: torch.Tensor | None = None
         if scaler_cache is None and num_train > 0:
-            y_col_BN = self._prepare_y(y, num_train, B)
+            y_col_BN = self._prepare_y(y, num_train, B, num_channels)
             y_col_emb_BNE = self._embed_col_y(y_col_BN)
 
         x_grouped_BRiACG = self._group_features(x_BRiAC, nan_ind_BRiAC)
@@ -2326,15 +2328,18 @@ def _prepare_targets(
     y: torch.Tensor,
     num_train_and_test_rows: int,
     batch_size: int,
+    num_channels: int = 1,
 ) -> torch.Tensor:
     """Pad y to match num_train_and_test_rows and ensure shape (Ri, B, 1)."""
     num_train_labels = y.shape[0]
-    if num_train_labels > num_train_and_test_rows:
+    if num_train_labels * num_channels > num_train_and_test_rows:
         raise ValueError("No test rows provided.")
-    target_RBT = y.view(num_train_labels, 1 if y.ndim == 1 else batch_size, -1)
+    if num_channels > 1:
+        y = y.repeat_interleave(num_channels, dim=0)
+    target_RBT = y.view(num_train_labels * num_channels, 1 if y.ndim == 1 else batch_size, -1)
     return F.pad(
         target_RBT,
-        (0, 0, 0, 0, 0, num_train_and_test_rows - num_train_labels),
+        (0, 0, 0, 0, 0, num_train_and_test_rows - num_train_labels * num_channels),
         value=float("nan"),
     )
 
