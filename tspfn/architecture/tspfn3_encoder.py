@@ -1761,15 +1761,10 @@ class TabPFNV3(Architecture):
 
         # ---- Decoder -----------------------------------------------------------
         # Unflatten train_emb and test_emb to (B, num_train/test, num_cls_tokens, E) for the decoder.
-        print(f"train_emb shape before unflattening: {train_emb.shape}")
-        print(f"test_emb shape before unflattening: {test_emb.shape}")
-        print(f"num_channels: {num_channels}")
-        print(f"self.icl_emsize: {self.icl_emsize}")
-        print(f"self.column_aggregator.num_cls_tokens: {self.column_aggregator.num_cls_tokens}")
-        print(f"self.icl_emsize // self.column_aggregator.num_cls_tokens: {self.icl_emsize // self.column_aggregator.num_cls_tokens}")
-        print(f"num train: {num_train}")
-        train_emb = train_emb.view(B, num_train, num_channels, self.icl_emsize // self.column_aggregator.num_cls_tokens)
-        test_emb = test_emb.view(B, -1, num_channels, self.icl_emsize // self.column_aggregator.num_cls_tokens)
+        # num_train = train_emb.shape[1] // num_channels
+        # num_test = test_emb.shape[1] // num_channels
+        train_emb = train_emb.view(B, -1, num_channels, self.icl_emsize)
+        test_emb = test_emb.view(B, -1, num_channels, self.icl_emsize)
 
         # Aggregate CLS tokens over channels with a simple mean
         train_emb = train_emb.mean(dim=2)
