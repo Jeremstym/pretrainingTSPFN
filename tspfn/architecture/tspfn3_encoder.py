@@ -1528,6 +1528,15 @@ class TabPFNV3(Architecture):
             **kw,
         )
 
+        # # ---- Multi-channel attention encoder ----
+
+        # self.multi_channel_attention = Attention(
+        #     embedding_size=self.icl_emsize,
+        #     num_heads=config.icl_num_heads,
+        #     head_dim=self.icl_emsize // config.icl_num_heads,
+        #     **kw,
+        # )
+
         # ---- ICL target encoder ----
         if task_type == "multiclass":
             self.icl_y_encoder: nn.Module = TrainableOrthogonalEmbedding(
@@ -1673,9 +1682,9 @@ class TabPFNV3(Architecture):
         )
 
         # ---- Stage 3: ICL ----
-        x_BRiAD = x_BRiAClE.flatten(-2) # (B, Ri, Ch, Cl * E)
+        x_BRiAD = x_BRiAClE.flatten(-2)  # (B, Ri, Ch, Cl * E)
         num_channels = x_BRiAD.shape[2]
-        x_BRiD = x_BRiAD.flatten(1,2) # (B, Ri * Ch, Cl * E)
+        x_BRiD = x_BRiAD.flatten(1, 2)  # (B, Ri * Ch, Cl * E)
         del x_BRiAClE
 
         icl_cache_out: KVCache | None = None  # Populated if return_kv_cache is True.
@@ -2030,7 +2039,7 @@ class TabPFNV3(Architecture):
                             enable_torch_compile=performance_options.enable_torch_compile,
                         )
                         precomputed_hidden_by_channel.append(precomputed_hidden)
-                    
+
                     x_grouped_BRiAGC = x_grouped_BRiACG.transpose(2, 3).contiguous()
                     precomputed_hidden_by_column = []
                     # num_columns = x_grouped_BRiAGC.shape[2]
@@ -2044,7 +2053,7 @@ class TabPFNV3(Architecture):
                     #         enable_torch_compile=performance_options.enable_torch_compile,
                     #     )
                     #     precomputed_hidden_by_column.append(precomputed_hidden)
-                    
+
                     break
                 except RuntimeError as e:
                     if not is_oom_error(e) or eff_col_chunk <= 1:
@@ -2099,9 +2108,11 @@ class TabPFNV3(Architecture):
                         )
                         if chunk_hidden is not None:
                             inducing_hidden = chunk_hidden
-                        assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, Cl, E), got {row_embedding_chunk.shape}"
+                        assert (
+                            row_embedding_chunk.ndim == 4
+                        ), f"Expected (B, row_chunk, Cl, E), got {row_embedding_chunk.shape}"
                         row_chunk_by_channel.append(row_embedding_chunk)
-                        
+
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
                     print(f"Row chunk {row_chunk_start}:{row_chunk_end} embedding shape: {row_embedding_chunk.shape}")
 
@@ -2126,17 +2137,45 @@ class TabPFNV3(Architecture):
                     #     assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, Ch, E), got {row_embedding_chunk.shape}"
                     #     row_embedding_chunk_by_column.append(row_embedding_chunk)
                     # row_embedding_chunk = torch.stack(row_embedding_chunk_by_column, dim=2)
-                    
-                    transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
-                        transposed_row_embedding_chunk.flatten(1,3).unsqueeze(2),
-                        transposed_row_embedding_chunk.flatten(1,3).unsqueeze(2),
-                        transposed_row_embedding_chunk.flatten(1,3).unsqueeze(2),
-                    ).view_as(transposed_row_embedding_chunk)
 
+                    # transposed_row_embedding_chunk = self.multi_channel_attention(
+                    #     row_embedding_chunk.flatten(2, 3).contiguous()
+                    # ).view_as(transposed_row_embedding_chunk)
+                    # row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
+
+                    row_embedding_chunk_list = []
+                    for row in range(row_embedding_chunk.shape[1]):
+                        B, Cl, Ch, E = (
+                            row_embedding_chunk.shape[0],
+                            row_embedding_chunk.shape[2],
+                            row_embedding_chunk.shape[3],
+                            row_embedding_chunk.shape[4],
+                        )
+                        transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
+                            transposed_row_embedding_chunk[:, row]
+                            .flatten(2, 3)
+                            .contiguous()
+                            .unsqueeze(2),  # (B, Cl*Ch, 1, E)
+                            transposed_row_embedding_chunk[:, row]
+                            .flatten(2, 3)
+                            .contiguous()
+                            .unsqueeze(2),  # (B, Cl*Ch, 1, E)
+                            transposed_row_embedding_chunk[:, row]
+                            .flatten(2, 3)
+                            .contiguous()
+                            .unsqueeze(2),  # (B, Cl*Ch, 1, E)
+                        ).view(B, Cl, Ch, E)  # (B, Cl, Ch, E)
+                        row_embedding_chunk_list.append(transposed_row_embedding_chunk)
+                    transposed_row_embedding_chunk = torch.stack(row_embedding_chunk_list, dim=1)
                     row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
+                    print(f"FINAL DIMENSIONS OF ROW EMBEDDING CHUNK: {row_embedding_chunk.shape}")
 
-                    assert row_embedding_chunk.shape[2] == C, f"Expected C={C} columns after aggregation, got {row_embedding_chunk.shape[2]}"
-                    assert row_embedding_chunk.ndim == 5, f"Expected (B, row_chunk, Ch, Cl, E), got {row_embedding_chunk.shape}"
+                    assert (
+                        row_embedding_chunk.shape[2] == C
+                    ), f"Expected C={C} columns after aggregation, got {row_embedding_chunk.shape[2]}"
+                    assert (
+                        row_embedding_chunk.ndim == 5
+                    ), f"Expected (B, row_chunk, Ch, Cl, E), got {row_embedding_chunk.shape}"
                     parts.append(row_embedding_chunk)
 
                 break
