@@ -1994,12 +1994,17 @@ class TabPFNV3(Architecture):
         (chunked path, where it is always computed as an intermediate).
         """
         num_train = y.shape[0]
-        if performance_options.use_chunkwise_inference and not self.training:
-            row_chunk_size = self.inference_row_chunk_size
-            col_chunk_size = self.inference_col_chunk_size
-        else:
-            row_chunk_size = None
-            col_chunk_size = None
+        # if performance_options.use_chunkwise_inference and not self.training:
+        #     row_chunk_size = self.inference_row_chunk_size
+        #     col_chunk_size = self.inference_col_chunk_size
+        # else:
+        #     row_chunk_size = None
+        #     col_chunk_size = None
+        
+        #WARNING: force chunking for now
+        row_chunk_size = self.inference_row_chunk_size
+        col_chunk_size = self.inference_col_chunk_size
+
 
         force_recompute_layer = performance_options.force_recompute_layer
         save_peak_memory_factor = performance_options.save_peak_memory_factor

@@ -30,7 +30,7 @@ tabpfn_kwargs:
     layernorm_elementwise_affine: True
     use_nan_indicators: True
     inference_row_chunk_size: 2048
-    inference_col_chunk_size: 4
+    inference_col_chunk_size: 512
     num_buckets: 5000
   task_type: multiclass
   n_out: 160
