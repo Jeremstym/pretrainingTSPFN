@@ -2167,9 +2167,9 @@ class TabPFNV3(Architecture):
                             .contiguous()
                             .unsqueeze(2),  # (B, Cl*Ch, 1, E)
                         ).view(B, Cl, Ch, E)  # (B, Cl, Ch, E)
+                        print(f"_transposed_row_embedding_chunk shape: {_transposed_row_embedding_chunk.shape}")
                         row_embedding_chunk_list.append(_transposed_row_embedding_chunk)
                     transposed_row_embedding_chunk = torch.stack(row_embedding_chunk_list, dim=1)
-                    print(f"transposed_row_embedding_chunk shape: {transposed_row_embedding_chunk.shape}")
                     row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
 
                     print(f"row_embedding_chunk shape: {row_embedding_chunk.shape}")
