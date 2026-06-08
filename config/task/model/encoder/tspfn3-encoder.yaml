@@ -32,6 +32,12 @@ tabpfn_kwargs:
     inference_row_chunk_size: 2048
     inference_col_chunk_size: 512
     num_buckets: 5000
+  performance_options:
+    use_chunkwise_inference: True
+    inference_row_chunk_size: 2048
+    inference_col_chunk_size: 512
+    enable_torch_compile: False
+    force_recompute_layer: True
   task_type: multiclass
   n_out: 160
   # device: cuda

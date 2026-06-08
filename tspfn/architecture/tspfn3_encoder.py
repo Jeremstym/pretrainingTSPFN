@@ -15,6 +15,7 @@ from tabpfn.architectures import ARCHITECTURES
 from tabpfn.model_loading import load_model_criterion_config, load_model, _load_checkpoint_cached
 from tspfn.architecture.pe_utils import rope_compute_heads_wrapper, interpolate_pos_encoding
 from tabpfn.architectures.base.attention.full_attention import MultiHeadAttention
+from tabpfn.architectures.interface import PerformanceOptions
 
 import logging
 
@@ -1994,17 +1995,12 @@ class TabPFNV3(Architecture):
         (chunked path, where it is always computed as an intermediate).
         """
         num_train = y.shape[0]
-        # if performance_options.use_chunkwise_inference and not self.training:
-        #     row_chunk_size = self.inference_row_chunk_size
-        #     col_chunk_size = self.inference_col_chunk_size
-        # else:
-        #     row_chunk_size = None
-        #     col_chunk_size = None
-        
-        #WARNING: force chunking for now
-        row_chunk_size = self.inference_row_chunk_size
-        col_chunk_size = self.inference_col_chunk_size
-
+        if performance_options.use_chunkwise_inference and not self.training:
+            row_chunk_size = self.inference_row_chunk_size
+            col_chunk_size = self.inference_col_chunk_size
+        else:
+            row_chunk_size = None
+            col_chunk_size = None
 
         force_recompute_layer = performance_options.force_recompute_layer
         save_peak_memory_factor = performance_options.save_peak_memory_factor
@@ -2030,8 +2026,7 @@ class TabPFNV3(Architecture):
         num_rows, C = x_grouped_BRiACG.shape[1], x_grouped_BRiACG.shape[2]
 
         # --- Phase 1: compute inducing hidden when chunking w/o a pre-built cache. ---
-        # use_chunks = row_chunk_size is not None and row_chunk_size < num_rows
-        use_chunks = True
+        use_chunks = row_chunk_size is not None and row_chunk_size < num_rows
 
         if use_chunks and precomputed_hidden is None:
             eff_col_chunk = col_chunk_size if col_chunk_size is not None else C
@@ -2501,11 +2496,12 @@ class TSPFNEncoder(nn.Module, ABC):
             model.load_state_dict(model_state)
 
         self.model = model
+        self.performance_options = PerformanceOptions(**tabpfn_kwargs.get("performance_options", {}))
 
     def forward(self, x: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
         # x is (Ri, B, Ch, C) and y is (train_size, B)
         # x = x.flatten(-2)  # (Ri, B, Ch, C) -> (Ri, B, Ch*C)
-        output = self.model(x, y)
+        output = self.model(x, y, performance_options=self.performance_options)
         if isinstance(output, dict):
             return output["test_embeddings"]
         if output.dim() == 3:
