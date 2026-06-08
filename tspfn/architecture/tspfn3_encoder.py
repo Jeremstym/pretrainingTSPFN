@@ -2100,6 +2100,7 @@ class TabPFNV3(Architecture):
                         if chunk_hidden is not None:
                             inducing_hidden = chunk_hidden
                         assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, C, E), got {row_embedding_chunk.shape}"
+                        print(f"row embedding chunk shape: {row_embedding_chunk.shape}")
                         row_chunk_by_channel.append(row_embedding_chunk)
                         
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
