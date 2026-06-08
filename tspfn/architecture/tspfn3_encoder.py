@@ -2171,6 +2171,8 @@ class TabPFNV3(Architecture):
                     transposed_row_embedding_chunk = torch.stack(row_embedding_chunk_list, dim=1)
                     row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
 
+                    print(f"row_embedding_chunk shape: {row_embedding_chunk.shape}")
+
                     assert (
                         row_embedding_chunk.shape[2] == C
                     ), f"Expected C={C} columns after aggregation, got {row_embedding_chunk.shape[2]}"
