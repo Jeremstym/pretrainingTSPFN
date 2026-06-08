@@ -2151,9 +2151,7 @@ class TabPFNV3(Architecture):
                             row_embedding_chunk.shape[3],
                             row_embedding_chunk.shape[4],
                         )
-                        print(f"row embedding chunk shape before attention: {row_embedding_chunk.shape}")
-                        print(f"Row {row} embedding chunk shape before attention: {transposed_row_embedding_chunk[:, row].shape}")
-                        transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
+                        _transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
                             transposed_row_embedding_chunk[:, row]
                             .flatten(1, 2)
                             .contiguous()
@@ -2167,7 +2165,7 @@ class TabPFNV3(Architecture):
                             .contiguous()
                             .unsqueeze(2),  # (B, Cl*Ch, 1, E)
                         ).view(B, Cl, Ch, E)  # (B, Cl, Ch, E)
-                        row_embedding_chunk_list.append(transposed_row_embedding_chunk)
+                        row_embedding_chunk_list.append(_transposed_row_embedding_chunk)
                     transposed_row_embedding_chunk = torch.stack(row_embedding_chunk_list, dim=1)
                     row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
                     print(f"FINAL DIMENSIONS OF ROW EMBEDDING CHUNK: {row_embedding_chunk.shape}")
