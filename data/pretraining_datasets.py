@@ -687,7 +687,8 @@ class TSPFNMetaDataset(Dataset):
     def __getitem__(self, idx):
         # On retourne le bloc de 10k (X et y)
         # Supposons que y est la dernière colonne
-        if len(self.chunks) == 1 and isinstance(self.chunks[0], Dataset):
+        print(f"Retrieving chunk {idx} from meta-dataset with total {len(self.chunks)} chunks.")
+        if len(self.chunks) == 1:
             # Si on n'a qu'un seul dataset et qu'on a stocké les objets Dataset complets
             dataset = self.chunks[0]
             return dataset.X, dataset.Y
