@@ -113,24 +113,24 @@ class CubePFNPretraining(TSPFNSystem):
         # self.time_series_positional_encoding = time_series_positional_encoding
 
         # Use ModuleDict so metrics move to GPU automatically
-        metrics_template = MetricCollection(
-            [
-                MulticlassAccuracy(num_classes=self.num_classes, average="micro"),
-                MulticlassAUROC(num_classes=self.num_classes, average="macro"),
-                MulticlassAveragePrecision(num_classes=self.num_classes, average="macro"),
-                MulticlassF1Score(num_classes=self.num_classes, average="macro"),
-                MulticlassCohenKappa(num_classes=self.num_classes),
-                MulticlassRecall(num_classes=self.num_classes, average="macro"),
-            ]
-        )
-        # Store them in a dict of ModuleDicts
-        self.metrics = nn.ModuleDict(
-            {
-                "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
-                "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
-                "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
-            }
-        )
+        # metrics_template = MetricCollection(
+        #     [
+        #         MulticlassAccuracy(num_classes=self.num_classes, average="micro"),
+        #         MulticlassAUROC(num_classes=self.num_classes, average="macro"),
+        #         MulticlassAveragePrecision(num_classes=self.num_classes, average="macro"),
+        #         MulticlassF1Score(num_classes=self.num_classes, average="macro"),
+        #         MulticlassCohenKappa(num_classes=self.num_classes),
+        #         MulticlassRecall(num_classes=self.num_classes, average="macro"),
+        #     ]
+        # )
+        # # Store them in a dict of ModuleDicts
+        # self.metrics = nn.ModuleDict(
+        #     {
+        #         "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
+        #         "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
+        #         "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
+        #     }
+        # )
 
     @property
     def example_input_array(self) -> Tensor:
@@ -521,7 +521,7 @@ class CubePFNPretraining(TSPFNSystem):
             losses[loss_name] = loss_val
 
             # Metrics are automatically updated inside the Metric objects
-            self.metrics[stage][target_task].update(y_hat_flat, target_flat)
+            # self.metrics[stage][target_task].update(y_hat_flat, target_flat)
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
         # losses["s_loss"] = torch.stack(trainable_losses).mean()
@@ -529,27 +529,27 @@ class CubePFNPretraining(TSPFNSystem):
 
         return metrics
 
-    def on_test_epoch_end(self):
-        output_data = []
+    # def on_test_epoch_end(self):
+    #     output_data = []
 
-        for target_task, collection in self.metrics["test_metrics"].items():
-            # compute() returns a dict of results for this task
-            results = collection.compute()
+    #     for target_task, collection in self.metrics["test_metrics"].items():
+    #         # compute() returns a dict of results for this task
+    #         results = collection.compute()
 
-            for metric_name, value in results.items():
-                tag = f"{metric_name}/{target_task}"
-                self.log(f"test_{tag}", value)  # Log to logger
-                output_data.append({"metric": tag, "value": value.item()})
+    #         for metric_name, value in results.items():
+    #             tag = f"{metric_name}/{target_task}"
+    #             self.log(f"test_{tag}", value)  # Log to logger
+    #             output_data.append({"metric": tag, "value": value.item()})
 
-            # Reset is handled by Lightning if logged, but manual reset is safe here
-            collection.reset()
+    #         # Reset is handled by Lightning if logged, but manual reset is safe here
+    #         collection.reset()
 
-        # Save CSV once at the very end
-        with open("test_metrics.csv", mode="w", newline="") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
-            writer.writeheader()
-            writer.writerows(output_data)
-        logger.info("Test metrics saved to test_metrics.csv")
+    #     # Save CSV once at the very end
+    #     with open("test_metrics.csv", mode="w", newline="") as csv_file:
+    #         writer = csv.DictWriter(csv_file, fieldnames=["metric", "value"])
+    #         writer.writeheader()
+    #         writer.writerows(output_data)
+    #     logger.info("Test metrics saved to test_metrics.csv")
 
     # def on_test_epoch_end(self):
     #     all_metrics = {}
