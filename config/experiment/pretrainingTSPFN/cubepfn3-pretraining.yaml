@@ -6,7 +6,7 @@ defaults:
   - /task/model/tokenizer: null
   - override /task/model: null
   - override /task/optim: adamw
-  - override /data: pretraining-data-dev
+  - override /data: pretraining-data
 
 
 resume: False

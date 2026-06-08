@@ -1,7 +1,7 @@
 defaults:
   - default
 
-_target_: data.data_module.PretrainingTSPFNDataModule
+_target_: data.data_module.PretrainingTSPFNFullDataModule
 train_datasets:
   2ChannelHIRID:
     _target_: data.pretraining_datasets.HIRID2ChannelDataset
@@ -147,7 +147,7 @@ val_datasets:
 #     root: ${oc.env:TWOCHANS_PTB_DATA_PATH}
 #     split: test
 meta_batch_size: 1
-chunk_size: 5000
+chunk_size: 10000
 num_workers: 4
 num_channels: null
 sequence_length: ${data.chunk_size} # For the TSPFN encoder, the sequence length is determined by the chunk size (number of time points per chunk)
