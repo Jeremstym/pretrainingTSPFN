@@ -669,6 +669,7 @@ class TSPFNMetaDataset(Dataset):
             n = len(dataset.X)
             if n < chunk_size:
                 # Process all dataset
+                print(f"Dataset with {n} samples is smaller than chunk size {chunk_size}. Storing the whole dataset as one chunk.")
                 self.chunks.append((dataset))
                 continue
 
