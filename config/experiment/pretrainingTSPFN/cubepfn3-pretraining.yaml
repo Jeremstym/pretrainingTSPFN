@@ -35,7 +35,7 @@ task:
   embed_dim: 128 # 192 for V2, 512 for V2.5
   num_classes: 10 # As in TabPFN_v2 paper
   num_channels: ${data.num_channels}
-  chunk_size: ${data.chunk_size}
+  # chunk_size: ${data.chunk_size}
   split_finetuning: 0.5
   predict_losses:
     classification:
