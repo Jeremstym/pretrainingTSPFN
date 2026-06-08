@@ -53,6 +53,8 @@ class CubePFNPretraining(TSPFNSystem):
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
         chunk_size: int = 10000,
         use_tokenizer: bool = False,
+        adaptable_metrics: bool = True,
+        return_logits: bool = True,
         # time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
         *args,
         **kwargs,
@@ -76,6 +78,9 @@ class CubePFNPretraining(TSPFNSystem):
         # Add shortcut to lr to work with Lightning's learning rate finder
         self.hparams["lr"] = None
         self.num_classes = num_classes
+        self.adaptable_metrics = adaptable_metrics
+        self.return_logits = return_logits
+
 
         # Configure losses/metrics to compute at each train/val/test step
         # self.metrics = nn.ModuleDict()
@@ -365,7 +370,7 @@ class CubePFNPretraining(TSPFNSystem):
         already_tokenized = self.ts_tokenizer is not None
 
         out_features = self.encode(
-            y_batch_support, ts_support, ts_query, already_tokenized=already_tokenized, return_logits=True
+            y_batch_support, ts_support, ts_query, already_tokenized=already_tokenized, return_logits=self.return_logits
         )  # (B, S, C, T) -> (B, E)
 
         # Early return if requested task requires no prediction heads
@@ -476,7 +481,7 @@ class CubePFNPretraining(TSPFNSystem):
             y_inference_support=y_inference_support,
             ts_inference_support=ts_train_support,
             already_tokenized=already_tokenized,
-            return_logits=True,  # FIXME Always return logits for CubePFN
+            return_logits=self.return_logits,
         )
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
