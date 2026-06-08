@@ -2119,7 +2119,6 @@ class TabPFNV3(Architecture):
 
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
 
-                    transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
                     # row_embedding_chunk_by_column = []
                     # for col in range(num_columns):
                     #     row_embedding_chunk, _ = process_row_chunk(
@@ -2145,31 +2144,51 @@ class TabPFNV3(Architecture):
                     # ).view_as(transposed_row_embedding_chunk)
                     # row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
 
-                    row_embedding_chunk_list = []
-                    for row in range(row_embedding_chunk.shape[1]):
-                        B, Ch, Cl, E = (
-                            row_embedding_chunk.shape[0],
-                            row_embedding_chunk.shape[2],
-                            row_embedding_chunk.shape[3],
-                            row_embedding_chunk.shape[4],
-                        )
-                        _transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
-                            transposed_row_embedding_chunk[:, row]
-                            .flatten(1, 2)
-                            .contiguous()
-                            .unsqueeze(2),  # (B, Cl*Ch, 1, E)
-                            transposed_row_embedding_chunk[:, row]
-                            .flatten(1, 2)
-                            .contiguous()
-                            .unsqueeze(2),  # (B, Cl*Ch, 1, E)
-                            transposed_row_embedding_chunk[:, row]
-                            .flatten(1, 2)
-                            .contiguous()
-                            .unsqueeze(2),  # (B, Cl*Ch, 1, E)
-                        ).view(B, Cl, Ch, E)  # (B, Cl, Ch, E)
-                        row_embedding_chunk_list.append(_transposed_row_embedding_chunk)
-                    transposed_row_embedding_chunk = torch.stack(row_embedding_chunk_list, dim=1)
+                    # transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
+                    # row_embedding_chunk_list = []
+                    # for row in range(row_embedding_chunk.shape[1]):
+                    #     B, Ch, Cl, E = (
+                    #         row_embedding_chunk.shape[0],
+                    #         row_embedding_chunk.shape[2],
+                    #         row_embedding_chunk.shape[3],
+                    #         row_embedding_chunk.shape[4],
+                    #     )
+                    #     _transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
+                    #         transposed_row_embedding_chunk[:, row]
+                    #         .flatten(1, 2)
+                    #         .contiguous()
+                    #         .unsqueeze(2),  # (B, Cl*Ch, 1, E)
+                    #         transposed_row_embedding_chunk[:, row]
+                    #         .flatten(1, 2)
+                    #         .contiguous()
+                    #         .unsqueeze(2),  # (B, Cl*Ch, 1, E)
+                    #         transposed_row_embedding_chunk[:, row]
+                    #         .flatten(1, 2)
+                    #         .contiguous()
+                    #         .unsqueeze(2),  # (B, Cl*Ch, 1, E)
+                    #     ).view(B, Cl, Ch, E)  # (B, Cl, Ch, E)
+                    #     row_embedding_chunk_list.append(_transposed_row_embedding_chunk)
+                    # transposed_row_embedding_chunk = torch.stack(row_embedding_chunk_list, dim=1)
+                    # row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
+
+                    # --- REPLACE THE MANUAL FOR-LOOP BLOCK WITH THIS ---
+                    B, R_chunk, Ch, Cl, E = row_embedding_chunk.shape
+                    
+                    # Instead of a row loop, collapse them into batch dimension cleanly
+                    # Flatten sequence lengths correctly so FlashAttention can actually trigger
+                    flat_q = transposed_row_embedding_chunk.reshape(B * R_chunk, Cl * Ch, E).unsqueeze(2) # (B*R, Seq, 1, E)
+                    
+                    # Permute to standard SDPA format: (Batch, Heads, Seq, Dim)
+                    # Here we treat it as 1 head to keep FlashAttention happy
+                    q_sdpa = flat_q.permute(0, 2, 1, 3).contiguous() 
+                    
+                    # Run scaled dot product attention smoothly across the entire chunk at once
+                    attn_out = scaled_dot_product_attention(q_sdpa, q_sdpa, q_sdpa)
+                    
+                    # Restore original structural shapes
+                    transposed_row_embedding_chunk = attn_out.permute(0, 2, 1, 3).reshape(B, R_chunk, Cl, Ch, E)
                     row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
+                    # ---------------------------------------------------
 
                     assert (
                         row_embedding_chunk.shape[2] == C
