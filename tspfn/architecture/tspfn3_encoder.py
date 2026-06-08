@@ -2106,7 +2106,8 @@ class TabPFNV3(Architecture):
                     transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
                     row_embedding_chunk_by_column = []
                     for col in range(num_columns):
-                        raise Exception("Column-wise row chunking is currently disabled because it causes OOM issues that need to be debugged")
+                        print(f"Processing row chunk {row_chunk_start}:{row_chunk_end}, column {col}")
+                        print(f"Transposed row embedding chunk shape: {transposed_row_embedding_chunk.shape}")
                         row_embedding_chunk, _ = process_row_chunk(
                             x_grouped_chunk_BRjCG=transposed_row_embedding_chunk[:, :, col],
                             y_col_emb=y_col_emb_BNE,
