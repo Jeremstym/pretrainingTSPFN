@@ -2083,6 +2083,7 @@ class TabPFNV3(Architecture):
             parts: list[torch.Tensor] = []
             inducing_hidden: list[torch.Tensor] | None = None
             try:
+                num_channels = x_grouped_BRiACG.shape[2]
                 for row_chunk_start in range(0, num_rows, effective_chunk_size):
                     row_chunk_end = min(row_chunk_start + effective_chunk_size, num_rows)
                     x_grouped_chunk = x_grouped_BRiACG[:, row_chunk_start:row_chunk_end]
