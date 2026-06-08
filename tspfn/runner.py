@@ -29,6 +29,8 @@ import pytorch_lightning as pl
 
 logger = logging.getLogger(__name__)
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 
 class TSPFNRunner(ABC):
     """Abstract runner that runs the main training/val loop, etc. using Lightning Trainer."""
