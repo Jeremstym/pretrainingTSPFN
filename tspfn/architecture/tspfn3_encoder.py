@@ -2082,8 +2082,6 @@ class TabPFNV3(Architecture):
                             torch._dynamo.mark_dynamic(x_grouped_chunk, index=1)
                     row_chunk_by_channel = []
                     for channels in range(num_channels):
-                        print(f"Processing channel number {channels} for rows {row_chunk_start} to {row_chunk_end} (exclusive)")
-                        print(f"x grouped chunk shape: {x_grouped_chunk.shape}")
                         row_embedding_chunk, chunk_hidden = process_row_chunk(
                             x_grouped_chunk_BRjCG=x_grouped_chunk[:, :, channels],
                             y_col_emb=y_col_emb_BNE,
@@ -2108,6 +2106,7 @@ class TabPFNV3(Architecture):
                     transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
                     row_embedding_chunk_by_column = []
                     for col in range(num_columns):
+                        raise Exception("Column-wise row chunking is currently disabled because it causes OOM issues that need to be debugged")
                         row_embedding_chunk, _ = process_row_chunk(
                             x_grouped_chunk_BRjCG=transposed_row_embedding_chunk[:, :, col],
                             y_col_emb=y_col_emb_BNE,
