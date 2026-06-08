@@ -2172,24 +2172,26 @@ class TabPFNV3(Architecture):
                     # row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
 
                     transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
-                    # --- REPLACE THE MANUAL FOR-LOOP BLOCK WITH THIS ---
+                    # --- REPLACE THE ENTIRE 'for row in range(...)' LOOP WITH THIS ---
                     B, R_chunk, Ch, Cl, E = row_embedding_chunk.shape
                     
-                    # Instead of a row loop, collapse them into batch dimension cleanly
-                    # Flatten sequence lengths correctly so FlashAttention can actually trigger
-                    flat_q = transposed_row_embedding_chunk.reshape(B * R_chunk, Cl * Ch, E).unsqueeze(2) # (B*R, Seq, 1, E)
+                    # 1. Flatten rows and treat (Cl * Ch) as the true structural sequence layout
+                    # Shape transitions: (B, R_chunk, Ch, Cl, E) -> (B * R_chunk, Cl * Ch, E)
+                    flat_q = transposed_row_embedding_chunk.reshape(B * R_chunk, Cl * Ch, E)
                     
-                    # Permute to standard SDPA format: (Batch, Heads, Seq, Dim)
-                    # Here we treat it as 1 head to keep FlashAttention happy
-                    q_sdpa = flat_q.permute(0, 2, 1, 3).contiguous() 
+                    # 2. Add an explicit head dimension at dim 1 to satisfy standard SDPA layout: (Batch, Heads, Seq, Dim)
+                    # Treating it as 1 head prevents mathematical inflation during compile tracing
+                    q_sdpa = flat_q.unsqueeze(1).contiguous() # Shape: (B * R_chunk, 1, Cl * Ch, E)
                     
-                    # Run scaled dot product attention smoothly across the entire chunk at once
-                    attn_out = scaled_dot_product_attention(q_sdpa, q_sdpa, q_sdpa)
+                    # 3. Call standard SDPA vectorially over the unified chunk
+                    _transposed_row_embedding_chunk = F.scaled_dot_product_attention(
+                        q_sdpa, q_sdpa, q_sdpa, attn_mask=None, dropout_p=0.0, is_causal=False
+                    )
                     
-                    # Restore original structural shapes
-                    transposed_row_embedding_chunk = attn_out.permute(0, 2, 1, 3).reshape(B, R_chunk, Cl, Ch, E)
+                    # 4. Remove head dim and restore original target architectural shapes
+                    transposed_row_embedding_chunk = _transposed_row_embedding_chunk.squeeze(1).view(B, R_chunk, Cl, Ch, E)
                     row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
-                    # ---------------------------------------------------
+                    # -----------------------------------------------------------------
 
                     assert (
                         row_embedding_chunk.shape[2] == C
