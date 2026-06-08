@@ -2081,6 +2081,7 @@ class TabPFNV3(Architecture):
                         if (row_chunk_end - row_chunk_start) != row_chunk_size:
                             torch._dynamo.mark_dynamic(x_grouped_chunk, index=1)
                     row_chunk_by_channel = []
+                    print(f"X group chunk shape: {x_grouped_chunk.shape}")
                     for channels in range(num_channels):
                         row_embedding_chunk, chunk_hidden = process_row_chunk(
                             x_grouped_chunk_BRjCG=x_grouped_chunk[:, :, channels],
@@ -2102,12 +2103,12 @@ class TabPFNV3(Architecture):
                         row_chunk_by_channel.append(row_embedding_chunk)
                         
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
+                    print(f"Row chunk {row_chunk_start}:{row_chunk_end} embedding shape: {row_embedding_chunk.shape}")
 
                     transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
+                    print(f"Transposed row chunk shape: {transposed_row_embedding_chunk.shape}")
                     row_embedding_chunk_by_column = []
                     for col in range(num_columns):
-                        print(f"Processing row chunk {row_chunk_start}:{row_chunk_end}, column {col}")
-                        print(f"Transposed row embedding chunk shape: {transposed_row_embedding_chunk.shape}")
                         row_embedding_chunk, _ = process_row_chunk(
                             x_grouped_chunk_BRjCG=transposed_row_embedding_chunk[:, :, col],
                             y_col_emb=y_col_emb_BNE,
