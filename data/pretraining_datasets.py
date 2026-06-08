@@ -668,10 +668,9 @@ class TSPFNMetaDataset(Dataset):
         for dataset in datasets.values():
             n = len(dataset.X)
             if n < chunk_size:
-                # Optionnel : On peut ignorer ou padder les datasets trop petits
-                raise ValueError(
-                    f"Dataset of size {n} is smaller than chunk size {chunk_size}. Please check the datasets or adjust the chunk size."
-                )
+                # Process all dataset
+                self.chunks.append((dataset))
+                continue
 
             for i in range(0, n - chunk_size + 1, chunk_size):
                 # self.chunks.append((X[i : i + chunk_size], y[i : i + chunk_size]))
