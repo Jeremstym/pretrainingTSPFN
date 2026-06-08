@@ -2151,6 +2151,7 @@ class TabPFNV3(Architecture):
                             row_embedding_chunk.shape[3],
                             row_embedding_chunk.shape[4],
                         )
+                        print(f"row embedding chunk shape before attention: {row_embedding_chunk.shape}")
                         transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
                             transposed_row_embedding_chunk[:, row]
                             .flatten(1, 2)
