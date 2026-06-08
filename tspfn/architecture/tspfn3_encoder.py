@@ -1673,9 +1673,9 @@ class TabPFNV3(Architecture):
         )
 
         # ---- Stage 3: ICL ----
-        x_BRiAD = x_BRiAClE.flatten(-2) # (B, Ri, Ch, num_cls * E)
+        x_BRiAD = x_BRiAClE.flatten(-2) # (B, Ri, Ch, Cl * E)
         num_channels = x_BRiAD.shape[2]
-        x_BRiD = x_BRiAD.flatten(1,2) # (B, Ri * Ch, num_cls * E)
+        x_BRiD = x_BRiAD.flatten(1,2) # (B, Ri * Ch, Cl * E)
         del x_BRiAClE
 
         icl_cache_out: KVCache | None = None  # Populated if return_kv_cache is True.
@@ -2033,17 +2033,17 @@ class TabPFNV3(Architecture):
                     
                     x_grouped_BRiAGC = x_grouped_BRiACG.transpose(2, 3).contiguous()
                     precomputed_hidden_by_column = []
-                    num_columns = x_grouped_BRiAGC.shape[2]
-                    for col in range(num_columns):
-                        precomputed_hidden = self._compute_all_inducing_hidden(
-                            self.feature_distribution_embedder.layers,
-                            x_grouped_BRiAGC[:, :, col],
-                            num_train,
-                            y_col_emb_BNE,
-                            eff_col_chunk,
-                            enable_torch_compile=performance_options.enable_torch_compile,
-                        )
-                        precomputed_hidden_by_column.append(precomputed_hidden)
+                    # num_columns = x_grouped_BRiAGC.shape[2]
+                    # for col in range(num_columns):
+                    #     precomputed_hidden = self._compute_all_inducing_hidden(
+                    #         self.feature_distribution_embedder.layers,
+                    #         x_grouped_BRiAGC[:, :, col],
+                    #         num_train,
+                    #         y_col_emb_BNE,
+                    #         eff_col_chunk,
+                    #         enable_torch_compile=performance_options.enable_torch_compile,
+                    #     )
+                    #     precomputed_hidden_by_column.append(precomputed_hidden)
                     
                     break
                 except RuntimeError as e:
@@ -2099,7 +2099,7 @@ class TabPFNV3(Architecture):
                         )
                         if chunk_hidden is not None:
                             inducing_hidden = chunk_hidden
-                        assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, C, E), got {row_embedding_chunk.shape}"
+                        assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, Cl, E), got {row_embedding_chunk.shape}"
                         row_chunk_by_channel.append(row_embedding_chunk)
                         
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
@@ -2107,30 +2107,36 @@ class TabPFNV3(Architecture):
 
                     transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
                     print(f"Transposed row chunk shape: {transposed_row_embedding_chunk.shape}")
-                    row_embedding_chunk_by_column = []
-                    for col in range(num_columns):
-                        row_embedding_chunk, _ = process_row_chunk(
-                            x_grouped_chunk_BRjCG=transposed_row_embedding_chunk[:, :, col],
-                            y_col_emb=y_col_emb_BNE,
-                            chunk_start=row_chunk_start,
-                            chunk_end=row_chunk_end,
-                            effective_num_train=effective_num_train,
-                            precomputed_hidden=(
-                                precomputed_hidden_by_column[col] if precomputed_hidden is not None else None
-                            ),
-                            save_peak_memory_factor=save_peak_memory_factor,
-                            force_recompute_layer=force_recompute_layer,
-                            return_inducing_hidden=False,
-                            is_full_path=is_full_path,
-                        )
-                        assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, Ch, E), got {row_embedding_chunk.shape}"
-                        row_embedding_chunk_by_column.append(row_embedding_chunk)
+                    # row_embedding_chunk_by_column = []
+                    # for col in range(num_columns):
+                    #     row_embedding_chunk, _ = process_row_chunk(
+                    #         x_grouped_chunk_BRjCG=transposed_row_embedding_chunk[:, :, col],
+                    #         y_col_emb=y_col_emb_BNE,
+                    #         chunk_start=row_chunk_start,
+                    #         chunk_end=row_chunk_end,
+                    #         effective_num_train=effective_num_train,
+                    #         precomputed_hidden=(
+                    #             precomputed_hidden_by_column[col] if precomputed_hidden is not None else None
+                    #         ),
+                    #         save_peak_memory_factor=save_peak_memory_factor,
+                    #         force_recompute_layer=force_recompute_layer,
+                    #         return_inducing_hidden=False,
+                    #         is_full_path=is_full_path,
+                    #     )
+                    #     assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, Ch, E), got {row_embedding_chunk.shape}"
+                    #     row_embedding_chunk_by_column.append(row_embedding_chunk)
+                    # row_embedding_chunk = torch.stack(row_embedding_chunk_by_column, dim=2)
                     
-                    row_embedding_chunk = torch.stack(row_embedding_chunk_by_column, dim=2)
-                    assert row_embedding_chunk.shape[2] == C, f"Expected C={C} columns after aggregation, got {row_embedding_chunk.shape[2]}"
-                    assert row_embedding_chunk.ndim == 5, f"Expected (B, row_chunk, Ch, C, E), got {row_embedding_chunk.shape}"
+                    row_embedding_chunk = _batched_scaled_dot_product_attention(
+                        transposed_row_embedding_chunk,
+                        transposed_row_embedding_chunk,
+                        transposed_row_embedding_chunk,
+                    ).transpose(2, 3).contiguous()
 
+                    assert row_embedding_chunk.shape[2] == C, f"Expected C={C} columns after aggregation, got {row_embedding_chunk.shape[2]}"
+                    assert row_embedding_chunk.ndim == 5, f"Expected (B, row_chunk, Ch, Cl, E), got {row_embedding_chunk.shape}"
                     parts.append(row_embedding_chunk)
+
                 break
             except RuntimeError as e:
                 if not is_oom_error(e) or not use_chunks or effective_chunk_size <= 1:
