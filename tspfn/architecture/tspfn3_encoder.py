@@ -2128,9 +2128,9 @@ class TabPFNV3(Architecture):
                     # row_embedding_chunk = torch.stack(row_embedding_chunk_by_column, dim=2)
                     
                     transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
-                        transposed_row_embedding_chunk.flatten(2,3),
-                        transposed_row_embedding_chunk.flatten(2,3),
-                        transposed_row_embedding_chunk.flatten(2,3),
+                        transposed_row_embedding_chunk.flatten(1,3).unsqueeze(2),
+                        transposed_row_embedding_chunk.flatten(1,3).unsqueeze(2),
+                        transposed_row_embedding_chunk.flatten(1,3).unsqueeze(2),
                     ).view_as(transposed_row_embedding_chunk)
 
                     row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
