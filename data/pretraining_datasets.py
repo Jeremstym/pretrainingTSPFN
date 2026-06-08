@@ -693,6 +693,7 @@ class TSPFNMetaDataset(Dataset):
             # Si on n'a qu'un seul dataset et qu'on a stocké les objets Dataset complets
             dataset = self.chunks[0]
             return dataset.X, dataset.Y
+        print(f"chunk is {self.chunks[idx]}")
         x, y = self.chunks[idx]
         return x, y
 
