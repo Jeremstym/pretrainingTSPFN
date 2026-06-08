@@ -42,6 +42,8 @@ from data.pretraining_datasets import (
     PTB2ChannelDataset,
     TSPFNMetaDataset,
     TSPFNValidationDataset,
+    TSPFNFullDataset,
+    TSPFNFullValidationDataset,
     TSPFNTestDataset,
 )
 from data.utils.sampler import StratifiedBatchSampler
@@ -136,6 +138,62 @@ class PretrainingTSPFNDataModule(pl.LightningDataModule):
             pin_memory=self.num_workers > 0,
         )
 
+
+class PretrainingTSPFNFullDataModule(pl.LightningDataModule):
+    """LightningDataModule for TSP-style pretraining datasets.
+
+    Parameters
+    - data_roots: root directory for data
+    - batch_size, num_workers, pin_memory: DataLoader args
+    - transform: optional callable applied to subsets
+    """
+
+    def __init__(
+        self,
+        train_datasets: DictConfig,
+        val_datasets: DictConfig,
+        meta_batch_size=1,
+        chunk_size=10000,
+        num_workers: int = 0,
+        seed: int = 42,
+        **kwargs,
+    ) -> None:
+        super().__init__()
+        self.train_datasets = train_datasets
+        self.val_datasets = val_datasets
+        self.meta_batch_size = meta_batch_size
+        self.chunk_size = chunk_size
+        self.num_workers = num_workers
+        self.pin_memory = num_workers > 0
+        self.seed = seed
+
+    def setup(self, stage=None):
+        if stage == "fit" or stage is None:
+            # On instancie les datasets de train un par un
+            train_instances = {name: instantiate(cfg) for name, cfg in self.train_datasets.items()}
+            # On instancie les datasets de val
+            val_instances = {name: instantiate(cfg) for name, cfg in self.val_datasets.items()}
+
+            self.train_ds = TSPFNFullDataset(train_instances)
+            self.val_ds = TSPFNFullValidationDataset(train_instances, val_instances)
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train_ds,
+            shuffle=True,
+            batch_size=self.meta_batch_size,
+            num_workers=self.num_workers,
+            pin_memory=self.num_workers > 0,
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val_ds,
+            shuffle=False,
+            batch_size=self.meta_batch_size,
+            num_workers=self.num_workers,
+            pin_memory=self.num_workers > 0,
+        )
 
 class TSPFNDataModule(pl.LightningDataModule):
     """LightningDataModule for TSP datasets.

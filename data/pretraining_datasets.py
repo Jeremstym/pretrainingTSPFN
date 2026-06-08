@@ -668,10 +668,10 @@ class TSPFNMetaDataset(Dataset):
         for dataset in datasets.values():
             n = len(dataset.X)
             if n < chunk_size:
-                # Process all dataset
-                print(f"Dataset with {n} samples is smaller than chunk size {chunk_size}. Storing the whole dataset as one chunk.")
-                self.chunks.append((dataset))
-                continue
+                # Optionnel : On peut ignorer ou padder les datasets trop petits
+                raise ValueError(
+                    f"Dataset of size {n} is smaller than chunk size {chunk_size}. Please check the datasets or adjust the chunk size."
+                )
 
             for i in range(0, n - chunk_size + 1, chunk_size):
                 # self.chunks.append((X[i : i + chunk_size], y[i : i + chunk_size]))
@@ -688,12 +688,6 @@ class TSPFNMetaDataset(Dataset):
     def __getitem__(self, idx):
         # On retourne le bloc de 10k (X et y)
         # Supposons que y est la dernière colonne
-        print(f"Retrieving chunk {idx} from meta-dataset with total {len(self.chunks)} chunks.")
-        if len(self.chunks) == 1:
-            # Si on n'a qu'un seul dataset et qu'on a stocké les objets Dataset complets
-            dataset = self.chunks[0]
-            return dataset.X, dataset.Y
-        print(f"chunk is {self.chunks[idx]}")
         x, y = self.chunks[idx]
         return x, y
 
@@ -729,20 +723,41 @@ class TSPFNValidationDataset(Dataset):
                     }
                 )
 
+
+class TSPFNFullDataset(Dataset):
+    def __init__(self, datasets: Dict):
+        self.chunk_size = chunk_size
+        self.dataset_list = []
+
+        for dataset in datasets.values():
+            self.dataset_list.append(dataset)
+
+    def __len__(self):
+        return len(self.dataset_list)
+
+    def __getitem__(self, idx):
+        # On retourne le bloc de 10k (X et y)
+        # Supposons que y est la dernière colonne
+        x, y = self.dataset_list[idx]
+        return x, y
+
+
+class TSPFNFullValidationDataset(Dataset):
+    def __init__(self, train_datasets_list: Dict, val_datasets_list: Dict):
+        self.pairs = []
+
+        for (train_dataset), (val_dataset) in zip(train_datasets_list.values(), val_datasets_list.values()):
+            self.pairs.append({"full_train": (train_dataset.X, train_dataset.Y), "full_val": (val_dataset.X, val_dataset.Y)})
+
     def __len__(self):
         return len(self.pairs)
 
     def __getitem__(self, idx):
         item = self.pairs[idx]
         train_data, train_labels = item["full_train"]
-        query_chunk, query_labels = item["query_chunk"]
+        val_data, val_labels = item["full_val"]
 
-        # Random selection of support set from the full train data
-        indices_sup = torch.randperm(len(train_data))[: self.n_support]
-        support_chunk = train_data[indices_sup]
-        support_labels = train_labels[indices_sup]
-
-        output = {"support": (support_chunk, support_labels), "query": (query_chunk, query_labels)}
+        output = {"support": (train_data, train_labels), "query": (val_data, val_labels)}
 
         return output
 
