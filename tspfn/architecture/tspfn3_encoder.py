@@ -2153,15 +2153,15 @@ class TabPFNV3(Architecture):
                         )
                         transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
                             transposed_row_embedding_chunk[:, row]
-                            .flatten(2, 3)
+                            .flatten(1, 2)
                             .contiguous()
                             .unsqueeze(2),  # (B, Cl*Ch, 1, E)
                             transposed_row_embedding_chunk[:, row]
-                            .flatten(2, 3)
+                            .flatten(1, 2)
                             .contiguous()
                             .unsqueeze(2),  # (B, Cl*Ch, 1, E)
                             transposed_row_embedding_chunk[:, row]
-                            .flatten(2, 3)
+                            .flatten(1, 2)
                             .contiguous()
                             .unsqueeze(2),  # (B, Cl*Ch, 1, E)
                         ).view(B, Cl, Ch, E)  # (B, Cl, Ch, E)
