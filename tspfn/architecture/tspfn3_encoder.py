@@ -2100,7 +2100,6 @@ class TabPFNV3(Architecture):
                         if chunk_hidden is not None:
                             inducing_hidden = chunk_hidden
                         assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, C, E), got {row_embedding_chunk.shape}"
-                        print(f"row embedding chunk shape: {row_embedding_chunk.shape}")
                         row_chunk_by_channel.append(row_embedding_chunk)
                         
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
@@ -2214,6 +2213,7 @@ class TabPFNV3(Architecture):
 
         print(f"x grouped chunk BRjCG shape: {x_grouped_chunk_BRjCG.shape}, num_train_rows: {num_train_rows}")
         x_emb = self.x_embed(x_grouped_chunk_BRjCG)
+        print(f"x_emb shape: {x_emb.shape}")
 
         if y_col_emb is not None and num_train_rows > 0:
             y_emb = y_col_emb[:, chunk_start : chunk_start + num_train_rows]
@@ -2227,11 +2227,13 @@ class TabPFNV3(Architecture):
             force_recompute_layer=force_recompute_layer and is_full_path,
             return_hidden=return_inducing_hidden and is_full_path,
         )
+        print(f"Post dist-embedder chunk shape: {x_emb.shape}")
         row_embedding_chunk = self.column_aggregator(
             x_BRiCE=x_emb,
             save_peak_memory_factor=save_peak_memory_factor,
             force_recompute_layer=force_recompute_layer and is_full_path,
         )
+        print(f"Post column-aggregator chunk shape: {row_embedding_chunk.shape}")
         return row_embedding_chunk, chunk_hidden
 
 
