@@ -2082,6 +2082,7 @@ class TabPFNV3(Architecture):
                             torch._dynamo.mark_dynamic(x_grouped_chunk, index=1)
                     row_chunk_by_channel = []
                     for channels in range(num_channels):
+                        print(f"Processing channel number {channels} for rows {row_chunk_start} to {row_chunk_end} (exclusive)")
                         print(f"x grouped chunk shape: {x_grouped_chunk.shape}")
                         row_embedding_chunk, chunk_hidden = process_row_chunk(
                             x_grouped_chunk_BRjCG=x_grouped_chunk[:, :, channels],
