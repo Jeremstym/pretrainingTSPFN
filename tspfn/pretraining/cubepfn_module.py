@@ -30,7 +30,13 @@ from torchmetrics import MetricCollection
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
-from tspfn.utils import half_batch_split, stratified_batch_split, z_scoring, z_scoring_per_channel, get_stratified_batch_split
+from tspfn.utils import (
+    half_batch_split,
+    stratified_batch_split,
+    z_scoring,
+    z_scoring_per_channel,
+    get_stratified_batch_split,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +110,6 @@ class CubePFNPretraining(TSPFNSystem):
             )
         else:
             self.ts_tokenizer = None
-
 
         # Initialize inference storage tensors
         # self.ts_train_for_inference = torch.Tensor().to(self.device)
@@ -222,7 +227,7 @@ class CubePFNPretraining(TSPFNSystem):
         if self.ts_tokenizer is not None:
             ts_batch_support = self.ts_tokenizer(ts_batch_support)  # (Support, C, num_tokens, E)
             ts_batch_query = self.ts_tokenizer(ts_batch_query)  # (Query, C, num_tokens, E)
-        
+
         # Unsqueeze to comply with expected input shape for TabPFN encoder
         if ts_batch_support.ndim == 3:
             ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C, T)
@@ -276,7 +281,7 @@ class CubePFNPretraining(TSPFNSystem):
                 ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, C, T)
             else:
                 ts = torch.cat([ts_batch_support, ts_batch_query], dim=0)
-            
+
             if not return_logits:
                 out_features = self.encoder(
                     ts.transpose(0, 1),
@@ -316,7 +321,6 @@ class CubePFNPretraining(TSPFNSystem):
 
         else:
             raise ValueError("During inference, both support ts and labels must be provided.")
-
 
         return out_features  # (B, Query, E)
 
@@ -359,7 +363,9 @@ class CubePFNPretraining(TSPFNSystem):
 
         already_tokenized = self.ts_tokenizer is not None
 
-        out_features = self.encode(y_batch_support, ts_support, ts_query, already_tokenized=already_tokenized)  # (B, S, C, T) -> (B, E)
+        out_features = self.encode(
+            y_batch_support, ts_support, ts_query, already_tokenized=already_tokenized, return_logits=True
+        )  # (B, S, C, T) -> (B, E)
 
         # Early return if requested task requires no prediction heads
         if task == "encode":
@@ -397,10 +403,7 @@ class CubePFNPretraining(TSPFNSystem):
         )  # (B, S, E), (B, S)
         already_tokenized = self.ts_tokenizer is not None
         return self.encode(
-            y_batch_support,
-            ts_support,
-            ts_query,
-            already_tokenized=already_tokenized
+            y_batch_support, ts_support, ts_query, already_tokenized=already_tokenized
         )  # (B, S, E) -> (B, E)
 
     def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
@@ -440,7 +443,6 @@ class CubePFNPretraining(TSPFNSystem):
             else:
                 raise ValueError(f"Unexpected batch format: {type(batch)}")
 
-
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
@@ -473,7 +475,7 @@ class CubePFNPretraining(TSPFNSystem):
             y_inference_support=y_inference_support,
             ts_inference_support=ts_train_support,
             already_tokenized=already_tokenized,
-            return_logits=True, #FIXME Always return logits for CubePFN
+            return_logits=True,  # FIXME Always return logits for CubePFN
         )
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
@@ -487,7 +489,7 @@ class CubePFNPretraining(TSPFNSystem):
             self.num_classes = num_classes
             # Re instance metrics
             self.configure_metrics()
-        
+
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
             if not isinstance(prediction_head, nn.Identity):
