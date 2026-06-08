@@ -2171,6 +2171,7 @@ class TabPFNV3(Architecture):
                     # transposed_row_embedding_chunk = torch.stack(row_embedding_chunk_list, dim=1)
                     # row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
 
+                    transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
                     # --- REPLACE THE MANUAL FOR-LOOP BLOCK WITH THIS ---
                     B, R_chunk, Ch, Cl, E = row_embedding_chunk.shape
                     
