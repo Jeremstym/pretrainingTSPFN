@@ -726,7 +726,6 @@ class TSPFNValidationDataset(Dataset):
 
 class TSPFNFullDataset(Dataset):
     def __init__(self, datasets: Dict):
-        self.chunk_size = chunk_size
         self.dataset_list = []
 
         for dataset in datasets.values():
