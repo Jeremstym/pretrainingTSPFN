@@ -148,6 +148,19 @@ UCR2019_univariate=(
     "Yoga"
 )
 
+for dataset in "${UCR2019_univariate[@]}"; do
+    poetry run tspfn-pretrain \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TSPFN-v3/seed\${seed}" \
+        +experiment=finetuningTSPFN/tspfn3-finetuning \
+        data=benchmark/evaluating-ucrunivariate \
+        data.dataset="$dataset" \
+        task.adaptable_metrics=True \
+        seed=42 \
+        +dataset="$dataset" \
+        train=False \
+        test=True
+done
+
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
 #         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TSPFN/seed\${seed}" \
@@ -162,18 +175,6 @@ UCR2019_univariate=(
 #         updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" \
 #         task.time_series_positional_encoding=cwpe+rope
 # done
-
-for dataset in "${UCR2019_univariate[@]}"; do
-    poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TSPFN-v3/seed\${seed}" \
-        +experiment=finetuningTSPFN/tspfn3-finetuning \
-        data=benchmark/evaluating-ucrunivariate \
-        data.dataset="$dataset" \
-        seed=42 \
-        +dataset="$dataset" \
-        train=False \
-        test=True
-done
 
 # TSICL test
 
