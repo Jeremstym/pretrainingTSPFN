@@ -1655,16 +1655,16 @@ class TabPFNV3(Architecture):
                 f"Expected target values between 0 and {self.n_out - 1}, but got "
                 f"values greater than {self.n_out - 1}."
             )
-        x_RiBC = x
-        B = x_RiBC.shape[1]
+        x_RiBAC = x
+        B = x_RiBAC.shape[1]
         num_train = y.shape[0]
         if performance_options.enable_torch_compile:
-            torch._dynamo.mark_dynamic(x_RiBC, index=0)
-            torch._dynamo.mark_dynamic(x_RiBC, index=1)
-            torch._dynamo.mark_dynamic(x_RiBC, index=2)
+            torch._dynamo.mark_dynamic(x_RiBAC, index=0)
+            torch._dynamo.mark_dynamic(x_RiBAC, index=1)
+            torch._dynamo.mark_dynamic(x_RiBAC, index=2)
 
-        x_BRiClE, inducing_hidden = self._stages_0_to_2(
-            x_RiBC,
+        x_BRiAClE, inducing_hidden = self._stages_0_to_2(
+            x_RiBAC,
             y,
             performance_options=performance_options,
             return_inducing_hidden=return_kv_cache,
@@ -1673,8 +1673,10 @@ class TabPFNV3(Architecture):
         )
 
         # ---- Stage 3: ICL ----
-        x_BRiD = x_BRiClE.flatten(-2)
-        del x_BRiClE
+        x_BRiAD = x_BRiAClE.flatten(-2) # (B, Ri, Ch, num_cls * E)
+        num_channels = x_BRiAD.shape[2]
+        x_BRiD = x_BRiAD.flatten(1,2) # (B, Ri * Ch, num_cls * E)
+        del x_BRiAClE
 
         icl_cache_out: KVCache | None = None  # Populated if return_kv_cache is True.
 
@@ -1689,16 +1691,17 @@ class TabPFNV3(Architecture):
                 )
         else:
             if num_train > 0:
-                y_icl = self._prepare_y(y, num_train, B)
+                flatten_num_train = num_train * num_channels
+                y_icl = self._prepare_y(y, flatten_num_train, B)
                 y_icl_emb = self._embed_icl_y(y_icl)
-                x_BRiD[:, :num_train] = x_BRiD[:, :num_train] + y_icl_emb
+                x_BRiD[:, :flatten_num_train] = x_BRiD[:, :flatten_num_train] + y_icl_emb
 
             if return_kv_cache:
                 icl_cache_out = KVCache()
                 for layer_idx, block in enumerate(self.icl_blocks):
                     x_BRiD, kv_entry = block(
                         x_BRiD,
-                        num_train,
+                        flatten_num_train,
                         performance_options.save_peak_memory_factor,
                         return_kv=True,
                     )
@@ -1709,14 +1712,14 @@ class TabPFNV3(Architecture):
                         x_BRiD, _ = torch.utils.checkpoint.checkpoint(
                             block,
                             x_BRiD,
-                            num_train,
+                            flatten_num_train,
                             use_reentrant=False,
                             save_peak_memory_factor=performance_options.save_peak_memory_factor,
                         )
                     else:
                         x_BRiD, _ = block(
                             x_BRiD,
-                            num_train,
+                            flatten_num_train,
                             performance_options.save_peak_memory_factor,
                         )
 
@@ -1727,8 +1730,8 @@ class TabPFNV3(Architecture):
             test_emb = x_BRiD
             train_emb = kv_cache.train_embeddings
         else:
-            test_emb = x_BRiD[:, num_train:]
-            train_emb = x_BRiD[:, :num_train]
+            test_emb = x_BRiD[:, flatten_num_train:]
+            train_emb = x_BRiD[:, :flatten_num_train]
 
         # ---- Build KV cache output ---------------------------------------------
         built_cache: TabPFNV3Cache | None = None
@@ -1736,7 +1739,7 @@ class TabPFNV3(Architecture):
             if kv_cache is not None and not kv_cache.is_empty():
                 built_cache = kv_cache  # pass through unchanged
             else:
-                scaler_stats = self.standard_scaler.fit(x_RiBC[:num_train])
+                scaler_stats = self.standard_scaler.fit(x_RiBAC[:num_train])
                 # Store train_embeddings at the ICL KV cache dtype.
                 cache_dtype = next(iter(icl_cache_out.kv.values())).key.dtype
                 built_cache = TabPFNV3Cache(
@@ -1748,6 +1751,14 @@ class TabPFNV3(Architecture):
                 )
 
         # ---- Decoder -----------------------------------------------------------
+        # Unflatten train_emb and test_emb to (B, num_train/test, num_cls_tokens, E) for the decoder.
+        train_emb = train_emb.view(B, num_train, num_channels, self.icl_emsize // self.column_aggregator.num_cls_tokens)
+        test_emb = test_emb.view(B, -1, num_channels, self.icl_emsize // self.column_aggregator.num_cls_tokens)
+
+        # Aggregate CLS tokens over channels with a simple mean
+        train_emb = train_emb.mean(dim=2)
+        test_emb = test_emb.mean(dim=2)
+
         if self.task_type == "multiclass":
             y_BN = y.transpose(0, 1) if y.dim() == 2 else y.unsqueeze(0)
             test_out: torch.Tensor = self.many_class_decoder(
@@ -1817,7 +1828,7 @@ class TabPFNV3(Architecture):
 
     def _preprocess_raw(
         self,
-        x_RiBC: torch.Tensor,
+        x_RiBAC: torch.Tensor,
         num_train: int,
         scaler_cache: dict[str, torch.Tensor] | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor | None]:
@@ -1826,34 +1837,34 @@ class TabPFNV3(Architecture):
         When *scaler_cache* is provided the scaler is applied without refitting
         (inference mode); otherwise it is fitted on the first *num_train* rows.
 
-        Returns ``(x_BRiC, nan_ind_BRiC)`` both of shape ``(B, Ri, C)``.
+        Returns ``(x_BRiAC, nan_ind_BRiAC)`` both of shape ``(B, Ri, C)``.
         """
-        nan_ind_BRiC: torch.Tensor | None = None
+        nan_ind_BRiAC: torch.Tensor | None = None
         if self.use_nan_indicators:
             # Note: Indicators need to be computed before imputation.
-            nan_indicator_RiBC = _generate_nan_and_inf_indicator(x_RiBC)
-            nan_ind_BRiC = nan_indicator_RiBC.transpose(0, 1)
+            nan_indicator_RiBAC = _generate_nan_and_inf_indicator(x_RiBAC)
+            nan_ind_BRiAC = nan_indicator_RiBAC.transpose(0, 1)
 
-        x_RiBC, _ = _impute_nan_and_inf_with_mean(x_RiBC, num_train, scaler_cache)
+        x_RiBAC, _ = _impute_nan_and_inf_with_mean(x_RiBAC, num_train, scaler_cache)
         if scaler_cache is not None:
-            x_RiBC = self.standard_scaler.transform(x_RiBC, fitted_cache=scaler_cache)
+            x_RiBAC = self.standard_scaler.transform(x_RiBAC, fitted_cache=scaler_cache)
         else:
-            x_RiBC = self.standard_scaler(x=x_RiBC, num_train_rows=num_train)
-        x_BRiC = x_RiBC.transpose(0, 1)
+            x_RiBAC = self.standard_scaler(x=x_RiBAC, num_train_rows=num_train)
+        x_BRiAC = x_RiBAC.transpose(0, 1)
 
-        return x_BRiC, nan_ind_BRiC
+        return x_BRiAC, nan_ind_BRiAC
 
     def _group_features(
         self,
-        x_BRiC: torch.Tensor,
-        nan_ind_BRiC: torch.Tensor | None,
+        x_BRiAC: torch.Tensor,
+        nan_ind_BRiAC: torch.Tensor | None,
     ) -> torch.Tensor:
         """Build the full grouped + indicator-concatenated tensor."""
         size = self.feature_group_size
-        x_grouped = [torch.roll(x_BRiC, shifts=-(2**i), dims=2) for i in range(size)]
+        x_grouped = [torch.roll(x_BRiAC, shifts=-(2**i), dims=3) for i in range(size)]
         x_grouped = torch.stack(x_grouped, dim=-1)
-        if nan_ind_BRiC is not None:
-            ind_grouped = [torch.roll(nan_ind_BRiC, shifts=-(2**i), dims=2) for i in range(size)]
+        if nan_ind_BRiAC is not None:
+            ind_grouped = [torch.roll(nan_ind_BRiAC, shifts=-(2**i), dims=3) for i in range(size)]
             ind_grouped = torch.stack(ind_grouped, dim=-1)
             x_grouped = torch.cat([x_grouped, ind_grouped], dim=-1)
         return x_grouped
@@ -1861,7 +1872,7 @@ class TabPFNV3(Architecture):
     def _compute_all_inducing_hidden(
         self,
         dist_embedder_layers: nn.ModuleList,
-        x_grouped_BRiCG: torch.Tensor,
+        x_grouped_BRiACG: torch.Tensor,
         num_train: int,
         y_col_emb_BNE: torch.Tensor | None,
         col_chunk_size: int,
@@ -1875,13 +1886,13 @@ class TabPFNV3(Architecture):
 
         Returns one ``(B*C, num_inducing, embedding_size)`` tensor per block.
         """
-        num_columns = x_grouped_BRiCG.shape[2]
+        num_columns = x_grouped_BRiACG.shape[2]
         num_blocks = len(dist_embedder_layers)
         # I: num inducing vectors.
         # Collect (B, Cj, I, E) per column-chunk, per block
         hidden_per_block: list[list[torch.Tensor]] = [[] for _ in range(num_blocks)]
 
-        x_grouped_train_BNCG = x_grouped_BRiCG[:, :num_train]
+        x_grouped_train_BNCG = x_grouped_BRiACG[:, :num_train]
         process_col_fn = self._compiled(self._process_col_chunk) if enable_torch_compile else self._process_col_chunk
 
         for c0 in range(0, num_columns, col_chunk_size):
@@ -1931,7 +1942,7 @@ class TabPFNV3(Architecture):
 
     def _preprocess_and_group(
         self,
-        rows_RiBC: torch.Tensor,
+        rows_RiBAC: torch.Tensor,
         y: torch.Tensor,
         num_train: int,
         scaler_cache: dict[str, torch.Tensor] | None,
@@ -1942,19 +1953,19 @@ class TabPFNV3(Architecture):
         Returns the grouped x of shape `(B, Ri, C, G)` tensor and optionally
         the `(B, N_train, E)` y embedding.
         """
-        B = rows_RiBC.shape[1]
-        x_BRiC, nan_ind_BRiC = self._preprocess_raw(rows_RiBC, num_train, scaler_cache)
+        B = rows_RiBAC.shape[1]
+        x_BRiAC, nan_ind_BRiAC = self._preprocess_raw(rows_RiBAC, num_train, scaler_cache)
         y_col_emb_BNE: torch.Tensor | None = None
         if scaler_cache is None and num_train > 0:
             y_col_BN = self._prepare_y(y, num_train, B)
             y_col_emb_BNE = self._embed_col_y(y_col_BN)
 
-        x_grouped_BRiCG = self._group_features(x_BRiC, nan_ind_BRiC)
-        return x_grouped_BRiCG, y_col_emb_BNE
+        x_grouped_BRiACG = self._group_features(x_BRiAC, nan_ind_BRiAC)
+        return x_grouped_BRiACG, y_col_emb_BNE
 
     def _stages_0_to_2(
         self,
-        x_RiBC: torch.Tensor,
+        x_RiBAC: torch.Tensor,
         y: torch.Tensor,
         *,
         performance_options: PerformanceOptions,
@@ -1965,7 +1976,7 @@ class TabPFNV3(Architecture):
         """Stages 0-2: feature embedding, distribution embedding, column aggregation.
 
         Handles all three computation paths (cache / chunked / full) and returns
-        ``(x_BRiClE, inducing_hidden)``.  ``inducing_hidden`` is ``None`` unless
+        ``(x_BRiAClE, inducing_hidden)``.  ``inducing_hidden`` is ``None`` unless
         ``return_inducing_hidden`` is True (full path) or row-chunking is active
         (chunked path, where it is always computed as an intermediate).
         """
@@ -1981,12 +1992,12 @@ class TabPFNV3(Architecture):
         save_peak_memory_factor = performance_options.save_peak_memory_factor
 
         if kv_cache is not None and not kv_cache.is_empty():
-            rows_RiBC = x_RiBC if x_is_test_only else x_RiBC[num_train:]
+            rows_RiBAC = x_RiBAC if x_is_test_only else x_RiBAC[num_train:]
             scaler_cache = kv_cache.scaler_cache
             precomputed_hidden: list[torch.Tensor] | None = kv_cache.inducing_hidden
             effective_num_train = 0
         else:
-            rows_RiBC = x_RiBC
+            rows_RiBAC = x_RiBAC
             scaler_cache = None
             precomputed_hidden = None
             effective_num_train = num_train
@@ -1997,8 +2008,8 @@ class TabPFNV3(Architecture):
             if performance_options.enable_torch_compile
             else self._preprocess_and_group
         )
-        x_grouped_BRiCG, y_col_emb_BNE = preprocess_fn(rows_RiBC, y, num_train, scaler_cache)
-        num_rows, C = x_grouped_BRiCG.shape[1], x_grouped_BRiCG.shape[2]
+        x_grouped_BRiACG, y_col_emb_BNE = preprocess_fn(rows_RiBAC, y, num_train, scaler_cache)
+        num_rows, C = x_grouped_BRiACG.shape[1], x_grouped_BRiACG.shape[2]
 
         # --- Phase 1: compute inducing hidden when chunking w/o a pre-built cache. ---
         use_chunks = row_chunk_size is not None and row_chunk_size < num_rows
@@ -2007,14 +2018,33 @@ class TabPFNV3(Architecture):
             eff_col_chunk = col_chunk_size if col_chunk_size is not None else C
             while True:
                 try:
-                    precomputed_hidden = self._compute_all_inducing_hidden(
-                        self.feature_distribution_embedder.layers,
-                        x_grouped_BRiCG,
-                        num_train,
-                        y_col_emb_BNE,
-                        eff_col_chunk,
-                        enable_torch_compile=performance_options.enable_torch_compile,
-                    )
+                    precomputed_hidden_by_channel = []
+                    num_channels = x_grouped_BRiACG.shape[2]
+                    for channels in range(num_channels):
+                        precomputed_hidden = self._compute_all_inducing_hidden(
+                            self.feature_distribution_embedder.layers,
+                            x_grouped_BRiACG[:, :, channels],
+                            num_train,
+                            y_col_emb_BNE,
+                            eff_col_chunk,
+                            enable_torch_compile=performance_options.enable_torch_compile,
+                        )
+                        precomputed_hidden_by_channel.append(precomputed_hidden)
+                    
+                    x_grouped_BRiAGC = x_grouped_BRiACG.transpose(2, 3).contiguous()
+                    precomputed_hidden_by_column = []
+                    num_columns = x_grouped_BRiAGC.shape[2]
+                    for col in range(num_columns):
+                        precomputed_hidden = self._compute_all_inducing_hidden(
+                            self.feature_distribution_embedder.layers,
+                            x_grouped_BRiAGC[:, :, col],
+                            num_train,
+                            y_col_emb_BNE,
+                            eff_col_chunk,
+                            enable_torch_compile=performance_options.enable_torch_compile,
+                        )
+                        precomputed_hidden_by_column.append(precomputed_hidden)
+                    
                     break
                 except RuntimeError as e:
                     if not is_oom_error(e) or eff_col_chunk <= 1:
@@ -2042,7 +2072,7 @@ class TabPFNV3(Architecture):
             try:
                 for row_chunk_start in range(0, num_rows, effective_chunk_size):
                     row_chunk_end = min(row_chunk_start + effective_chunk_size, num_rows)
-                    x_grouped_chunk = x_grouped_BRiCG[:, row_chunk_start:row_chunk_end]
+                    x_grouped_chunk = x_grouped_BRiACG[:, row_chunk_start:row_chunk_end]
                     if performance_options.enable_torch_compile:
                         torch._dynamo.mark_dynamic(x_grouped_chunk, index=0)
                         torch._dynamo.mark_dynamic(x_grouped_chunk, index=2)
@@ -2050,21 +2080,53 @@ class TabPFNV3(Architecture):
                         # one with static rows for the fixed chunk size.
                         if (row_chunk_end - row_chunk_start) != row_chunk_size:
                             torch._dynamo.mark_dynamic(x_grouped_chunk, index=1)
+                    row_chunk_by_channel = []
+                    for channels in range(num_channels):
+                        row_embedding_chunk, chunk_hidden = process_row_chunk(
+                            x_grouped_chunk_BRjCG=x_grouped_chunk[:, :, channels],
+                            y_col_emb=y_col_emb_BNE,
+                            chunk_start=row_chunk_start,
+                            chunk_end=row_chunk_end,
+                            effective_num_train=effective_num_train,
+                            precomputed_hidden=(
+                                precomputed_hidden_by_channel[channels] if precomputed_hidden is not None else None
+                            ),
+                            save_peak_memory_factor=save_peak_memory_factor,
+                            force_recompute_layer=force_recompute_layer,
+                            return_inducing_hidden=return_inducing_hidden,
+                            is_full_path=is_full_path,
+                        )
+                        if chunk_hidden is not None:
+                            inducing_hidden = chunk_hidden
+                        assert row_embedding_chunk.ndim() == 4, f"Expected (B, row_chunk, C, E), got {row_embedding_chunk.shape}"
+                        row_chunk_by_channel.append(row_embedding_chunk)
+                        
+                    row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
 
-                    row_embedding_chunk, chunk_hidden = process_row_chunk(
-                        x_grouped_chunk_BRjCG=x_grouped_chunk,
-                        y_col_emb=y_col_emb_BNE,
-                        chunk_start=row_chunk_start,
-                        chunk_end=row_chunk_end,
-                        effective_num_train=effective_num_train,
-                        precomputed_hidden=precomputed_hidden,
-                        save_peak_memory_factor=save_peak_memory_factor,
-                        force_recompute_layer=force_recompute_layer,
-                        return_inducing_hidden=return_inducing_hidden,
-                        is_full_path=is_full_path,
-                    )
-                    if chunk_hidden is not None:
-                        inducing_hidden = chunk_hidden
+                    transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
+                    row_embedding_chunk_by_column = []
+                    for col in range(num_columns):
+                        row_embedding_chunk, _ = process_row_chunk(
+                            x_grouped_chunk_BRjCG=transposed_row_embedding_chunk[:, :, col],
+                            y_col_emb=y_col_emb_BNE,
+                            chunk_start=row_chunk_start,
+                            chunk_end=row_chunk_end,
+                            effective_num_train=effective_num_train,
+                            precomputed_hidden=(
+                                precomputed_hidden_by_column[col] if precomputed_hidden is not None else None
+                            ),
+                            save_peak_memory_factor=save_peak_memory_factor,
+                            force_recompute_layer=force_recompute_layer,
+                            return_inducing_hidden=False,
+                            is_full_path=is_full_path,
+                        )
+                        assert row_embedding_chunk.ndim() == 4, f"Expected (B, row_chunk, Ch, E), got {row_embedding_chunk.shape}"
+                        row_embedding_chunk_by_column.append(row_embedding_chunk)
+                    
+                    row_embedding_chunk = torch.stack(row_embedding_chunk_by_column, dim=2)
+                    assert row_embedding_chunk.shape[2] == C, f"Expected C={C} columns after aggregation, got {row_embedding_chunk.shape[2]}"
+                    assert row_embedding_chunk.ndim() == 5, f"Expected (B, row_chunk, Ch, C, E), got {row_embedding_chunk.shape}"
+
                     parts.append(row_embedding_chunk)
                 break
             except RuntimeError as e:
@@ -2078,8 +2140,8 @@ class TabPFNV3(Architecture):
 
         if use_chunks:
             inducing_hidden = precomputed_hidden
-        x_BRiClE = parts[0] if len(parts) == 1 else torch.cat(parts, dim=1)
-        return x_BRiClE, inducing_hidden
+        x_BRiAClE = parts[0] if len(parts) == 1 else torch.cat(parts, dim=1)
+        return x_BRiAClE, inducing_hidden
 
     def _process_col_chunk(
         self,
@@ -2359,8 +2421,8 @@ class TSPFNEncoder(nn.Module, ABC):
         self.model = model
 
     def forward(self, x: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
-        # x is (B, Ri, C) and y is (train_size, B)
-        x = x.flatten(-2)  # (Ri, B, Ch, C) -> (Ri, B, Ch*C)
+        # x is (Ri, B, Ch, C) and y is (train_size, B)
+        # x = x.flatten(-2)  # (Ri, B, Ch, C) -> (Ri, B, Ch*C)
         output = self.model(x, y)
         if isinstance(output, dict):
             return output["test_embeddings"]
