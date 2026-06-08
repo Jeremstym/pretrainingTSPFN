@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=heavy
 ###SBATCH --nodelist=ac
-#SBATCH --job-name=TSPFN-pretraining
+#SBATCH --job-name=CubePFN-pretraining
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --time=1-23:00:00
