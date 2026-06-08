@@ -2489,6 +2489,11 @@ class TSPFNEncoder(nn.Module, ABC):
         full_state = checkpoint["state_dict"]
         criterion_state_keys = [k for k in full_state if "criterion." in k]
 
+        if "performance_options" in tabpfn_kwargs:
+            performance_options = tabpfn_kwargs.pop("performance_options")
+        else:
+            performance_options = {}
+            
         model = TabPFNV3(**tabpfn_kwargs, device="cuda", dtype=torch.float32)
 
         if use_checkpoint:
@@ -2496,7 +2501,7 @@ class TSPFNEncoder(nn.Module, ABC):
             model.load_state_dict(model_state)
 
         self.model = model
-        self.performance_options = PerformanceOptions(**tabpfn_kwargs.get("performance_options", {}))
+        self.performance_options = PerformanceOptions(**performance_options)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
         # x is (Ri, B, Ch, C) and y is (train_size, B)
