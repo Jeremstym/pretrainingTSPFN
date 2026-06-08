@@ -2094,7 +2094,6 @@ class TabPFNV3(Architecture):
                         if (row_chunk_end - row_chunk_start) != row_chunk_size:
                             torch._dynamo.mark_dynamic(x_grouped_chunk, index=1)
                     row_chunk_by_channel = []
-                    print(f"X group chunk shape: {x_grouped_chunk.shape}")
                     for channels in range(num_channels):
                         row_embedding_chunk, chunk_hidden = process_row_chunk(
                             x_grouped_chunk_BRjCG=x_grouped_chunk[:, :, channels],
@@ -2118,10 +2117,8 @@ class TabPFNV3(Architecture):
                         row_chunk_by_channel.append(row_embedding_chunk)
 
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
-                    print(f"Row chunk {row_chunk_start}:{row_chunk_end} embedding shape: {row_embedding_chunk.shape}")
 
                     transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
-                    print(f"Transposed row chunk shape: {transposed_row_embedding_chunk.shape}")
                     # row_embedding_chunk_by_column = []
                     # for col in range(num_columns):
                     #     row_embedding_chunk, _ = process_row_chunk(
@@ -2172,7 +2169,6 @@ class TabPFNV3(Architecture):
                         row_embedding_chunk_list.append(_transposed_row_embedding_chunk)
                     transposed_row_embedding_chunk = torch.stack(row_embedding_chunk_list, dim=1)
                     row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
-                    print(f"FINAL DIMENSIONS OF ROW EMBEDDING CHUNK: {row_embedding_chunk.shape}")
 
                     assert (
                         row_embedding_chunk.shape[2] == C
@@ -2262,9 +2258,7 @@ class TabPFNV3(Architecture):
         # Number of train rows in this chunk, not overall dataset.
         num_train_rows = max(0, min(effective_num_train - chunk_start, row_chunk_range))
 
-        print(f"x grouped chunk BRjCG shape: {x_grouped_chunk_BRjCG.shape}, num_train_rows: {num_train_rows}")
         x_emb = self.x_embed(x_grouped_chunk_BRjCG)
-        print(f"x_emb shape: {x_emb.shape}")
 
         if y_col_emb is not None and num_train_rows > 0:
             y_emb = y_col_emb[:, chunk_start : chunk_start + num_train_rows]
@@ -2278,13 +2272,11 @@ class TabPFNV3(Architecture):
             force_recompute_layer=force_recompute_layer and is_full_path,
             return_hidden=return_inducing_hidden and is_full_path,
         )
-        print(f"Post dist-embedder chunk shape: {x_emb.shape}")
         row_embedding_chunk = self.column_aggregator(
             x_BRiCE=x_emb,
             save_peak_memory_factor=save_peak_memory_factor,
             force_recompute_layer=force_recompute_layer and is_full_path,
         )
-        print(f"Post column-aggregator chunk shape: {row_embedding_chunk.shape}")
         return row_embedding_chunk, chunk_hidden
 
 
