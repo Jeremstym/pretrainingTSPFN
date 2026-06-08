@@ -125,14 +125,14 @@ def z_scoring_per_channel(
     return data_support_z, data_query_z, label_support, label_query
 
 
-def get_stratified_batch_split(data, labels, n_total=10000):
+def get_stratified_batch_split(data, labels):
     device = data.device
 
-    min_support = 16
-    max_support = n_total - int(0.5 * n_total)  # We keep at least 50% for the query to have a meaningful evaluation
+    # min_support = 16
+    # max_support = n_total - int(0.5 * n_total)  # We keep at least 50% for the query to have a meaningful evaluation
 
-    log_min, log_max = np.log(min_support), np.log(max_support)
-    n_support = int(np.exp(np.random.uniform(log_min, log_max)))
+    # log_min, log_max = np.log(min_support), np.log(max_support)
+    # n_support = int(np.exp(np.random.uniform(log_min, log_max)))
 
     # query_ratio = (n_total - n_support) / n_total
     query_ratio = 0.5  # We keep a fixed query ratio to ensure a meaningful evaluation

@@ -202,7 +202,7 @@ class TSPFNPretraining(TSPFNSystem):
             ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = get_stratified_batch_split(
                 data=time_series_attrs,
                 labels=labels,
-                n_total=self.chunk_size,
+                # n_total=self.chunk_size,
             )
         else:
             ts_batch_support = time_series_attrs  # (Support+Query, C, T)
