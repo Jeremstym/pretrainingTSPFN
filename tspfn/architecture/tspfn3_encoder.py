@@ -2127,11 +2127,13 @@ class TabPFNV3(Architecture):
                     #     row_embedding_chunk_by_column.append(row_embedding_chunk)
                     # row_embedding_chunk = torch.stack(row_embedding_chunk_by_column, dim=2)
                     
-                    row_embedding_chunk = _batched_scaled_dot_product_attention(
-                        transposed_row_embedding_chunk,
-                        transposed_row_embedding_chunk,
-                        transposed_row_embedding_chunk,
-                    ).transpose(2, 3).contiguous()
+                    transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
+                        transposed_row_embedding_chunk.flatten(2,3),
+                        transposed_row_embedding_chunk.flatten(2,3),
+                        transposed_row_embedding_chunk.flatten(2,3),
+                    ).view_as(transposed_row_embedding_chunk)
+
+                    row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
 
                     assert row_embedding_chunk.shape[2] == C, f"Expected C={C} columns after aggregation, got {row_embedding_chunk.shape[2]}"
                     assert row_embedding_chunk.ndim == 5, f"Expected (B, row_chunk, Ch, Cl, E), got {row_embedding_chunk.shape}"
