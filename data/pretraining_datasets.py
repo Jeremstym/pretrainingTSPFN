@@ -722,6 +722,23 @@ class TSPFNValidationDataset(Dataset):
                         "query_chunk": (val_dataset.X[-self.n_query :], val_dataset.Y[-self.n_query :]),
                     }
                 )
+    
+    def __len__(self):
+        return len(self.pairs)
+
+    def __getitem__(self, idx):
+        item = self.pairs[idx]
+        train_data, train_labels = item["full_train"]
+        query_chunk, query_labels = item["query_chunk"]
+
+        # Random selection of support set from the full train data
+        indices_sup = torch.randperm(len(train_data))[: self.n_support]
+        support_chunk = train_data[indices_sup]
+        support_labels = train_labels[indices_sup]
+
+        output = {"support": (support_chunk, support_labels), "query": (query_chunk, query_labels)}
+
+        return output
 
 
 class TSPFNFullDataset(Dataset):
@@ -729,7 +746,7 @@ class TSPFNFullDataset(Dataset):
         self.dataset_list = []
 
         for dataset in datasets.values():
-            self.dataset_list.append(dataset)
+            self.dataset_list.append((dataset.X, dataset.Y))
 
     def __len__(self):
         return len(self.dataset_list)
