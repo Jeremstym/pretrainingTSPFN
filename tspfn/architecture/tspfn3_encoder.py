@@ -1646,6 +1646,7 @@ class TabPFNV3(Architecture):
 
         if performance_options is None:
             performance_options = self.get_default_performance_options()
+            performance_options.enable_torch_compile = False  # TODO: temp toggle for testing
 
         if performance_options.enable_torch_compile:
             # We increase the limit, since we compile a couple of subgraphs for
