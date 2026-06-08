@@ -2098,7 +2098,7 @@ class TabPFNV3(Architecture):
                         )
                         if chunk_hidden is not None:
                             inducing_hidden = chunk_hidden
-                        assert row_embedding_chunk.ndim() == 4, f"Expected (B, row_chunk, C, E), got {row_embedding_chunk.shape}"
+                        assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, C, E), got {row_embedding_chunk.shape}"
                         row_chunk_by_channel.append(row_embedding_chunk)
                         
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
@@ -2120,12 +2120,12 @@ class TabPFNV3(Architecture):
                             return_inducing_hidden=False,
                             is_full_path=is_full_path,
                         )
-                        assert row_embedding_chunk.ndim() == 4, f"Expected (B, row_chunk, Ch, E), got {row_embedding_chunk.shape}"
+                        assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, Ch, E), got {row_embedding_chunk.shape}"
                         row_embedding_chunk_by_column.append(row_embedding_chunk)
                     
                     row_embedding_chunk = torch.stack(row_embedding_chunk_by_column, dim=2)
                     assert row_embedding_chunk.shape[2] == C, f"Expected C={C} columns after aggregation, got {row_embedding_chunk.shape[2]}"
-                    assert row_embedding_chunk.ndim() == 5, f"Expected (B, row_chunk, Ch, C, E), got {row_embedding_chunk.shape}"
+                    assert row_embedding_chunk.ndim == 5, f"Expected (B, row_chunk, Ch, C, E), got {row_embedding_chunk.shape}"
 
                     parts.append(row_embedding_chunk)
                 break
