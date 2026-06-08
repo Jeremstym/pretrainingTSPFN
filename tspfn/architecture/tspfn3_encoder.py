@@ -2120,6 +2120,7 @@ class TabPFNV3(Architecture):
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
 
                     transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
+                    print(f"transposed_row_embedding_chunk shape: {transposed_row_embedding_chunk.shape}")
                     # row_embedding_chunk_by_column = []
                     # for col in range(num_columns):
                     #     row_embedding_chunk, _ = process_row_chunk(
