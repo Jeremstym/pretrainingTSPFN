@@ -1646,7 +1646,6 @@ class TabPFNV3(Architecture):
 
         if performance_options is None:
             performance_options = self.get_default_performance_options()
-            performance_options.enable_torch_compile = False  # TODO: temp toggle for testing
 
         if performance_options.enable_torch_compile:
             # We increase the limit, since we compile a couple of subgraphs for
@@ -2026,7 +2025,8 @@ class TabPFNV3(Architecture):
         num_rows, C = x_grouped_BRiACG.shape[1], x_grouped_BRiACG.shape[2]
 
         # --- Phase 1: compute inducing hidden when chunking w/o a pre-built cache. ---
-        use_chunks = row_chunk_size is not None and row_chunk_size < num_rows
+        # use_chunks = row_chunk_size is not None and row_chunk_size < num_rows
+        use_chunks = True
 
         if use_chunks and precomputed_hidden is None:
             eff_col_chunk = col_chunk_size if col_chunk_size is not None else C
