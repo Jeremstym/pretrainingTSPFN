@@ -24,4 +24,5 @@ nvidia-smi
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-mantis-tspfn/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-cpsc seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-Mantis.pt"
 
 #! EVALUATING TabPFN v3 below
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-tspfn3/seed${seed}' +experiment=finetuningTSPFN/tspfn3-finetuning data=evaluating-cpsc seed=42 train=False test=True
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-tspfn3/seed${seed}' +experiment=finetuningTSPFN/tspfn3-finetuning data=evaluating-cpsc seed=42 train=False test=True
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-cubepfn3-chsavg/seed${seed}' +experiment=finetuningTSPFN/tspfn3-finetuning data=evaluating-cpsc seed=42 train=False test=True ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubepfn3-selfattchannel-avg.ckpt"
