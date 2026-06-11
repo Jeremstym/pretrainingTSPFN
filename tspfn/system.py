@@ -122,13 +122,14 @@ class TSPFNSystem(pl.LightningModule, ABC):
         output = {"optimizer": optimizer}
 
         if scheduler_cfg:
-            # Calcul dynamique des steps
             total_steps = self.trainer.estimated_stepping_batches
-            
             warmup_ratio = scheduler_cfg.get("num_warmup_steps", 0.1)
-            num_warmup = int(total_steps * warmup_ratio)
+            steps_per_epoch = len(self.trainer.datamodule.train_dataloader())
+            total_training_steps = steps_per_epoch * total_steps
+            # num_warmup = int(total_steps * warmup_ratio)
+            num_warmup_steps = int(total_training_steps * warmup_ratio)
 
-            print(f"Configuring scheduler: Total steps={total_steps}, Warmup steps={num_warmup}")
+            print(f"Configuring scheduler: Total steps={total_steps}, Warmup steps={num_warmup_steps}")
 
             sch_kwargs = dict(scheduler_cfg)
             sch_kwargs.pop("num_warmup_steps", None)
@@ -137,8 +138,8 @@ class TSPFNSystem(pl.LightningModule, ABC):
             scheduler = hydra.utils.instantiate(
                 sch_kwargs,
                 optimizer=optimizer,
-                num_warmup_steps=num_warmup,
-                num_training_steps=total_steps,
+                num_warmup_steps=num_warmup_steps,
+                num_training_steps=total_training_steps,
             )
 
             output["lr_scheduler"] = {

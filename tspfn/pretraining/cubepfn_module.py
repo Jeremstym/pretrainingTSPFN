@@ -181,7 +181,27 @@ class CubePFNPretraining(TSPFNSystem):
         if self.hparams["model"].get("freeze_encoder", False):
             for param in self.encoder.parameters():
                 param.requires_grad = False
-        return super().configure_optimizers()
+
+        no_decay = ["bias", "LayerNorm.weight", "BatchNorm.weight", "ln_"]
+        optimizer_grouped_parameters = [
+            {
+                "params": [
+                    p
+                    for n, p in self.encoder.named_parameters()
+                    if not any(nd in n for nd in no_decay) and p.requires_grad
+                ],
+                "weight_decay": self.hparams["optim"]["optimizer"]["weight_decay"],
+            },
+            {
+                "params": [
+                    p
+                    for n, p in self.encoder.named_parameters()
+                    if any(nd in n for nd in no_decay) and p.requires_grad
+                ],
+                "weight_decay": 0.0,
+            },
+        ]
+        return super().configure_optimizers(params=optimizer_grouped_parameters)
 
     @auto_move_data
     def process_data(
