@@ -183,6 +183,7 @@ class CubePFNPretraining(TSPFNSystem):
                 param.requires_grad = False
 
         no_decay = ["bias", "LayerNorm.weight", "BatchNorm.weight", "ln_"]
+        wd_value = float(self.hparams["optim"]["optimizer"].get("weight_decay", 0.01))
         optimizer_grouped_parameters = [
             {
                 "params": [
@@ -190,7 +191,7 @@ class CubePFNPretraining(TSPFNSystem):
                     for n, p in self.encoder.named_parameters()
                     if not any(nd in n for nd in no_decay) and p.requires_grad
                 ],
-                "weight_decay": self.hparams["optim"]["optimizer"]["weight_decay"],
+                "weight_decay": wd_value,
             },
             {
                 "params": [
