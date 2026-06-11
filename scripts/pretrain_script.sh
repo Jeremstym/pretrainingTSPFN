@@ -56,5 +56,5 @@ nvidia-smi
 #! Pretraining CubePFN for TabPFN v3
 
 #? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/TabPFN-v3-AttentionChannel-CLS' +experiment=pretrainingTSPFN/cubepfn3-pretraining seed=42
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/TabICL-v3-AttentionChannelCLS-AvgCLS' +experiment=pretrainingTSPFN/cubepfn3-pretraining seed=42 task.model.encoder.use_checkpoint=False
-# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/TabPFN-v3-AttentionChannelCLS-AvgCLS' +experiment=pretrainingTSPFN/cubepfn3-pretraining seed=42
+#? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/TabICL-v3-AttentionChannelCLS-AvgCLS' +experiment=pretrainingTSPFN/cubepfn3-pretraining seed=42 task.model.encoder.use_checkpoint=False
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/TabPFN-v3-AttentionChannelCLS-AvgCLS' +experiment=pretrainingTSPFN/cubepfn3-pretraining seed=42
