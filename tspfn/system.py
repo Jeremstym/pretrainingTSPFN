@@ -113,7 +113,7 @@ class TSPFNSystem(pl.LightningModule, ABC):
         #     }
 
         # return configured_optimizer
-        optimizer_cfg = self.hparams["optim"].get("optimizer")
+        optimizer_cfg = self.hparams["optim"]["optimizer"]
         scheduler_cfg = self.hparams["optim"].get("scheduler", None)
 
         partial_optimizer = hydra.utils.instantiate(optimizer_cfg, _partial_=True)
