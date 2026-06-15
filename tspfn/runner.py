@@ -80,6 +80,7 @@ class TSPFNRunner(ABC):
                 list,
                 tuple,
                 set,
+                int,
                 omegaconf.base.ContainerMetadata,
                 omegaconf.base.Metadata,
             ]
