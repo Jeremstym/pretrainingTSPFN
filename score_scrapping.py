@@ -107,7 +107,7 @@ def main():
 
 def main_v3():
     # Define the path to the directory containing the results
-    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-v3")
+    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-CubeICL-*")
 
     # Initialize a list to store the results
     results = []
@@ -145,8 +145,8 @@ def main_v3():
     results_df = pd.DataFrame(results).sort_values(by=["dataset", "seed"])
     # results_df = filter_datasets_by_class_count(results_df)
     output_dir = "/data/stympopper/TSPFN-Benchmark"
-    results_df.to_csv(f"{output_dir}/less_10_ucr_univariate_results_summary-V3.csv", index=False)
-    print("Results summary saved to less_10_ucr_univariate_results_summary-V3.csv")
+    results_df.to_csv(f"{output_dir}/less_10_ucr_univariate_results_summary-CubeICL.csv", index=False)
+    print("Results summary saved to less_10_ucr_univariate_results_summary-CubeICL.csv")
 
 
 if __name__ == "__main__":
