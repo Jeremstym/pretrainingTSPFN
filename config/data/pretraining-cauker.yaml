@@ -8,5 +8,5 @@ train_datasets:
     root: ${oc.env:CAUKER2M4CH512}
   
 meta_batch_size: 1
-chunk_size: 10000
+chunk_size: 5000
 num_workers: 4
