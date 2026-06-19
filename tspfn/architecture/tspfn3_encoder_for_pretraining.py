@@ -1701,8 +1701,8 @@ class TabPFNV3(Architecture):
                     cached_kv=kv_cache.icl_cache.kv[layer_idx],
                 )
         else:
-            # if num_train > 0:
-            #     flatten_num_train = num_train * num_channels
+            if num_train > 0:
+                flatten_num_train = num_train * num_channels
             #     y_icl = self._prepare_y(y, flatten_num_train, B, num_channels)
             #     y_icl_emb = self._embed_icl_y(y_icl)
             #     x_BRiD[:, :flatten_num_train] = x_BRiD[:, :flatten_num_train] + y_icl_emb
