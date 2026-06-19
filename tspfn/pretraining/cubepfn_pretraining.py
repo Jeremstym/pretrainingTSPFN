@@ -175,7 +175,7 @@ class CubePFNPretraining(TSPFNSystem):
         ts_fft = self.fft(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         ts_croped = self.crop_resize(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
 
-        y_nan = torch.empty(ts.shape[0], 1) # (S, 1)
+        y_nan = torch.empty(ts.shape[0], 1)  # (S, 1)
         out_features = self.encoder(
             ts,
             ts_diff,
@@ -213,7 +213,9 @@ class CubePFNPretraining(TSPFNSystem):
         # Shared step for training, validation and testing
         metrics = {}
         losses = []
-        assert len(self.contrastive_losses) > 0, "Model must include at least one contrastive loss to perform pretraining."
+        assert (
+            len(self.contrastive_losses) > 0
+        ), "Model must include at least one contrastive loss to perform pretraining."
         metrics.update(self._contrastive_shared_step(batch))
         losses.append(metrics["s_loss"])
 
@@ -245,7 +247,12 @@ class CubePFNPretraining(TSPFNSystem):
                 loss_val = 0
                 num_channels = ts_proj.shape[1]
                 for channel in range(num_channels):
-                    loss_val += target_loss(ts_proj[:, channel, :], diff_proj[:, channel, :])
+                    loss_val += target_loss(
+                        ts_proj[:, channel, :],
+                        diff_proj[:, channel, :],
+                        freq_proj[:, channel, :],
+                        crop_proj[:, channel, :],
+                    )
                 metrics.update({f"{contrastive_task}_loss_channel": loss_val})
             elif "augmentation_wise" in contrastive_task:
                 loss_val = (
