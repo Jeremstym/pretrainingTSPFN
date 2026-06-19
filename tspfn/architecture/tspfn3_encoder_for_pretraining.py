@@ -2489,7 +2489,7 @@ class TSPFNEncoder(nn.Module, ABC):
         else:
             performance_options = {}
 
-        model = TabPFNV3(**tabpfn_kwargs, task_type="output_embeddings", device="cuda", dtype=torch.float32)
+        model = TabPFNV3(**tabpfn_kwargs, device="cuda", dtype=torch.float32)
 
         if use_checkpoint:
             model_state = {k: v for k, v in full_state.items() if k not in criterion_state_keys}

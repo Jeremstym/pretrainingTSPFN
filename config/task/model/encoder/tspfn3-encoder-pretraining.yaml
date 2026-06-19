@@ -36,7 +36,7 @@ tabpfn_kwargs:
     use_chunkwise_inference: True
     enable_torch_compile: False
     force_recompute_layer: True
-  task_type: multiclass
+  task_type: output_embeddings
   n_out: 160
   # device: cuda
   # dtype: torch.float32
