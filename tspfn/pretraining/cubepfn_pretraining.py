@@ -67,6 +67,8 @@ class CubePFNPretraining(TSPFNSystem):
 
         super().__init__(*args, **kwargs)
 
+        self.embed_dim = embed_dim
+
         # Add shortcut to lr to work with Lightning's learning rate finder
         # self.hparams["lr"] = None
 
@@ -119,8 +121,8 @@ class CubePFNPretraining(TSPFNSystem):
         if self.contrastive_losses is not None and len(self.contrastive_losses) > 0:
             contrastive_head = hydra.utils.instantiate(
                 self.hparams["model"]["contrastive_head"],
-                in_features=encoder.embed_dim,
-                out_features=encoder.embed_dim,
+                in_features=self.embed_dim,
+                out_features=self.embed_dim,
             )
         return encoder, contrastive_head
 
