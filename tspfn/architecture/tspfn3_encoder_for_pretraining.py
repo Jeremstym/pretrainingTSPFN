@@ -1825,6 +1825,9 @@ class TabPFNV3(Architecture):
             raise ValueError("No training rows available for target embedding.")
 
         if self.task_type == "output_embeddings":
+            if num_channels > 1:
+                y = y.repeat_interleave(num_channels, dim=0)
+                y = y.fill_(0.0)  # Fill with zeros for output embeddings
             return y
 
         y_NB1 = _prepare_targets(y, num_train, batch_size, num_channels)[:num_train]
