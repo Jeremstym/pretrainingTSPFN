@@ -1,5 +1,6 @@
+from torch import Tensor
+from typing import Union, Callable, Dict, List, Literal, Optional, Tuple
 import torch
-
 from torch import nn
 
 # class ContrastiveAugmentationLoss(nn.Module):
@@ -43,8 +44,8 @@ class ContrastiveAugmentationLoss(nn.Module):
         self.temperature = temperature
 
     def _compute_loss(self, q, k):
-        q = nn.functional.normalize(q, dim=1)
-        k = nn.functional.normalize(k, dim=1)
+        # q = nn.functional.normalize(q, dim=1)
+        # k = nn.functional.normalize(k, dim=1)
         logits = torch.einsum("nc,ck->nk", [q, k.t()])
         logits /= self.temperature
         labels = torch.arange(q.shape[0], dtype=torch.long).to(q.device)
