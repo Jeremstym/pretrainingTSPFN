@@ -2,11 +2,11 @@
 
 defaults:
   - /task/model/contrastive_head: linear
-  - /task/model/encoder: tspfn3-encoder
+  - /task/model/encoder: tspfn3-encoder-pretraining
   - /task/model/tokenizer: null
   - override /task/model: null
   - override /task/optim: adamw
-  - override /data: pretraining-data
+  - override /data: pretraining-cauker
 
 
 resume: False
@@ -31,7 +31,7 @@ data:
   meta_batch_size: 1 # Number of datasets to sample per training step
 
 task:
-  _target_: tspfn.pretraining.cubepfn_module.CubePFNPretraining
+  _target_: tspfn.pretraining.cubepfn_pretraining.CubePFNPretraining
   embed_dim: 512 # 192 for V2, 512 for V2.5 and V3
   # chunk_size: ${data.chunk_size}
   contrastive_losses:

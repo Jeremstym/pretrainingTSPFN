@@ -1,0 +1,42 @@
+_target_: tspfn.architecture.tspfn3_encoder_for_pretraining.TSPFNEncoder
+seed: ${seed}
+use_checkpoint: True
+tabpfn_kwargs:
+  model_path: ${oc.env:TABPFN3_MODEL_PATH}
+  config: 
+    _target_: tabpfn.architectures.tabpfn_v3.TabPFNV3Config
+    name: "TabPFN-v3"
+    max_num_classes: 160
+    embed_dim: 128
+    dist_embed_num_blocks: 3
+    dist_embed_num_heads: 8
+    dist_embed_num_inducing_points: 128
+    feature_group_size: 3
+    feat_agg_num_blocks: 3
+    feat_agg_num_heads: 8
+    feat_agg_num_cls_tokens: 4
+    feat_agg_rope_base: 100_000
+    use_rope: True
+    nlayers: 24
+    icl_num_heads: 8
+    icl_num_kv_heads: null
+    icl_num_kv_heads_test: null
+    decoder_head_dim: 64
+    decoder_num_heads: 6
+    decoder_use_softmax_scaling: True
+    ff_factor: 2
+    dropout: 0.0
+    softmax_scaling_mlp_hidden_dim: 64
+    layernorm_elementwise_affine: True
+    use_nan_indicators: True
+    inference_row_chunk_size: 2048
+    inference_col_chunk_size: 512
+    num_buckets: 5000
+  performance_options:
+    use_chunkwise_inference: True
+    enable_torch_compile: False
+    force_recompute_layer: True
+  task_type: multiclass
+  n_out: 160
+  # device: cuda
+  # dtype: torch.float32
