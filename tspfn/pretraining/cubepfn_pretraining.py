@@ -169,7 +169,6 @@ class CubePFNPretraining(TSPFNSystem):
             (S, C, E), Embedded features for each token in the input sequence.
         """
         print(f"time_series_attrs.shape: {time_series_attrs.shape}")
-        raise Exception("Debugging: Check the shape of time_series_attrs before proceeding.")
         ts = self.ts_scaler(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         ts_diff = self.ts_scaler(self.differentiate(time_series_attrs))  # (S, C, T-1)
         ts_diff = F.pad(ts_diff, (0, 1), mode="constant", value=0).unsqueeze(1)  # Match original length (S, B, C, T)
