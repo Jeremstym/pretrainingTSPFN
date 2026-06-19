@@ -1,0 +1,12 @@
+defaults:
+  - default
+
+_target_: data.data_module.PretrainingCubePFNDataModule
+train_datasets:
+  Cauker2M4CH512:
+    _target_: data.pretraining_datasets.Cauker2M4CH512Dataset
+    root: ${oc.env:CAUKER2M4CH512}
+  
+meta_batch_size: 1
+chunk_size: 10000
+num_workers: 4

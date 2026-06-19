@@ -660,6 +660,83 @@ class HIRID5ChannelDataset(Dataset):
         return self.X[index], self.Y[index]
 
 
+class Cauker2M4CH512Dataset(Dataset):
+    def __init__(self, root, length=512):
+        self.root = root
+        self.length = length
+
+        self.X = np.load(os.path.join(root, f"CauKer2M_4channels_512.npy"))
+        self.X = torch.from_numpy(self.X).float()
+        
+        assert self.X.shape[1] == 4, f"Expected 4 channels, but got {self.X.shape[1]}."
+        assert self.X.shape[2] == 512, f"Expected signal length of 512, but got {self.X.shape[2]}."
+
+        print(f"Loaded Cauker 2M 4 channels dataset with {len(self.X)} samples")
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        return self.X[index]
+
+
+class CubePFNFDataset(Dataset):
+    def __init__(
+        self,
+        datasets: Dict,
+        split: str = "train",
+        test_size: float = 0.2,
+        chunk_size: int = 10000,
+        random_state: int = 42,
+    ):
+        """
+        Args:
+            datasets (Dict): Dictionary containing the dataset objects.
+            split (str): One of 'train' or 'test' to determine which subset to return.
+            test_size (float): Proportion of the dataset to include in the test split.
+            chunk_size (int): Size of each chunk for splitting the dataset.
+            random_state (int): Controls the shuffling applied to the data before the split.
+        """
+        assert split in ["train", "test"], "split must be either 'train' or 'test'"
+        self.split = split
+        
+        all_data = []
+        for dataset in datasets.values():
+            n = len(dataset.X)
+            if n < chunk_size:
+                raise ValueError(
+                    f"Dataset of size {n} is smaller than chunk size {chunk_size}. Please check the datasets or adjust the chunk size."
+                )
+            for i in range(0, n - chunk_size + 1, chunk_size):
+                all_data.append(dataset.X[i : i + chunk_size])
+
+            if n % chunk_size != 0:
+                all_data.append(dataset.X[-chunk_size:])
+            
+        self.all_data = all_data
+        
+        indices = np.arange(len(self.all_data)) # Split at the dataset index level, not at the sample level
+        
+        if len(indices) < 2:
+            raise ValueError("Dataset is too small to split into train and test sets.")
+            
+        train_idx, test_idx = train_test_split(
+            indices, 
+            test_size=test_size, 
+            random_state=random_state
+        )
+        
+        self.active_indices = train_idx if self.split == "train" else test_idx
+
+    def __len__(self):
+        return len(self.active_indices)
+
+    def __getitem__(self, idx):
+        global_idx = self.active_indices[idx]
+        x = self.all_data[global_idx]
+        return x
+
+
 class TSPFNMetaDataset(Dataset):
     def __init__(self, datasets: Dict, chunk_size: int = 10000):
         self.chunk_size = chunk_size
