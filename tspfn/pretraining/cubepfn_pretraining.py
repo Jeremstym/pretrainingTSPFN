@@ -105,8 +105,8 @@ class CubePFNPretraining(TSPFNSystem):
     def example_input_array(self) -> Tensor:
         """Redefine example input array based on the cardiac attributes provided to the model."""
         # 2 is the size of the batch in the example
-        time_series_attrs = torch.randn(10, 4, 512)  # (S, C, T)
-        return time_series_attrs  # (S, C, T)
+        time_series_attrs = torch.randn(1, 10, 4, 512)  # (B=1, S, C, T)
+        return time_series_attrs  # (B=1, S, C, T)
 
     def configure_model(
         self,
@@ -168,7 +168,7 @@ class CubePFNPretraining(TSPFNSystem):
         Returns:
             (S, C, E), Embedded features for each token in the input sequence.
         """
-        print(f"time_series_attrs.shape: {time_series_attrs.shape}")
+        time_series_attrs = time_series_attrs.squeeze(0)  # (S, C, T)
         ts = self.ts_scaler(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         ts_diff = self.ts_scaler(self.differentiate(time_series_attrs))  # (S, C, T-1)
         ts_diff = F.pad(ts_diff, (0, 1), mode="constant", value=0).unsqueeze(1)  # Match original length (S, B, C, T)
