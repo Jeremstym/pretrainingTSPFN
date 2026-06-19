@@ -27,6 +27,7 @@ from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.strategies import DDPStrategy
 from pytorch_lightning.loggers import CometLogger, Logger
 import pytorch_lightning as pl
+from torch.utils.checkpoint import checkpoint
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +161,13 @@ class TSPFNRunner(ABC):
 
         # Instantiate system (which will handle instantiating the model and optimizer).
         model = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
-        model.gradient_checkpointing_enable()
+        assert hasattr(model, "encoder"), "The model must have an encoder attribute for pretraining."
+        original_forward = model.encoder.forward
+        def checkpointed_forward(*args, **kwargs):
+            return checkpoint(original_forward, *args, use_reentrant=False, **kwargs)
+        model.encoder.forward = checkpointed_forward
+        logger.info("Successfully patched model.encoder with native gradient checkpointing.")
+
 
         if cfg.ckpt:  # Load pretrained model if checkpoint is provided
             if cfg.weights_only:
