@@ -161,12 +161,12 @@ class TSPFNRunner(ABC):
 
         # Instantiate system (which will handle instantiating the model and optimizer).
         model = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
-        assert hasattr(model, "encoder"), "The model must have an encoder attribute for pretraining."
-        original_forward = model.encoder.forward
-        def checkpointed_forward(*args, **kwargs):
-            return checkpoint(original_forward, *args, use_reentrant=False, **kwargs)
-        model.encoder.forward = checkpointed_forward
-        logger.info("Successfully patched model.encoder with native gradient checkpointing.")
+        # assert hasattr(model, "encoder"), "The model must have an encoder attribute for pretraining."
+        # original_forward = model.encoder.forward
+        # def checkpointed_forward(*args, **kwargs):
+        #     return checkpoint(original_forward, *args, use_reentrant=False, **kwargs)
+        # model.encoder.forward = checkpointed_forward
+        # logger.info("Successfully patched model.encoder with native gradient checkpointing.")
 
 
         if cfg.ckpt:  # Load pretrained model if checkpoint is provided
