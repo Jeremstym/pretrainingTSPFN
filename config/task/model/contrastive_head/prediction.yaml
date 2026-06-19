@@ -1,0 +1,3 @@
+_target_: tspfn.architecture.contrastive_heads.LinearContrastiveHead
+in_features: ${task.embed_dim}
+out_features: ${task.embed_dim}
