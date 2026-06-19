@@ -38,7 +38,7 @@ class ContrastiveAugmentationLoss(nn.Module):
         Temperature scaling parameter used to regulate the sharpness of the softmax operator.
     """
 
-    def __init__(self, temperature=0.1):
+    def __init__(self, temperature: float = 0.1):
         super().__init__()
         self.temperature = temperature
 

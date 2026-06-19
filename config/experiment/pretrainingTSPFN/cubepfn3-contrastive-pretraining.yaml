@@ -36,9 +36,11 @@ task:
   # chunk_size: ${data.chunk_size}
   contrastive_losses:
     channel_wise_contrastive:
-      _target_: torch.nn.CrossEntropyLoss
+      _target_: tspfn.losses.ContrastiveChannelLoss
+      temperature: 0.1
     augmentation_wise_contrastive:
-      _target_: torch.nn.CrossEntropyLoss
+      _target_: tspfn.losses.ContrastiveAugmentationLoss
+      temperature: 0.1
   time_series_positional_encoding: none
   seed : ${seed}
   crop_resize:
