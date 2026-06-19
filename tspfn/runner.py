@@ -143,8 +143,7 @@ class TSPFNRunner(ABC):
         #     if not datamodule.switch_to_next_dataset():
         #         break
         # Instantiate Lightning Trainer
-        ddp_strategy = DDPStrategy(gradient_checkpointing=True)
-        trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks, strategy=ddp_strategy)
+        trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
         trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
 
         # profiler = hydra.utils.instantiate(cfg.profiler)
@@ -161,6 +160,7 @@ class TSPFNRunner(ABC):
 
         # Instantiate system (which will handle instantiating the model and optimizer).
         model = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
+        model.gradient_checkpointing_enable()
 
         if cfg.ckpt:  # Load pretrained model if checkpoint is provided
             if cfg.weights_only:
