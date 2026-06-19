@@ -174,7 +174,7 @@ class CubePFNPretraining(TSPFNSystem):
         ts_fft = self.fft(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         ts_croped = self.crop_resize(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
 
-        y_nan = torch.empty(ts.shape[0], 1).fill_(torch.nan).to(ts.device)  # (S, 1)
+        y_nan = torch.empty(ts.shape[0], 1) # (S, 1)
         out_features = self.encoder(
             ts,
             ts_diff,
