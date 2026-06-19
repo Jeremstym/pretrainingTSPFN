@@ -2465,7 +2465,7 @@ def _spline_based_regression_borders(num_buckets: int) -> Tensor:
     x_scale = num_buckets / 5000
     xp = np.array([x for x, _ in border_reference_points]) * x_scale
     yp = np.array([y for _, y in border_reference_points])
-    return tensor(np.interp(x=np.arange(num_buckets + 1), xp=xp, fp=yp), dtype=torch.float32)
+    return torch.tensor(np.interp(x=np.arange(num_buckets + 1), xp=xp, fp=yp), dtype=torch.float32)
 
 
 class TSPFNEncoder(nn.Module, ABC):
