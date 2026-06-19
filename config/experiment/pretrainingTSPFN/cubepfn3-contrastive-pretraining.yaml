@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /task/model/contrastive_head: identity
+  - /task/model/contrastive_head: linear
   - /task/model/encoder: tspfn3-encoder
   - /task/model/tokenizer: null
   - override /task/model: null
