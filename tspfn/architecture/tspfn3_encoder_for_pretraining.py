@@ -1981,9 +1981,9 @@ class TabPFNV3(Architecture):
         # num_channels = rows_RiBAC.shape[2]
         x_BRiAC, nan_ind_BRiAC = self._preprocess_raw(rows_RiBAC, num_train, scaler_cache)
         y_col_emb_BNE: Tensor | None = None
-        if scaler_cache is None and num_train > 0:
-            y_col_BN = self._prepare_y(y, num_train, B)  # Do not provide num channels here
-            y_col_emb_BNE = self._embed_col_y(y_col_BN)
+        # if scaler_cache is None and num_train > 0:
+        #     y_col_BN = self._prepare_y(y, num_train, B)  # Do not provide num channels here
+        #     y_col_emb_BNE = self._embed_col_y(y_col_BN)
 
         x_grouped_BRiACG = self._group_features(x_BRiAC, nan_ind_BRiAC)
         return x_grouped_BRiACG, y_col_emb_BNE
