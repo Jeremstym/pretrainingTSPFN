@@ -3,6 +3,31 @@ import torch
 import torch.nn.functional as F
 
 
+class Differentiation:
+    """
+    Differentiate augmentation function.
+
+    Parameters
+    ----------
+    None
+    """
+    def __init__(self, order=1):
+        self.order = order
+
+    def __call__(self, x):
+        """
+        Perform differentiation augmentation.
+
+        Parameters
+        ----------
+        x: torch tensor of shape (n_samples, n_channels, seq_len)
+            Original time series.
+        """
+        # Apply differentiation along the time dimension (last dimension)
+        x_diff = torch.diff(x, dim=-1, n=self.order)
+
+        return x_diff
+
 class RandomCropResize:
     """
     Random-crop-resize augmentation function.
@@ -14,7 +39,7 @@ class RandomCropResize:
     size: int, default=None
         To which size the input will be interpolated. By default, to the original sequence length.
     """
-    def __init__(self, crop_rate_range=[0, 0.2], size=512):
+    def __init__(self, crop_rate_range=[0, 0.2], size=None):
         self.crop_rate_range = crop_rate_range
         self.size = size
         
@@ -46,3 +71,30 @@ class RandomCropResize:
         x_resized = F.interpolate(x_cropped, size=size, mode='linear', align_corners=False)
 
         return x_resized
+
+
+class FastFourierTransform:
+    """
+    Fast Fourier Transform (FFT) augmentation function.
+
+    Parameters
+    ----------
+    None
+    """
+    def __init__(self):
+        pass
+        
+    def __call__(self, x):
+        """
+        Perform FFT augmentation.
+
+        Parameters
+        ----------
+        x: torch tensor of shape (n_samples, n_channels, seq_len)
+            Original time series.
+        """
+        # Apply FFT along the time dimension (last dimension)
+        x_fft = torch.fft.fft(x, dim=-1)
+
+        # Return the real part of the FFT result
+        return x_fft.real
