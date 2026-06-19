@@ -212,7 +212,7 @@ class CubePFNPretraining(TSPFNSystem):
         # Shared step for training, validation and testing
         metrics = {}
         losses = []
-        assert self.contrastive_losses > 0, "Model must include at least one contrastive loss to perform pretraining."
+        assert len(self.contrastive_losses) > 0, "Model must include at least one contrastive loss to perform pretraining."
         metrics.update(self._contrastive_shared_step(batch))
         losses.append(metrics["s_loss"])
 
