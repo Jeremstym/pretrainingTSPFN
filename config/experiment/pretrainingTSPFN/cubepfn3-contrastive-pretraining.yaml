@@ -35,9 +35,9 @@ task:
   embed_dim: 512 # 192 for V2, 512 for V2.5 and V3
   # chunk_size: ${data.chunk_size}
   contrastive_losses:
-    channel_contrastive:
+    channel_wise_contrastive:
       _target_: torch.nn.CrossEntropyLoss
-    augmentation_contrastive:
+    augmentation_wise_contrastive:
       _target_: torch.nn.CrossEntropyLoss
   time_series_positional_encoding: none
   seed : ${seed}

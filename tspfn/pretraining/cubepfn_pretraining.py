@@ -164,7 +164,7 @@ class CubePFNPretraining(TSPFNSystem):
         Args:
             ts: (S, C, T), Tokens to feed to the encoder.
         Returns:
-            (S, E), Embedded features for each token in the input sequence.
+            (S, C, E), Embedded features for each token in the input sequence.
         """
         ts = self.ts_scaler(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         ts_diff = self.ts_scaler(self.differentiate(time_series_attrs))  # (S, C, T-1)
@@ -179,7 +179,7 @@ class CubePFNPretraining(TSPFNSystem):
             ts_fft,
             ts_croped,
             y_nan,
-        )  # Return all token features for potential pooling
+        )
 
         ts_emb, diff_emb, freq_emb, crop_emb = out_features
 
@@ -193,18 +193,18 @@ class CubePFNPretraining(TSPFNSystem):
         """Performs a forward pass through i) the tokenizer, ii) the transformer encoder and iii) the contrastive head.
 
         Args:
-            time_series_attrs: (B, S, T): time series inputs.
+            time_series_attrs: (S, C, T): time series inputs.
             task: Flag indicating which type of inference task to perform.
 
-        Returns: (S, E), Embedded features for each token in the input sequence.
+        Returns: (S, C, E), Embedded features for each token in the input sequence.
         """
-        ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs)  # (S, E)
+        ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs)  # (S, C, E)
         ts_proj = self.contrastive_head(ts_emb)
         diff_proj = self.contrastive_head(diff_emb)
         freq_proj = self.contrastive_head(freq_emb)
         crop_proj = self.contrastive_head(crop_emb)
 
-        return ts_emb, diff_emb, freq_emb, crop_emb
+        return ts_proj, diff_proj, freq_proj, crop_proj
 
     def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
         # Shared step for training, validation and testing
@@ -238,12 +238,17 @@ class CubePFNPretraining(TSPFNSystem):
         losses, metrics = {}, {}
 
         for contrastive_task, target_loss in self.contrastive_losses.items():
-            if "channel_contrastive" in contrastive_task:
-                loss_val = target_loss(ts_proj, diff_proj, freq_proj, crop_proj)
-                metrics.update({f"{contrastive_task}_loss": loss_val})
-            elif "augmentation_contrastive" in contrastive_task:
-                loss_val = target_loss(ts_proj, diff_proj, freq_proj, crop_proj)
-                metrics.update({f"{contrastive_task}_loss": loss_val})
+            if "channel_wise" in contrastive_task:
+                loss_val = 0
+                num_channels = ts_proj.shape[1]
+                for channel in range(num_channels):
+                    loss_val += target_loss(ts_proj[:, channel, :], diff_proj[:, channel, :])
+                metrics.update({f"{contrastive_task}_loss_channel": loss_val})
+            elif "augmentation_wise" in contrastive_task:
+                loss_val = (
+                    target_loss(ts_proj) + target_loss(diff_proj) + target_loss(freq_proj) + target_loss(crop_proj)
+                )
+                metrics.update({f"{contrastive_task}_loss_augmentation": loss_val})
             else:
                 raise ValueError(f"Unknown contrastive task: {contrastive_task}")
 
