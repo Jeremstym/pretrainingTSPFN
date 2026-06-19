@@ -2297,9 +2297,9 @@ class TabPFNV3(Architecture):
 
         x_emb = self.x_embed(x_grouped_chunk_BRjCG)
 
-        if y_col_emb is not None and num_train_rows > 0:
-            y_emb = y_col_emb[:, chunk_start : chunk_start + num_train_rows]
-            x_emb[:, :num_train_rows] = x_emb[:, :num_train_rows] + y_emb.unsqueeze(2)
+        # if y_col_emb is not None and num_train_rows > 0:
+        #     y_emb = y_col_emb[:, chunk_start : chunk_start + num_train_rows]
+        #     x_emb[:, :num_train_rows] = x_emb[:, :num_train_rows] + y_emb.unsqueeze(2)
 
         x_emb, chunk_hidden = self.feature_distribution_embedder(
             x_BRiCE=x_emb,
