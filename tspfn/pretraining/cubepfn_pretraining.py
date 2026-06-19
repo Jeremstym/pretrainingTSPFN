@@ -81,7 +81,7 @@ class CubePFNPretraining(TSPFNSystem):
             }
 
         # Initialize transformer encoder and self-supervised + contrastive heads
-        self.encoder, self.contrastive_heads = self.configure_model()
+        self.encoder, self.contrastive_head = self.configure_model()
 
         # scales each time-series w.r.t. its mean and std
         self.ts_scaler = lambda x: (x - torch.mean(x, axis=2, keepdim=True)) / (
@@ -115,15 +115,14 @@ class CubePFNPretraining(TSPFNSystem):
 
         # Build the contrastive heads following the architecture proposed in
         # https://arxiv.org/pdf/2106.11959
-        contrastive_heads = None
+        contrastive_head = None
         if self.contrastive_losses is not None and len(self.contrastive_losses) > 0:
-            contrastive_heads = nn.ModuleDict()
-            for contrastive_task in self.contrastive_losses:
-                contrastive_heads[contrastive_task] = hydra.utils.instantiate(
-                    self.hparams["model"]["contrastive_head"][contrastive_task],
-                )
-
-        return encoder, contrastive_heads
+            contrastive_head = hydra.utils.instantiate(
+                self.hparams["model"]["contrastive_head"],
+                in_features=encoder.embed_dim,
+                out_features=encoder.embed_dim,
+            )
+        return encoder, contrastive_head
 
     def configure_optimizers(self) -> OptimizerLRSchedulerConfig:
         """Configure optimizer to ignore parameters that should remain frozen (e.g. tokenizers)."""
@@ -200,6 +199,10 @@ class CubePFNPretraining(TSPFNSystem):
         Returns: (S, E), Embedded features for each token in the input sequence.
         """
         ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs)  # (S, E)
+        ts_proj = self.contrastive_head(ts_emb)
+        diff_proj = self.contrastive_head(diff_emb)
+        freq_proj = self.contrastive_head(freq_emb)
+        crop_proj = self.contrastive_head(crop_emb)
 
         return ts_emb, diff_emb, freq_emb, crop_emb
 
@@ -222,20 +225,24 @@ class CubePFNPretraining(TSPFNSystem):
     ) -> Dict[str, Tensor]:
         # Forward pass through the encoder without gradient computation to fine-tune only the contrastive heads
         assert (
-            self.contrastive_heads is not None
+            self.contrastive_head is not None
         ), "You requested to perform a contrastive task, but the model does not include any contrastive heads."
 
         ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs=batch)
+        ts_proj = self.contrastive_head(ts_emb)
+        diff_proj = self.contrastive_head(diff_emb)
+        freq_proj = self.contrastive_head(freq_emb)
+        crop_proj = self.contrastive_head(crop_emb)
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
 
         for contrastive_task, target_loss in self.contrastive_losses.items():
             if "channel_contrastive" in contrastive_task:
-                loss_val = target_loss(ts_emb, diff_emb, freq_emb, crop_emb)
+                loss_val = target_loss(ts_proj, diff_proj, freq_proj, crop_proj)
                 metrics.update({f"{contrastive_task}_loss": loss_val})
             elif "augmentation_contrastive" in contrastive_task:
-                loss_val = target_loss(ts_emb, diff_emb, freq_emb, crop_emb)
+                loss_val = target_loss(ts_proj, diff_proj, freq_proj, crop_proj)
                 metrics.update({f"{contrastive_task}_loss": loss_val})
             else:
                 raise ValueError(f"Unknown contrastive task: {contrastive_task}")
