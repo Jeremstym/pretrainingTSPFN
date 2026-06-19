@@ -225,8 +225,8 @@ class PretrainingCubePFNDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         ds_instances = {name: instantiate(cfg) for name, cfg in self.train_datasets.items()}
-        self.train_ds = CubePFNFDataset(train_instances, split="train", chunk_size=self.chunk_size)
-        self.val_ds = CubePFNFDataset(train_instances, split="val", chunk_size=self.chunk_size)
+        self.train_ds = CubePFNFDataset(ds_instances, split="train", chunk_size=self.chunk_size)
+        self.val_ds = CubePFNFDataset(ds_instances, split="val", chunk_size=self.chunk_size)
 
     def train_dataloader(self):
         return DataLoader(
