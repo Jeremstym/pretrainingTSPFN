@@ -665,6 +665,7 @@ class Cauker2M4CH512Dataset(Dataset):
         self.root = root
         self.length = length
 
+        print(f"Loading Cauker 2M 4 channels dataset from {root}...")
         self.X = np.load(os.path.join(root, f"CauKer2M_4channels_512.npy"))
         self.X = torch.from_numpy(self.X).float()
         
