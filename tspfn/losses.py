@@ -75,7 +75,7 @@ class ContrastiveChannelLoss(nn.Module):
         Args:
             temperature: Temperature scaling factor.
         """
-        super().__init__(temperature=temperature)
+        super().__init__()
         self.temperature = temperature
 
     def forward(self, ts_proj: Tensor, diff_proj: Tensor, freq_proj: Tensor, crop_proj: Tensor) -> Tensor:
