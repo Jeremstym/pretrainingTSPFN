@@ -694,12 +694,12 @@ class CubePFNFDataset(Dataset):
         """
         Args:
             datasets (Dict): Dictionary containing the dataset objects.
-            split (str): One of 'train' or 'test' to determine which subset to return.
+            split (str): One of 'train' or 'val' to determine which subset to return.
             test_size (float): Proportion of the dataset to include in the test split.
             chunk_size (int): Size of each chunk for splitting the dataset.
             random_state (int): Controls the shuffling applied to the data before the split.
         """
-        assert split in ["train", "test"], "split must be either 'train' or 'test'"
+        assert split in ["train", "val"], "split must be either 'train' or 'val'"
         self.split = split
         
         all_data = []
