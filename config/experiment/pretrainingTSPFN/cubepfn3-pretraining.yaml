@@ -42,6 +42,15 @@ task:
   time_series_positional_encoding: none
   use_tokenizer: False
   seed : ${seed}
+  crop_resize:
+    _target_: tspfn.augmentation.RandomCropResize
+    crop_rate_range: [0, 0.2]
+    size: null # By default, to the original sequence length.
+  fft:
+    _target_: tspfn.augmentation.FastFourierTransform
+  differentiate:
+    _target_: tspfn.augmentation.Differentiation
+    order: 1
   # model:
   #   freeze_encoder: False # Whether to freeze the TabPFN encoder during training
   # optim:
