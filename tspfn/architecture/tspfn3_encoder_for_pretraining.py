@@ -2518,5 +2518,4 @@ class TSPFNEncoder(nn.Module, ABC):
         diff_emb = self.model(ts_diff, y, performance_options=self.performance_options).squeeze(0)
         freq_emb = self.model(ts_ftt, y, performance_options=self.performance_options).squeeze(0)
         crop_emb = self.model(ts_croped, y, performance_options=self.performance_options).squeeze(0)
-        print("ts_emb shape:", ts_emb.shape)
         return ts_emb, diff_emb, freq_emb, crop_emb
