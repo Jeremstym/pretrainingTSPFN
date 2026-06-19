@@ -24,6 +24,7 @@ from dotenv import load_dotenv
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, open_dict
 from pytorch_lightning import Trainer, seed_everything
+from pytorch_lightning.strategies import DDPStrategy
 from pytorch_lightning.loggers import CometLogger, Logger
 import pytorch_lightning as pl
 
@@ -142,7 +143,8 @@ class TSPFNRunner(ABC):
         #     if not datamodule.switch_to_next_dataset():
         #         break
         # Instantiate Lightning Trainer
-        trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks)
+        ddp_strategy = DDPStrategy(gradient_checkpointing=True)
+        trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=experiment_logger, callbacks=callbacks, strategy=ddp_strategy)
         trainer.logger.log_hyperparams(Namespace(**cfg))  # Save config to logger.
 
         # profiler = hydra.utils.instantiate(cfg.profiler)
