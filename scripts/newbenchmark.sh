@@ -1,6 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=electronic
-#SBATCH --nodelist=modjo
+#SBATCH --partition=hard
 #SBATCH --job-name=TSPFN-finetuning
 ####BATCH --cpus-per-task=5
 ####SBATCH --mem-per-cpu=8G
