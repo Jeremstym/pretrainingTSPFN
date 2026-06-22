@@ -32,7 +32,6 @@ from torch.utils.checkpoint import checkpoint
 logger = logging.getLogger(__name__)
 
 
-
 class TSPFNRunner(ABC):
     """Abstract runner that runs the main training/val loop, etc. using Lightning Trainer."""
 
@@ -168,7 +167,6 @@ class TSPFNRunner(ABC):
         # model.encoder.forward = checkpointed_forward
         # logger.info("Successfully patched model.encoder with native gradient checkpointing.")
 
-
         if cfg.ckpt:  # Load pretrained model if checkpoint is provided
             if cfg.weights_only:
                 logger.info(f"Loading weights from {ckpt_path}")
@@ -176,6 +174,19 @@ class TSPFNRunner(ABC):
                     torch.load(ckpt_path, map_location=model.device, weights_only=cfg.weights_only)["state_dict"],
                     strict=cfg.strict,
                 )
+                if not cfg.strict:
+                    missing_keys = set(model.state_dict().keys()) - set(
+                        torch.load(ckpt_path, map_location=model.device, weights_only=cfg.weights_only)[
+                            "state_dict"
+                        ].keys()
+                    )
+                    unexpected_keys = set(
+                        torch.load(ckpt_path, map_location=model.device, weights_only=cfg.weights_only)[
+                            "state_dict"
+                        ].keys()
+                    ) - set(model.state_dict().keys())
+                    logger.warning(f"Missing keys when loading weights: {missing_keys}")
+                    logger.warning(f"Unexpected keys when loading weights: {unexpected_keys}")
             #         modelkeys = list(model.state_dict().keys())
             #         loadkeys = list(torch.load(ckpt_path, map_location=model.device)["state_dict"].keys())
             #         commonkeys = list(set(modelkeys).intersection(loadkeys))
