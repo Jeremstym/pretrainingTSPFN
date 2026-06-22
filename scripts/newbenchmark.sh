@@ -150,7 +150,7 @@ UCR2019_univariate=(
 
 for dataset in "${UCR2019_univariate[@]}"; do
     poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN-v3-attchanCLSAVG/seed\${seed}" \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-contrastive-last/seed\${seed}" \
         +experiment=finetuningTSPFN/tspfn3-finetuning \
         data=benchmark/evaluating-ucrunivariate \
         data.dataset="$dataset" \
@@ -159,8 +159,38 @@ for dataset in "${UCR2019_univariate[@]}"; do
         +dataset="$dataset" \
         train=False \
         test=True \
-        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubePFN3-pretrained-attchanCLSAVG.ckpt"
+        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/CubePFN-contrastive-last.ckpt" \
+        strict=False
 done
+
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-contrastive/seed\${seed}" \
+#         +experiment=finetuningTSPFN/tspfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=False \
+#         test=True \
+#         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/CubePFN-contrastive-best.ckpt" \
+#         strict=False
+# done
+
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN-v3-attchanCLSAVG/seed\${seed}" \
+#         +experiment=finetuningTSPFN/tspfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=False \
+#         test=True \
+#         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubePFN3-pretrained-attchanCLSAVG.ckpt"
+# done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
