@@ -12,4 +12,7 @@ uname -a
 nvidia-smi
 ulimit -n 4096
 
-poetry run python /home/stympopper/CauKer/CauKer.py -N 2000000 -L 512 -F 4 -P 6 -M 18 -O /data/stympopper/CauKer2M/CauKer2M.arrow
+poetry run python /home/stympopper/CauKer/CauKer.py -N 100000 -L 512 -F 4 -P 6 -M 18 -O /data/stympopper/CauKer2M/CauKer100K5124CH.arrow
+poetry run python /home/stympopper/CauKer/CauKer.py -N 100000 -L 512 -F 3 -P 6 -M 18 -O /data/stympopper/CauKer2M/CauKer100K5123CH.arrow
+poetry run python /home/stympopper/CauKer/CauKer.py -N 100000 -L 512 -F 2 -P 6 -M 18 -O /data/stympopper/CauKer2M/CauKer100K5122CH.arrow
+poetry run python /home/stympopper/CauKer/CauKer.py -N 100000 -L 512 -F 1 -P 6 -M 18 -O /data/stympopper/CauKer2M/CauKer100K5121CH.arrow
