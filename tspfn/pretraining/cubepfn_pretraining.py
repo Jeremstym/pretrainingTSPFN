@@ -264,6 +264,8 @@ class CubePFNPretraining(TSPFNSystem):
 
             loss_name = f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{contrastive_task}"
             losses[loss_name] = loss_val
+        
+        print(f"Losses: {list(losses.values())}")
 
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
         metrics.update(losses)
