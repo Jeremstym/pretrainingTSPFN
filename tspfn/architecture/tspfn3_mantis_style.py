@@ -2531,4 +2531,4 @@ class TSPFNEncoder(nn.Module, ABC):
         # x is (Ri, B, C, T) and y is (train_size, B)
         # x = x.flatten(-2)  # (Ri, B, C, T) -> (Ri, B, C*T)
         ts_emb = self.model(ts, ts_diff, y, performance_options=self.performance_options).squeeze(0)
-        return ts_emb.squeeze(0) # (B, train_size), remove channel dimension if present
+        return ts_emb.squeeze(1) # (B, train_size), remove channel dimension if present
