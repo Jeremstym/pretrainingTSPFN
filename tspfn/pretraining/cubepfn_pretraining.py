@@ -92,9 +92,9 @@ class CubePFNPretraining(TSPFNSystem):
         self.crop_resize = hydra.utils.instantiate(
             self.hparams["crop_resize"],
         )
-        self.fft = hydra.utils.instantiate(
-            self.hparams["fft"],
-        )
+        # self.fft = hydra.utils.instantiate(
+        #     self.hparams["fft"],
+        # )
         self.differentiate = hydra.utils.instantiate(
             self.hparams["differentiate"],
         )
