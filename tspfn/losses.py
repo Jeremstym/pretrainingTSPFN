@@ -81,7 +81,8 @@ class ContrastiveChannelLoss(nn.Module):
         super().__init__()
         self.temperature = temperature
 
-    def forward(self, ts_proj: Tensor, diff_proj: Tensor, freq_proj: Tensor, crop_proj: Tensor) -> Tensor:
+    # def forward(self, ts_proj: Tensor, diff_proj: Tensor, freq_proj: Tensor, crop_proj: Tensor) -> Tensor:
+    def forward(self, ts_proj: Tensor, diff_proj: Tensor, crop_proj: Tensor) -> Tensor:
         """Performs a forward pass through the loss function.
 
         Args:
@@ -95,13 +96,14 @@ class ContrastiveChannelLoss(nn.Module):
         """
 
         logits_ts_diff = torch.einsum("nc,ck->nk", [ts_proj, diff_proj.t()]) / self.temperature
-        logits_ts_freq = torch.einsum("nc,ck->nk", [ts_proj, freq_proj.t()]) / self.temperature
+        # logits_ts_freq = torch.einsum("nc,ck->nk", [ts_proj, freq_proj.t()]) / self.temperature
         logits_ts_crop = torch.einsum("nc,ck->nk", [ts_proj, crop_proj.t()]) / self.temperature
 
         labels = torch.arange(ts_proj.shape[0], dtype=torch.long).to(ts_proj.device)
 
         loss1 = nn.CrossEntropyLoss()(logits_ts_diff, labels)
-        loss2 = nn.CrossEntropyLoss()(logits_ts_freq, labels)
+        # loss2 = nn.CrossEntropyLoss()(logits_ts_freq, labels)
         loss3 = nn.CrossEntropyLoss()(logits_ts_crop, labels)
 
-        return (loss1.mean() + loss2.mean() + loss3.mean()) / 3
+        # return (loss1.mean() + loss2.mean() + loss3.mean()) / 3
+        return (loss1.mean() + loss3.mean()) / 3
