@@ -827,6 +827,27 @@ class Cauker2M4CH512Dataset(Dataset):
         return self.X[index]
 
 
+class Cauker2MDataset(Dataset):
+    def __init__(self, root, length=512):
+        self.root = root
+        self.length = length
+
+        print(f"Loading Cauker 2M 4 channels dataset from {root}...")
+        self.X = np.load(os.path.join(root, f"CauKer2M_4channels_512.npy"))
+        self.X = torch.from_numpy(self.X).float()
+        
+        assert self.X.ndim == 2, f"Expected 2D tensor, but got {self.X.ndim} dimensions."
+        assert self.X.shape[1] == 512, f"Expected signal length of 512, but got {self.X.shape[1]}."
+
+        print(f"Loaded Cauker 2M 4 channels dataset with {len(self.X)} samples")
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        return self.X[index]
+
+
 class CubePFNFDataset(Dataset):
     def __init__(
         self,

@@ -3,9 +3,9 @@ defaults:
 
 _target_: data.data_module.PretrainingCubePFNDataModule
 train_datasets:
-  Cauker2M4CH512:
-    _target_: data.pretraining_datasets.Cauker2M4CH512Dataset
-    root: ${oc.env:CAUKER2M4CH512}
+  Cauker2M:
+    _target_: data.pretraining_datasets.Cauker2MDataset
+    root: ${oc.env:CAUKER2M}
 
 meta_batch_size: 1
 chunk_size: 2048
