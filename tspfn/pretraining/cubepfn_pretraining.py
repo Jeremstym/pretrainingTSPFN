@@ -263,7 +263,6 @@ class CubePFNPretraining(TSPFNSystem):
                 raise ValueError(f"Unknown contrastive task: {contrastive_task}")
 
             loss_name = f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{contrastive_task}"
-            print(f"Loss for {loss_name}: {loss_val}")
             losses[loss_name] = loss_val
         
         losses["s_loss"] = torch.stack(list(losses.values())).mean()
