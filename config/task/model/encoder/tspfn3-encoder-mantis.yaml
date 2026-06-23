@@ -1,4 +1,4 @@
-_target_: tspfn.architecture.tspfn3_encoder_for_pretraining.TSPFNEncoder
+_target_: tspfn.architecture.tspfn3_mantis_style.TSPFNEncoder
 seed: ${seed}
 use_checkpoint: True
 tabpfn_kwargs:
