@@ -61,4 +61,5 @@ nvidia-smi
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/TabPFN-v3-AttentionChannelCLS-AvgCLS' +experiment=pretrainingTSPFN/cubepfn3-pretraining seed=42
 
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-SSL-Cauker2M' +experiment=pretrainingTSPFN/cubepfn3-contrastive-pretraining seed=42
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-SSL-Cauker100K' +experiment=pretrainingTSPFN/cubepfn3-contrastive-pretraining seed=42
+#? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-SSL-Cauker100K' +experiment=pretrainingTSPFN/cubepfn3-contrastive-pretraining seed=42
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-SSL-Cauker100K-noFFT' +experiment=pretrainingTSPFN/cubepfn3-contrastive-pretraining seed=42
