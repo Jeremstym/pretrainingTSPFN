@@ -89,12 +89,12 @@ class CubePFNPretraining(TSPFNSystem):
         self.ts_scaler = lambda x: (x - torch.mean(x, axis=2, keepdim=True)) / (
             torch.std(x, axis=2, keepdim=True) + 1e-5
         )
-        self.crop_resize = hydra.utils.instantiate(
+        self.crop_resize1 = hydra.utils.instantiate(
             self.hparams["crop_resize"],
         )
-        # self.fft = hydra.utils.instantiate(
-        #     self.hparams["fft"],
-        # )
+        self.crop_resize2 = hydra.utils.instantiate(
+            self.hparams["crop_resize"],
+        )
         self.differentiate = hydra.utils.instantiate(
             self.hparams["differentiate"],
         )
@@ -170,25 +170,30 @@ class CubePFNPretraining(TSPFNSystem):
         """
         time_series_attrs = time_series_attrs.squeeze(0)  # (S, C, T)
         ts = self.ts_scaler(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
-        ts_diff = self.ts_scaler(self.differentiate(time_series_attrs))  # (S, C, T-1)
-        ts_diff = F.pad(ts_diff, (0, 1), mode="constant", value=0).unsqueeze(1)  # Match original length (S, B, C, T)
-        # ts_fft = self.fft(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
-        ts_croped = self.crop_resize(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
+        # ts_diff = self.ts_scaler(self.differentiate(time_series_attrs))  # (S, C, T-1)
+        # ts_diff = F.pad(ts_diff, (0, 1), mode="constant", value=0).unsqueeze(1)  # Match original length (S, B, C, T)
+        ts_augmented1 = self.crop_resize1(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
+        ts_diff_aug1 = self.differentiate(ts_augmented1.squeeze(1)).unsqueeze(1)  # (S, B, C, T-1)
+        ts_diff_aug1 = F.pad(ts_diff_aug1, (0, 1), mode="constant", value=0)  # Match original length (S, B, C, T)
+        ts_augmented2 = self.crop_resize2(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
+        ts_diff_aug2 = self.differentiate(ts_augmented2.squeeze(1)).unsqueeze(1)  # (S, B, C, T-1)
+        ts_diff_aug2 = F.pad(ts_diff_aug2, (0, 1), mode="constant", value=0)  # Match original length (S, B, C, T)
 
         y_nan = torch.empty(ts.shape[0], 1)  # (S, 1)
-        out_features = self.encoder(
-            ts,
-            ts_diff,
-            # ts_fft,
-            ts_croped,
+        out_aug1 = self.encoder(
+            ts_augmented1,
+            ts_diff_aug1,
             y_nan,
         )
 
-        # ts_emb, diff_emb, freq_emb, crop_emb = out_features
-        ts_emb, diff_emb, crop_emb = out_features
+        out_aug2 = self.encoder(
+            ts_augmented2,
+            ts_diff_aug2,
+            y_nan,
+        )
 
-        # return ts_emb, diff_emb, freq_emb, crop_emb
-        return ts_emb, diff_emb, crop_emb
+
+        return out_aug1, out_aug2
 
     @auto_move_data
     def forward(
@@ -203,15 +208,11 @@ class CubePFNPretraining(TSPFNSystem):
 
         Returns: (S, C, E), Embedded features for each token in the input sequence.
         """
-        # ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs)  # (S, C, E)
-        ts_emb, diff_emb, crop_emb = self.encode(time_series_attrs)  # (S, C, E)
-        ts_proj = self.contrastive_head(ts_emb)
-        diff_proj = self.contrastive_head(diff_emb)
-        # freq_proj = self.contrastive_head(freq_emb)
-        crop_proj = self.contrastive_head(crop_emb)
+        out_aug1, out_aug2 = self.encode(time_series_attrs)  # (S, C, E)
+        ts_proj_aug1 = self.contrastive_head(out_aug1)
+        ts_proj_aug2 = self.contrastive_head(out_aug2)
 
-        # return ts_proj, diff_proj, freq_proj, crop_proj
-        return ts_proj, diff_proj, crop_proj
+        return ts_proj_aug1, ts_proj_aug2
 
     def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
         # Shared step for training, validation and testing
@@ -237,12 +238,11 @@ class CubePFNPretraining(TSPFNSystem):
             self.contrastive_head is not None
         ), "You requested to perform a contrastive task, but the model does not include any contrastive heads."
 
-        # ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs=batch)
-        ts_emb, diff_emb, crop_emb = self.encode(time_series_attrs=batch)
-        ts_proj = self.contrastive_head(ts_emb)
-        diff_proj = self.contrastive_head(diff_emb)
-        # freq_proj = self.contrastive_head(freq_emb)
-        crop_proj = self.contrastive_head(crop_emb)
+        out_aug1, out_aug2 = self.encode(time_series_attrs=batch)
+        ts_proj_aug1 = self.contrastive_head(out_aug1)
+        ts_proj_aug2 = self.contrastive_head(out_aug2)
+
+        num_channels = ts_proj_aug1.shape[1]
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
         losses, metrics = {}, {}
@@ -250,21 +250,24 @@ class CubePFNPretraining(TSPFNSystem):
         for contrastive_task, target_loss in self.contrastive_losses.items():
             if "channel_wise" in contrastive_task:
                 loss_val = 0
-                num_channels = ts_proj.shape[1]
+                num_channels = ts_proj_aug1.shape[1]
                 for channel in range(num_channels):
                     loss_val += target_loss(
-                        ts_proj[:, channel, :],
-                        diff_proj[:, channel, :],
+                        ts_proj_aug1[:, channel, :],
+                        ts_proj_aug2[:, channel, :],
                         # freq_proj[:, channel, :],
                         crop_proj[:, channel, :],
                     )
                 metrics.update({f"{contrastive_task}_loss_channel": loss_val})
             elif "augmentation_wise" in contrastive_task:
                 loss_val = (
-                    # target_loss(ts_proj) + target_loss(diff_proj) + target_loss(freq_proj) + target_loss(crop_proj)
-                    target_loss(ts_proj) + target_loss(diff_proj) + target_loss(crop_proj)
+                    target_loss(ts_proj_aug1) + target_loss(ts_proj_aug2) + target_loss(crop_proj)
                 )
                 metrics.update({f"{contrastive_task}_loss_augmentation": loss_val})
+            
+            elif "mantis_style" in contrastive_task:
+                loss_val = target_loss(ts_proj_aug1, ts_proj_aug2)
+                metrics.update({f"{contrastive_task}_loss_mantis": loss_val})
             else:
                 raise ValueError(f"Unknown contrastive task: {contrastive_task}")
 

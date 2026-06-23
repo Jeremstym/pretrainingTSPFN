@@ -107,3 +107,37 @@ class ContrastiveChannelLoss(nn.Module):
 
         # return (loss1.mean() + loss2.mean() + loss3.mean()) / 3
         return (loss1.mean() + loss3.mean()) / 3
+
+
+class ContrastiveLoss(nn.Module):
+    """Normalized Temperature-scaled Cross-Entropy Loss with Decoupling."""
+
+    def __init__(self, temperature: float = 0.1):
+        """Initializes class instance.
+
+        Args:
+            temperature: Temperature scaling factor.
+        """
+        super().__init__()
+        self.temperature = temperature
+
+    # def forward(self, ts_proj: Tensor, diff_proj: Tensor, freq_proj: Tensor, crop_proj: Tensor) -> Tensor:
+    def forward(self, ts_proj_1: Tensor, ts_proj_2: Tensor) -> Tensor:
+        """Performs a forward pass through the loss function.
+
+        Args:
+            ts_proj_1: (S, E), Projected embeddings.
+            ts_proj_2: (S, E), Projected embeddings.
+
+        Returns:
+            Scalar loss value.
+        """
+        ts_proj_1 = nn.functional.normalize(ts_proj_1, dim=1)
+        ts_proj_2 = nn.functional.normalize(ts_proj_2, dim=1)
+        logits = torch.einsum("nc,ck->nk", [ts_proj_1, ts_proj_2.t()]) / self.temperature
+
+        labels = torch.arange(ts_proj_1.shape[0], dtype=torch.long).to(ts_proj_1.device)
+
+        loss = nn.CrossEntropyLoss()(logits, labels)
+
+        return loss.mean()
