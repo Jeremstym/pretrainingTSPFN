@@ -203,7 +203,8 @@ class CubePFNPretraining(TSPFNSystem):
 
         Returns: (S, C, E), Embedded features for each token in the input sequence.
         """
-        ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs)  # (S, C, E)
+        # ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs)  # (S, C, E)
+        ts_emb, diff_emb, crop_emb = self.encode(time_series_attrs)  # (S, C, E)
         ts_proj = self.contrastive_head(ts_emb)
         diff_proj = self.contrastive_head(diff_emb)
         # freq_proj = self.contrastive_head(freq_emb)
@@ -236,7 +237,8 @@ class CubePFNPretraining(TSPFNSystem):
             self.contrastive_head is not None
         ), "You requested to perform a contrastive task, but the model does not include any contrastive heads."
 
-        ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs=batch)
+        # ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs=batch)
+        ts_emb, diff_emb, crop_emb = self.encode(time_series_attrs=batch)
         ts_proj = self.contrastive_head(ts_emb)
         diff_proj = self.contrastive_head(diff_emb)
         # freq_proj = self.contrastive_head(freq_emb)
