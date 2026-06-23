@@ -195,7 +195,6 @@ class CubePFNPretraining(TSPFNSystem):
             y_nan,
         )
 
-        print(f"out_aug1 shape: {out_aug1.shape}, out_aug2 shape: {out_aug2.shape}")
         return out_aug1, out_aug2
 
     @auto_move_data
