@@ -833,7 +833,7 @@ class Cauker2MDataset(Dataset):
         self.length = length
 
         print(f"Loading Cauker 2M 4 channels dataset from {root}...")
-        self.X = np.load(os.path.join(root, f"CauKer2M_4channels_512.npy"))
+        self.X = np.load(os.path.join(root, f"CauKer2M.npy"))
         self.X = torch.from_numpy(self.X).float()
         
         assert self.X.ndim == 2, f"Expected 2D tensor, but got {self.X.ndim} dimensions."
