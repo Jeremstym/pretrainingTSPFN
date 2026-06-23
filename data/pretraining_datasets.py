@@ -667,7 +667,7 @@ class Cauker100K1CH512Dataset(Dataset):
         self.length = length
 
         print(f"Loading Cauker 100K 1 channel dataset from {root}...")
-        self.X = np.load(os.path.join(root, f"CauKer100K_1channels_512.npy"))
+        self.X = np.load(os.path.join(root, f"CauKer_1channels_512.npy"))
         self.X = torch.from_numpy(self.X).float()
         
         assert self.X.shape[1] == 1, f"Expected 1 channel, but got {self.X.shape[1]}."
@@ -687,7 +687,7 @@ class Cauker100K2CH512Dataset(Dataset):
         self.length = length
 
         print(f"Loading Cauker 100K 2 channels dataset from {root}...")
-        self.X = np.load(os.path.join(root, f"CauKer100K_2channels_512.npy"))
+        self.X = np.load(os.path.join(root, f"CauKer_2channels_512.npy"))
         self.X = torch.from_numpy(self.X).float()
         
         assert self.X.shape[1] == 2, f"Expected 2 channels, but got {self.X.shape[1]}."
@@ -707,7 +707,7 @@ class Cauker100K3CH512Dataset(Dataset):
         self.length = length
 
         print(f"Loading Cauker 100K 3 channels dataset from {root}...")
-        self.X = np.load(os.path.join(root, f"CauKer100K_3channels_512.npy"))
+        self.X = np.load(os.path.join(root, f"CauKer_3channels_512.npy"))
         self.X = torch.from_numpy(self.X).float()
         
         assert self.X.shape[1] == 3, f"Expected 3 channels, but got {self.X.shape[1]}."
@@ -728,7 +728,7 @@ class Cauker100K4CH512Dataset(Dataset):
         self.length = length
 
         print(f"Loading Cauker 100K 4 channels dataset from {root}...")
-        self.X = np.load(os.path.join(root, f"CauKer100K_4channels_512.npy"))
+        self.X = np.load(os.path.join(root, f"CauKer2M_4channels_512.npy"))
         self.X = torch.from_numpy(self.X).float()[:100_000]  # Load only the first 100k samples
         
         assert self.X.shape[1] == 4, f"Expected 4 channels, but got {self.X.shape[1]}."
@@ -749,7 +749,7 @@ class Cauker100K5CH512Dataset(Dataset):
         self.length = length
 
         print(f"Loading Cauker 100K 5 channels dataset from {root}...")
-        self.X = np.load(os.path.join(root, f"CauKer100K_5channels_512.npy"))
+        self.X = np.load(os.path.join(root, f"CauKer_5channels_512.npy"))
         self.X = torch.from_numpy(self.X).float()[:100_000]  # Load only the first 100k samples
         
         assert self.X.shape[1] == 5, f"Expected 5 channels, but got {self.X.shape[1]}."
@@ -770,7 +770,7 @@ class Cauker100K6CH512Dataset(Dataset):
         self.length = length
 
         print(f"Loading Cauker 100K 6 channels dataset from {root}...")
-        self.X = np.load(os.path.join(root, f"CauKer100K_6channels_512.npy"))
+        self.X = np.load(os.path.join(root, f"CauKer_6channels_512.npy"))
         self.X = torch.from_numpy(self.X).float()[:100_000]  # Load only the first 100k samples
         
         assert self.X.shape[1] == 6, f"Expected 6 channels, but got {self.X.shape[1]}."
@@ -791,7 +791,7 @@ class Cauker100K7CH512Dataset(Dataset):
         self.length = length
 
         print(f"Loading Cauker 100K 7 channels dataset from {root}...")
-        self.X = np.load(os.path.join(root, f"CauKer100K_7channels_512.npy"))
+        self.X = np.load(os.path.join(root, f"CauKer_7channels_512.npy"))
         self.X = torch.from_numpy(self.X).float()[:100_000]  # Load only the first 100k samples
         
         assert self.X.shape[1] == 7, f"Expected 7 channels, but got {self.X.shape[1]}."
