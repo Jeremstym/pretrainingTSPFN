@@ -63,6 +63,8 @@ class ContrastiveAugmentationLoss(nn.Module):
             for second_channel in range(num_channels):
                 if channel != second_channel:
                     loss_val += self._compute_loss(emb_proj[:, channel, :], emb_proj[:, second_channel, :])
+        if num_channels == 1:
+            return loss_val
         return loss_val / (num_channels * (num_channels - 1))
 
 
