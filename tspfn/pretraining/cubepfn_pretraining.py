@@ -86,8 +86,8 @@ class CubePFNPretraining(TSPFNSystem):
         self.encoder, self.contrastive_head = self.configure_model()
 
         # scales each time-series w.r.t. its mean and std
-        self.ts_scaler = lambda x: (x - torch.mean(x, axis=2, keepdim=True)) / (
-            torch.std(x, axis=2, keepdim=True) + 1e-5
+        self.ts_scaler = lambda x: (x - torch.mean(x, axis=-1, keepdim=True)) / (
+            torch.std(x, axis=-1, keepdim=True) + 1e-5
         )
         self.crop_resize1 = hydra.utils.instantiate(
             self.hparams["crop_resize"],
