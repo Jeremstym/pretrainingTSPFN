@@ -14,9 +14,6 @@ train_datasets:
     root: ${oc.env:CAUKER100K3CH512}
   Cauker100K4CH512:
     _target_: data.pretraining_datasets.Cauker100K4CH512Dataset
-    root: ${oc.env:CAUKER100K4CH512}
-  Cauker100K4CH512:
-    _target_: data.pretraining_datasets.Cauker100K4CH512Dataset
     root: ${oc.env:CAUKER2M4CH512}
   Cauker100K5CH512:
     _target_: data.pretraining_datasets.Cauker100K5CH512Dataset
