@@ -169,6 +169,9 @@ class CubePFNPretraining(TSPFNSystem):
             (S, C, E), Embedded features for each token in the input sequence.
         """
         time_series_attrs = time_series_attrs.squeeze(0)  # (S, C, T)
+        if time_series_attrs.ndim == 2:
+            time_series_attrs = time_series_attrs.unsqueeze(1)  # (S, T) -> (S, C=1, T)
+            ts = self.ts_scaler(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         ts = self.ts_scaler(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         # ts_diff = self.ts_scaler(self.differentiate(time_series_attrs))  # (S, C, T-1)
         # ts_diff = F.pad(ts_diff, (0, 1), mode="constant", value=0).unsqueeze(1)  # Match original length (S, B, C, T)
