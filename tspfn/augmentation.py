@@ -109,11 +109,11 @@ class RandomCropResize2D:
         start_idx = torch.randint(0, seq_len - cropped_seq_len + 1, (1,)).item()
 
         # perform the crop on the time dimension (last dimension)
-        x_cropped = x[:, start_idx:start_idx+cropped_seq_len]
+        x_cropped = x[:, start_idx:start_idx+cropped_seq_len].unsqueeze(1)  # Add a channel dimension
 
         # resize the cropped sequence to the target size
         # only need to resize along the time dimension (last dimension)
-        x_resized = F.interpolate(x_cropped, size=size, mode='linear', align_corners=False)
+        x_resized = F.interpolate(x_cropped, size=size, mode='linear', align_corners=False).squeeze(1)  # Remove the channel dimension
 
         return x_resized
 
