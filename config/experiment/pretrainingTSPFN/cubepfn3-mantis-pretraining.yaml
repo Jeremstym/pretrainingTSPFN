@@ -41,7 +41,7 @@ task:
   time_series_positional_encoding: none
   seed : ${seed}
   crop_resize:
-    _target_: tspfn.augmentation.RandomCropResize
+    _target_: tspfn.augmentation.RandomCropResize2D
     crop_rate_range: [0, 0.2]
     size: null # By default, to the original sequence length.
   differentiate:
