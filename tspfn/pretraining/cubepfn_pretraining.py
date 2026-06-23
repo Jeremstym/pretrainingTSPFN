@@ -172,21 +172,23 @@ class CubePFNPretraining(TSPFNSystem):
         ts = self.ts_scaler(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         ts_diff = self.ts_scaler(self.differentiate(time_series_attrs))  # (S, C, T-1)
         ts_diff = F.pad(ts_diff, (0, 1), mode="constant", value=0).unsqueeze(1)  # Match original length (S, B, C, T)
-        ts_fft = self.fft(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
+        # ts_fft = self.fft(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         ts_croped = self.crop_resize(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
 
         y_nan = torch.empty(ts.shape[0], 1)  # (S, 1)
         out_features = self.encoder(
             ts,
             ts_diff,
-            ts_fft,
+            # ts_fft,
             ts_croped,
             y_nan,
         )
 
-        ts_emb, diff_emb, freq_emb, crop_emb = out_features
+        # ts_emb, diff_emb, freq_emb, crop_emb = out_features
+        ts_emb, diff_emb, crop_emb = out_features
 
-        return ts_emb, diff_emb, freq_emb, crop_emb
+        # return ts_emb, diff_emb, freq_emb, crop_emb
+        return ts_emb, diff_emb, crop_emb
 
     @auto_move_data
     def forward(
@@ -204,10 +206,11 @@ class CubePFNPretraining(TSPFNSystem):
         ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs)  # (S, C, E)
         ts_proj = self.contrastive_head(ts_emb)
         diff_proj = self.contrastive_head(diff_emb)
-        freq_proj = self.contrastive_head(freq_emb)
+        # freq_proj = self.contrastive_head(freq_emb)
         crop_proj = self.contrastive_head(crop_emb)
 
-        return ts_proj, diff_proj, freq_proj, crop_proj
+        # return ts_proj, diff_proj, freq_proj, crop_proj
+        return ts_proj, diff_proj, crop_proj
 
     def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
         # Shared step for training, validation and testing
@@ -236,7 +239,7 @@ class CubePFNPretraining(TSPFNSystem):
         ts_emb, diff_emb, freq_emb, crop_emb = self.encode(time_series_attrs=batch)
         ts_proj = self.contrastive_head(ts_emb)
         diff_proj = self.contrastive_head(diff_emb)
-        freq_proj = self.contrastive_head(freq_emb)
+        # freq_proj = self.contrastive_head(freq_emb)
         crop_proj = self.contrastive_head(crop_emb)
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
@@ -250,13 +253,14 @@ class CubePFNPretraining(TSPFNSystem):
                     loss_val += target_loss(
                         ts_proj[:, channel, :],
                         diff_proj[:, channel, :],
-                        freq_proj[:, channel, :],
+                        # freq_proj[:, channel, :],
                         crop_proj[:, channel, :],
                     )
                 metrics.update({f"{contrastive_task}_loss_channel": loss_val})
             elif "augmentation_wise" in contrastive_task:
                 loss_val = (
-                    target_loss(ts_proj) + target_loss(diff_proj) + target_loss(freq_proj) + target_loss(crop_proj)
+                    # target_loss(ts_proj) + target_loss(diff_proj) + target_loss(freq_proj) + target_loss(crop_proj)
+                    target_loss(ts_proj) + target_loss(diff_proj) + target_loss(crop_proj)
                 )
                 metrics.update({f"{contrastive_task}_loss_augmentation": loss_val})
             else:

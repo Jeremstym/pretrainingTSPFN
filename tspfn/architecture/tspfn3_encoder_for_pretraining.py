@@ -2511,11 +2511,13 @@ class TSPFNEncoder(nn.Module, ABC):
         self.model = model
         self.performance_options = PerformanceOptions(**performance_options)
 
-    def forward(self, ts: Tensor, ts_diff: Tensor, ts_ftt: Tensor, ts_croped: Tensor, y: Tensor, **kwargs) -> Tensor:
+    # def forward(self, ts: Tensor, ts_diff: Tensor, ts_ftt: Tensor, ts_croped: Tensor, y: Tensor, **kwargs) -> Tensor:
+    def forward(self, ts: Tensor, ts_diff: Tensor, ts_croped: Tensor, y: Tensor, **kwargs) -> Tensor:
         # x is (Ri, B, C, T) and y is (train_size, B)
         # x = x.flatten(-2)  # (Ri, B, C, T) -> (Ri, B, C*T)
         ts_emb = self.model(ts, y, performance_options=self.performance_options).squeeze(0)
         diff_emb = self.model(ts_diff, y, performance_options=self.performance_options).squeeze(0)
-        freq_emb = self.model(ts_ftt, y, performance_options=self.performance_options).squeeze(0)
+        # freq_emb = self.model(ts_ftt, y, performance_options=self.performance_options).squeeze(0)
         crop_emb = self.model(ts_croped, y, performance_options=self.performance_options).squeeze(0)
-        return ts_emb, diff_emb, freq_emb, crop_emb
+        # return ts_emb, diff_emb, freq_emb, crop_emb
+        return ts_emb, diff_emb, crop_emb
