@@ -8,6 +8,7 @@ from abc import ABC
 import einops
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from functools import partial
 import types
 from tabpfn.checkpoint import Checkpoint
@@ -181,6 +182,191 @@ class _DtypeMatchingRMSNorm(nn.RMSNorm):
         return super().forward(input)
 
 
+class SoftmaxScalingMLP(nn.Module):
+    """Query-aware attention scaling using MLPs to compute scaling factors.
+
+    Applies scaling to queries:
+
+    q_scaled = q * base_mlp(logn) * (1 + tanh(query_mlp(q))),
+
+    where the base MLP learns length-dependent scaling and the query MLP
+    learns query-dependent modulation.
+    """
+
+    def __init__(
+        self,
+        num_heads: int,
+        head_dim: int,
+        n_hidden: int = 64,
+    ):
+        """Initializes the SoftmaxScalingMLP module.
+
+        Args:
+            num_heads: Number of attention heads.
+            head_dim: Dimension of each attention head.
+            n_hidden: Number of hidden units in the MLPs.
+        """
+        super().__init__()
+        self.num_heads = num_heads
+        self.head_dim = head_dim
+
+        base_out_dim = num_heads * head_dim
+        query_out_dim = head_dim
+
+        self.base_mlp = nn.Sequential(nn.Linear(1, n_hidden), nn.GELU(), nn.Linear(n_hidden, base_out_dim))
+        self.query_mlp = nn.Sequential(nn.Linear(head_dim, n_hidden), nn.GELU(), nn.Linear(n_hidden, query_out_dim))
+        # ensures initial modulation is zero
+        nn.init.zeros_(self.query_mlp[-1].weight)  # type: ignore
+        nn.init.zeros_(self.query_mlp[-1].bias)  # type: ignore
+
+    @override
+    def forward(self, q_BSHD: Tensor, n: int) -> Tensor:
+        """Applies scalable attention scaling to queries.
+
+        Args:
+            q_BSHD: Query tensor after projection, shape `[B, S, H, D]`.
+                B: Batch size.
+                S: Sequence length.
+                H: Number of heads.
+                D: Head dimension.
+            n: Number of elements for log-n scaling.
+
+        Returns:
+            Scaled query tensor, same shape as `q_BSHD`.
+        """
+        logn_11 = _safe_log_seqlen(n, q_BSHD.device, q_BSHD.dtype).reshape(1, 1)
+        base_scales = self.base_mlp(logn_11).view(1, 1, self.num_heads, self.head_dim)
+        modulation = 1 + torch.tanh(self.query_mlp(q_BSHD))
+        scales = base_scales * modulation
+        return q_BSHD * scales
+
+
+class ManyClassDecoder(nn.Module):
+    """Attention-based retrieval decoder for many-class classification.
+
+    Computes weighted (by attention score) average over one-hot encoded
+    train targets, then takes the log to obtain logits.  Supports arbitrary
+    class counts by chunking the value (one-hot) dimension into head_dim-sized
+    pieces and folding them into the batch dimension for a single flash-attention
+    call.
+    """
+
+    def __init__(
+        self,
+        max_num_classes: int,
+        input_size: int,
+        head_dim: int = 64,
+        num_heads: int = 6,
+        softmax_scaling_layer: nn.Module | None = None,
+    ):
+        """Init."""
+        super().__init__()
+        self.max_num_classes = max_num_classes
+        self.input_size = input_size
+        self.attention_size = head_dim * num_heads
+        self.head_dim = head_dim
+        self.num_heads = num_heads
+        self.q_projection = nn.Linear(self.input_size, self.attention_size)
+        self.k_projection = nn.Linear(self.input_size, self.attention_size)
+        self.softmax_scaling_layer = softmax_scaling_layer
+
+    @override
+    def forward(
+        self,
+        train_embeddings: Tensor,  # (B, N, E)
+        test_embeddings: Tensor,  # (B, M, E)
+        targets: Tensor,  # (B, N) - class indices
+    ) -> Tensor:
+        """Perform a forward pass."""
+        B, M, _ = test_embeddings.shape
+        q_BME = self.q_projection(test_embeddings)
+        # Mirrors the dtype guard in ICLAttention's cached path.
+        if train_embeddings.dtype != q_BME.dtype:
+            train_embeddings = train_embeddings.to(q_BME.dtype)
+        k_BNE = self.k_projection(train_embeddings)
+
+        if M == 0:
+            # OOM checks at training start run with no test rows. Flash attention
+            # rejects a query sequence of length 0, so we return early.
+            # Both dummy terms keep the output in the computation graph so that
+            # gradients flow through both projections during memory estimation.
+            empty = test_embeddings.new_empty((0, B, self.max_num_classes))
+            return empty + (q_BME.sum() + k_BNE.sum()) * 0.0
+
+        # WARNING Change the original code to compute num_classes_in_batch from targets
+        # to adapt to the new setting where we may have fewer classes in a batch than max_num_classes
+        num_classes_in_batch = targets.max().item() + 1
+        one_hot_targets_BNT = (
+            # F.one_hot(targets.long(), num_classes=self.max_num_classes)
+            F.one_hot(targets.long(), num_classes=num_classes_in_batch)
+            .to(dtype=q_BME.dtype)
+            .contiguous()
+        )
+
+        q_BMHD = q_BME.view(B, M, self.num_heads, self.head_dim).contiguous()
+        k_BNHD = k_BNE.view(B, -1, self.num_heads, self.head_dim).contiguous()
+        one_hot_targets_BNHT = one_hot_targets_BNT.unsqueeze(2).expand(-1, -1, self.num_heads, -1).contiguous()
+        test_output_BMHT = _chunked_class_attention(
+            q_BMHD,
+            k_BNHD,
+            one_hot_targets_BNHT,
+            softmax_scaling_layer=self.softmax_scaling_layer,
+        )
+        test_output_BMT = test_output_BMHT.mean(2)  # average over heads
+
+        test_output_MBT = test_output_BMT.transpose(0, 1)
+        # convert to logits:
+        return torch.log(torch.clamp(test_output_MBT, min=1e-5) + 3e-5)
+
+
+def _chunked_class_attention(
+    q_BSHD: Tensor,
+    k_BJHD: Tensor,
+    v_BJHT: Tensor,
+    softmax_scaling_layer: nn.Module | None = None,
+) -> Tensor:
+    """Run retrieval attention where the value dimension C may exceed head_dim D.
+
+    Splits V into head_dim-sized chunks along the class axis, folds the chunk
+    index into the batch dimension, and dispatches a single flash-attention call.
+    This avoids the O(N*M) memory cost of the math backend for any class count.
+
+    Args:
+        q_BSHD: Query tensor of shape (B, S, H, D) for test points.
+        k_BJHD: Key tensor of shape (B, J, H, D) for train points.
+        v_BJHT: Value tensor of shape (B, J, H, T) holding one-hot class
+            encodings; T may be larger than D.
+        softmax_scaling_layer: Optional scaling module to scale queries before SDPA.
+
+    Returns:
+        Output tensor of shape (B, S, H, T).
+    """
+    B, S, H, D = q_BSHD.shape
+    T = v_BJHT.shape[-1]
+    num_chunks = math.ceil(T / D)
+
+    # Pad V to a multiple of D along the class axis
+    pad = num_chunks * D - T
+    if pad > 0:
+        v_BJHT = F.pad(v_BJHT, (0, pad))
+
+    # Fold chunk index into batch dimension
+    J = v_BJHT.shape[1]
+    v_folded = (
+        v_BJHT.reshape(B, J, H, num_chunks, D).permute(0, 3, 1, 2, 4).reshape(B * num_chunks, J, H, D).contiguous()
+    )
+    q_folded = q_BSHD.unsqueeze(1).expand(-1, num_chunks, -1, -1, -1).reshape(B * num_chunks, S, H, D).contiguous()
+    k_folded = k_BJHD.unsqueeze(1).expand(-1, num_chunks, -1, -1, -1).reshape(B * num_chunks, J, H, D).contiguous()
+
+    # Single flash-attention call across all chunks
+    out_folded = _batched_scaled_dot_product_attention(
+        q_folded, k_folded, v_folded, softmax_scaling_layer=softmax_scaling_layer
+    )
+
+    # Unfold and trim padding: (B*K, S, H, D) -> (B, S, H, T)
+    return out_folded.reshape(B, num_chunks, S, H, D).permute(0, 2, 3, 1, 4).reshape(B, S, H, num_chunks * D)[..., :T]
+
+
 class AddThinkingRows(nn.Module):
     """Takes the embedded input and prepends "thinking rows" to it.
 
@@ -203,34 +389,35 @@ class AddThinkingRows(nn.Module):
     @override
     def forward(
         self,
-        x_BRiCE: torch.Tensor,
+        x_BRiCLD: torch.Tensor,
         single_eval_pos: int,
     ) -> tuple[torch.Tensor, int]:
         """Prepends the thinking tokens to the embedded input.
 
         Args:
-            x_BRiCE: Input tensor of shape (B, Ri, C, E), where:
+            x_BRiCLD: Input tensor of shape (B, Ri, C, E), where:
                 - B: batch size
                 - Ri: number of input rows (train and test)
-                - C: number of feature groups
-                - E: Model embedding size.
+                - C: number of channels
+                - L: number of features per channel (T + 1 for the target)
+                - D: Model embedding size.
             single_eval_pos: Rows after this index are treated as evaluation rows.
 
         Returns:
-            A tuple, (x_BRCE, updated single_eval_pos), where where x_BRCE has added
-            rows, now having shape (B, R = Ri + num thinking rows, C, E).
+            A tuple, (x_BRCLD, updated single_eval_pos), where where x_BRCLD has added
+            rows, now having shape (B, R = Ri + num thinking rows, C, D).
         """
         # T: num thinking rows
         # R: Ri + T, total rows including thinking rows
-        batch_size, _, num_features, _ = x_BRiCE.shape
-        thinking_rows_BTCE = (
+        batch_size, _, num_channels, num_features, _ = x_BRiCLD.shape
+        thinking_rows_BTCLE = (
             self.row_token_values_TE.unsqueeze(0)
             .unsqueeze(2)
-            .expand(batch_size, -1, num_features, -1)
+            .expand(batch_size, -1, num_channels, num_features, -1)
         )
-        x_BRCE = torch.cat([thinking_rows_BTCE, x_BRiCE], dim=1)
+        x_BRCLD = torch.cat([thinking_rows_BTCLE, x_BRiCLD], dim=1)
         single_eval_pos += self.num_thinking_rows
-        return x_BRCE, single_eval_pos
+        return x_BRCLD, single_eval_pos
 
     def reset_parameters(self) -> None:
         """Set the tokens to randomly-sampled values."""
@@ -249,6 +436,8 @@ class Attention(nn.Module):
         head_dim: int,
         device: torch.device | str | None = None,
         dtype: torch.dtype | str | None = None,
+        use_rope: bool = True,
+        rope_base: float = 100_000,
     ):
         """Construct a new instance.
 
@@ -258,11 +447,23 @@ class Attention(nn.Module):
             head_dim: The dimensionality of the query, key and value vectors.
             device: The device to use for the layer parameters.
             dtype: The data type to use for the layer parameters.
+            use_rope: Whether to use rotary positional embeddings.
+            rope_base: The base for the rotary positional embeddings.
         """
         super().__init__()
         self.num_heads = num_heads
         self.head_dim = head_dim
         device_and_dtype_no_bias = {"device": device, "dtype": dtype, "bias": False}
+
+        self.rope = (
+            RotaryEmbedding(
+                dim=embedding_size // num_heads,
+                theta=int(rope_base),
+                interleaved=False,
+            )
+            if use_rope
+            else None
+        )
 
         self.q_projection = nn.Linear(
             embedding_size, head_dim * num_heads, **device_and_dtype_no_bias
@@ -310,6 +511,11 @@ class AlongRowAttention(Attention):
         q_BrCHD = q_flat_BrCHF.view(Br, C, -1, self.head_dim)
         k_BrCHD = k_flat_BrCHF.view(Br, C, -1, self.head_dim)
         v_BrCHD = v_flat_BrCHF.view(Br, C, -1, self.head_dim)
+
+        if self.rope is not None:
+            q_BrCHD = self.rope.rotate_queries_or_keys(q_BrCHD.transpose(1, 2)).transpose(1, 2)
+            k_BrCHD = self.rope.rotate_queries_or_keys(k_BrCHD.transpose(1, 2)).transpose(1, 2)
+
 
         output_BrHCD = _batched_scaled_dot_product_attention(q_BrCHD, k_BrCHD, v_BrCHD)
         output_BrCF = output_BrHCD.reshape(Br, C, self.head_dim * self.num_heads)
@@ -379,6 +585,17 @@ class AlongColumnAttention(Attention):
         output_BcSF = output_BcSHD.reshape(Bc, R, self.head_dim * self.num_heads)
         return self.out_projection(output_BcSF)
 
+
+def _safe_log_seqlen(n: int | Tensor, device: torch.device, dtype: torch.dtype) -> Tensor:
+    """Compute log(n) safely, avoiding fp16 overflow for large `n`."""
+    if isinstance(n, Tensor):
+        return n.to(torch.float32).clamp(min=1).log().to(dtype)
+    # Materialise `n` via arithmetic on a 0-d tensor rather than
+    # `torch.as_tensor(n, ...)`. The latter bakes `n` into the graph as a constant and
+    # emits a `n == <value>` guard, triggering a recompile on every new value
+    # `one * n` keeps the value symbolic when `n` is a SymInt.
+    one = torch.ones((), dtype=torch.float32, device=device)
+    return (one * n).clamp(min=1).log().to(dtype)
 
 def _batched_scaled_dot_product_attention(
     q_BSHD: torch.Tensor, k_BSJD: torch.Tensor, v_BSJD: torch.Tensor
@@ -477,6 +694,7 @@ class TabPFNBlock(nn.Module):
         dim_feedforward: int,
         device: torch.device | str | None = None,
         dtype: torch.dtype | str | None = None,
+        use_rope: bool = True,
     ) -> None:
         """TabPFNBlock constructor.
 
@@ -495,6 +713,7 @@ class TabPFNBlock(nn.Module):
             embedding_size=emsize,
             num_heads=nhead,
             head_dim=emsize // nhead,
+            use_rope=use_rope,
             **device_and_dtype,
         )
 
@@ -621,7 +840,7 @@ class TabPFNV2p5(Architecture):
         *,
         config: TabPFNV2p5Config,
         task_type: TaskType,
-        n_out: int = 1,
+        max_n_out: int = 160,
         feature_positional_embedding: Literal["subspace"] | None = "subspace",
         device: torch.device | str | None = None,
         dtype: torch.dtype | str | None = None,
@@ -634,7 +853,7 @@ class TabPFNV2p5(Architecture):
                 [num_rows, batch_size, num_cols, features] and returns a single tensor
                 of shape [num_rows, batch_size, input_size].
             task_type: The type of task the model should perform.
-            n_out: The number of outputs the model should produce.
+            max_n_out: The number of outputs the model should produce.
             feature_positional_embedding: The positional embedding type to use.
                 The  positional embedding is added to the features to help the model
                 distinguish them. Currently, only "subspace" is supported.
@@ -647,7 +866,7 @@ class TabPFNV2p5(Architecture):
         self.input_size = config.emsize
         self.hidden_size = self.input_size * 2
         self.features_per_group = config.features_per_group
-        self.n_out = n_out
+        self.max_n_out = max_n_out
         self.task_type: TaskType = task_type
 
         self.feature_group_embedder = self._get_feature_group_embedder(config)
@@ -663,13 +882,41 @@ class TabPFNV2p5(Architecture):
                 dim_feedforward=self.hidden_size,
                 device=device,
                 dtype=dtype,
+                use_rope=True,
             )
             for _ in range(config.nlayers)
+        )
+        self.channel_blocks = nn.ModuleList(
+            TabPFNBlock(
+                emsize=config.emsize,
+                nhead=config.nhead,
+                dim_feedforward=self.hidden_size,
+                device=device,
+                dtype=dtype,
+                use_rope=False,  
+            )
+            for _ in range(config.channel_nlayers)
         )
         self.output_projection = nn.Sequential(
             nn.Linear(self.input_size, self.hidden_size),
             nn.GELU(),
-            nn.Linear(self.hidden_size, n_out),
+            nn.Linear(self.hidden_size, max_n_out),
+        )
+        decoder_softmax_scaling = (
+            SoftmaxScalingMLP(
+                num_heads=config.decoder_num_heads,
+                head_dim=config.decoder_head_dim,
+                n_hidden=config.softmax_scaling_mlp_hidden_dim,
+            )
+            if config.decoder_use_softmax_scaling
+            else None
+        )
+        self.many_class_decoder = ManyClassDecoder(
+            max_num_classes=config.max_num_classes,
+            input_size=self.icl_emsize,
+            head_dim=config.decoder_head_dim,
+            num_heads=config.decoder_num_heads,
+            softmax_scaling_layer=decoder_softmax_scaling,
         )
         self.standard_scaler = TorchStandardScaler()
 
@@ -700,14 +947,14 @@ class TabPFNV2p5(Architecture):
             embedder = nn.Linear(encoding_size, emsize, bias=False)
         return embedder
 
-    def _add_column_embeddings(self, x_BRGX: torch.Tensor) -> torch.Tensor:
+    def _add_column_embeddings(self, x_BRCGX: torch.Tensor) -> torch.Tensor:
         """Add a random embedding to each column to prevent feature collapse."""
-        generator = torch.Generator(device=x_BRGX.device).manual_seed(42)
-        num_cols, encoding_size = x_BRGX.shape[2], x_BRGX.shape[3]
+        generator = torch.Generator(device=x_BRCGX.device).manual_seed(42)
+        num_cols, encoding_size = x_BRCGX.shape[-2], x_BRCGX.shape[-1]
         embs = torch.randn(
             (num_cols, encoding_size // 4),
-            device=x_BRGX.device,
-            dtype=x_BRGX.dtype,
+            device=x_BRCGX.device,
+            dtype=x_BRCGX.dtype,
             generator=generator,
         )
         # Random numbers vary between different devices, even with a fixed seed. Thus we
@@ -720,9 +967,9 @@ class TabPFNV2p5(Architecture):
                 device=embs.device, dtype=embs.dtype
             )
         embs = self.feature_positional_embedding_embeddings(embs)
-        x_BRGX += embs[None, None]
+        x_BRCGX += embs[None, None, None]
 
-        return x_BRGX
+        return x_BRCGX
 
     @override
     def forward(  # noqa: C901
@@ -738,6 +985,36 @@ class TabPFNV2p5(Architecture):
         """Perform a forward pass.
 
         See ModelInterface.forward() for the full docstring.
+
+        Args:
+            x: Input features of shape (Ri, B, C, T) where:
+                - Ri: number of input rows (train + test)
+                - B: batch size
+                - C: number of channels
+                - T: time steps (for time series data)
+            y: Input targets of shape (Ri, B) where:
+                - Ri: number of input rows (train + test)
+                - B: batch size
+
+            only_return_standard_out: If True, only return the standard output of the model.
+            categorical_inds: List of lists of indices for categorical features.
+            performance_options: Options for controlling performance optimizations.
+            task_type: The type of task to perform. If None, use the model's default
+                task type.
+        Returns:
+            If only_return_standard_out is True, returns a tensor of shape (M, B, 1) where:
+                - M: number of test samples
+                - B: batch size
+            If only_return_standard_out is False, returns a dictionary with the following keys:
+                - "standard": Tensor of shape (M, B, 1) with the standard output of the model.
+                - "train_embeddings": Tensor of shape (N, B, D) with the embeddings of the training samples, where:
+                    - N: number of training samples
+                    - B: batch size
+                    - D: embedding size
+                - "test_embeddings": Tensor of shape (M, B, D) with the embeddings of the test samples, where:
+                    - M: number of test samples
+                    - B: batch size
+                    - D: embedding size
         """
         if performance_options is None:
             performance_options = self.get_default_performance_options()
@@ -754,40 +1031,42 @@ class TabPFNV2p5(Architecture):
         if (
             not self.training
             and self.task_type == "multiclass"
-            and (y > self.n_out - 1).any()
+            and (y > self.max_n_out - 1).any()
         ):
             raise ValueError(
                 "Target is out of range. Make sure to use an ordinal encoded target. "
-                f"Expected target values between 0 and {self.n_out - 1}, but got values"
-                f" greater than {self.n_out - 1}."
+                f"Expected target values between 0 and {self.max_n_out - 1}, but got values"
+                f" greater than {self.max_n_out - 1}."
             )
 
         # Ri = number of input rows (train + test, before adding thinking rows)
         # B = batch size
         # C = number of columns before grouping
-        x_RiBC = x
-        num_train_rows, batch_size, *_ = x_RiBC.shape
+        x_RiBCT = x
+        num_train_rows, batch_size, num_channels, *_ = x_RiBCT.shape
         num_train_labels = y.shape[0]
 
-        embedded_x_BRiGX = self._preprocess_and_embed_features(
-            x_RiBC=x_RiBC,
+        embedded_x_BRiCGX = self._preprocess_and_embed_features(
+            x_RiBCT=x_RiBCT,
             num_train_labels=num_train_labels,
             batch_size=batch_size,
+            num_channels=num_channels
         )
 
-        embedded_y_BRiX = self._preprocess_and_embed_targets(
+        embedded_y_BRiCX = self._preprocess_and_embed_targets(
             y=y,
             num_train_rows=num_train_rows,
             num_train_labels=num_train_labels,
             batch_size=batch_size,
+            num_channels=num_channels
         )
 
         # Add the targets as an additional column.
-        x_BRiCD = torch.cat((embedded_x_BRiGX, embedded_y_BRiX[:, :, None]), dim=2)
+        x_BRiCLD = torch.cat((embedded_x_BRiCGX, embedded_y_BRiCX[:, :, :, None]), dim=3)
         # This check results in a graph break with torch compile, so we only run it once
         # in the beginning and then disable it.
         if self._do_encoder_nan_check:
-            if torch.isnan(x_BRiCD).any():
+            if torch.isnan(x_BRiCLD).any():
                 raise ValueError(
                     "Found NaNs in the encoded x and y. Make sure to use "
                     "a NaN-handling encoder."
@@ -795,55 +1074,115 @@ class TabPFNV2p5(Architecture):
             self._do_encoder_nan_check = False
 
         # R = num rows + num thinking rows
-        x_BRCD, num_train_and_thinking_rows = self.add_thinking_rows(
-            x_BRiCD, single_eval_pos=num_train_labels
+        x_BRCLD, num_train_and_thinking_rows = self.add_thinking_rows(
+            x_BRiCLD, single_eval_pos=num_train_labels
         )
+        
+        num_channels = x_BRCLD.shape[2]
+        if num_channels == 1:
+            x_BRCLD = x_BRCLD.squeeze(2)
+            for block in self.blocks:
+                if force_recompute_layer:
+                    x_BRCLD = torch.utils.checkpoint.checkpoint(
+                        block,
+                        x_BRCLD,
+                        num_train_and_thinking_rows,
+                        save_peak_memory_factor,
+                        use_reentrant=False,
+                    )
+                else:
+                    x_BRCLD = block(
+                        x_BRCLD, num_train_and_thinking_rows, save_peak_memory_factor
+                    )
+        else:
+            # Loop over channels
+            for block, channel_block in zip(self.blocks, self.channel_blocks):
+                for c in range(num_channels):
+                    x_BRCLD_c = x_BRCLD[:, :, c]
+                    if force_recompute_layer:
+                        x_BRCLD_c = torch.utils.checkpoint.checkpoint(
+                            block,
+                            x_BRCLD_c,
+                            num_train_and_thinking_rows,
+                            save_peak_memory_factor,
+                            use_reentrant=False,
+                        )
+                    else:
+                        x_BRCLD_c = block(
+                            x_BRCLD_c, num_train_and_thinking_rows, save_peak_memory_factor
+                        )
+                x_BRCLD[:, :, c] = x_BRCLD_c
 
-        for block in self.blocks:
-            if force_recompute_layer:
-                x_BRCD = torch.utils.checkpoint.checkpoint(
-                    block,
-                    x_BRCD,
-                    num_train_and_thinking_rows,
-                    save_peak_memory_factor,
-                    use_reentrant=False,
-                )
-            else:
-                x_BRCD = block(
-                    x_BRCD, num_train_and_thinking_rows, save_peak_memory_factor
-                )
+                x_BRCD = x_BRCLD[:,:,:,:-1].mean(dim=-2) # Average over time dimension
+                if force_recompute_layer:
+                    x_BRCD = torch.utils.checkpoint.checkpoint(
+                        channel_block,
+                        x_BRCD,
+                        num_train_and_thinking_rows,
+                        save_peak_memory_factor,
+                        use_reentrant=False,
+                    )
+                else:
+                    x_BRCD = channel_block(
+                        x_BRCD, num_train_and_thinking_rows, save_peak_memory_factor
+                    )
 
+                x_BRCLD[:,:,:,:-1] += x_BRCD.unsqueeze(-2) # Add the channel output back to the original tensor
+
+                    
         # M: number of test samples
         # B: batch size
-        test_embeddings_BMD = x_BRCD[:, num_train_and_thinking_rows:, -1]
-        test_embeddings_MBD = test_embeddings_BMD.transpose(0, 1)
-        test_output_MB1 = self.output_projection(test_embeddings_MBD)
+        test_embeddings_BMCD = x_BRCLD[:, num_train_and_thinking_rows:, -1]
+        test_embeddings_MBCD = test_embeddings_BMCD.transpose(0, 1)
+        
+        # N: number of training rows
+        train_rows_start = self.add_thinking_rows.num_thinking_rows
+        train_rows_end = num_train_and_thinking_rows
+        train_embeddings_BNCD = x_BRCLD[:, train_rows_start:train_rows_end, -1]
+        train_embeddings_NBCD = train_embeddings_BNCD.transpose(0, 1)
+
+        if task_type == "linear_projection":
+            # Average over channels
+            test_embeddings_MBD = test_embeddings_MBCD.mean(dim=2)
+            test_output_MB1 = self.output_projection(test_embeddings_MBD)
+        
+        elif task_type == "output_embedding":
+            test_output_MB1 = None
+
+        elif task_type == "many_class_decoder":
+            # Average over channels
+            test_embeddings_MBD = test_embeddings_MBCD.mean(dim=2)
+            train_embeddings_NBD = train_embeddings_NBCD.mean(dim=2)
+            y_BN = y.transpose(0, 1) if y.dim() == 2 else y.unsqueeze(0)
+            test_output_MB1: Tensor = self.many_class_decoder(
+                train_embeddings_NBD.transpose(0, 1),
+                test_embeddings_MBD.transpose(0, 1),
+                y_BN[:, :num_train_and_thinking_rows],
+            )
+
+        else:
+            raise ValueError(f"Unknown task type: {task_type}")
 
         if only_return_standard_out:
             return test_output_MB1
 
-        # N: number of training rows
-        train_rows_start = self.add_thinking_rows.num_thinking_rows
-        train_rows_end = num_train_and_thinking_rows
-        train_embeddings_BND = x_BRCD[:, train_rows_start:train_rows_end, -1]
-        train_embeddings_NBD = train_embeddings_BND.transpose(0, 1)
-
-        output = {"standard": test_output_MB1}
-        output["train_embeddings"] = train_embeddings_NBD
-        output["test_embeddings"] = test_embeddings_MBD
+        output = {"standard": test_output_MB1.squeeze(1)}
+        output["train_embeddings"] = train_embeddings_NBCD.squeeze(1)
+        output["test_embeddings"] = test_embeddings_MBCD.squeeze(1)
 
         return output
 
     def _preprocess_and_embed_features(
         self,
-        x_RiBC: torch.Tensor,
+        x_RiBCT: torch.Tensor,
         num_train_labels: int,
         batch_size: int,
+        num_channels: int,
     ) -> torch.Tensor:
         """Preprocess and embed input features and add column embeddings.
 
         Args:
-            x_RiBC: Input features of shape (Ri, B, C) where:
+            x_RiBCT: Input features of shape (Ri, B, C) where:
                 - Ri: number of input rows (train + test)
                 - B: batch size
                 - C: number of columns before grouping
@@ -855,33 +1194,33 @@ class TabPFNV2p5(Architecture):
                 - G: number of feature groups
                 - X: embedding size
         """
-        x_RiBC = _remove_constant_features(x_RiBC=x_RiBC)
+        x_RiBCT = _remove_constant_features(x_RiBCT=x_RiBCT)
         # Bg = folded batch size (B * G) and number of feature groups (G)
-        x_RiBgF, num_feature_groups = _pad_and_reshape_feature_groups(
-            x_RiBC=x_RiBC,
+        x_RiBgCTg, num_feature_groups = _pad_and_reshape_feature_groups(
+            x_RiBCT=x_RiBCT,
             num_features_per_group=self.features_per_group,
         )
-        nan_and_inf_indicator_RiBgF = _generate_nan_and_inf_indicator(x=x_RiBgF)
+        nan_and_inf_indicator_RiBgCTg = _generate_nan_and_inf_indicator(x=x_RiBgCTg)
         # For consistency with old base implementation, the imputation is done
         # before the standard scaling
-        x_RiBgF, _ = _impute_nan_and_inf_with_mean(
-            x=x_RiBgF, num_train_rows=num_train_labels
+        x_RiBgCTg, _ = _impute_nan_and_inf_with_mean(
+            x=x_RiBgCTg, num_train_rows=num_train_labels
         )
-        x_RiBgF = self.standard_scaler(x=x_RiBgF, num_train_rows=num_train_labels)
-        x_RiBgF = _normalize_feature_groups(
-            x_RiBF=x_RiBgF, num_features_per_group=self.features_per_group
+        x_RiBgCTg = self.standard_scaler(x=x_RiBgCTg, num_train_rows=num_train_labels)
+        x_RiBgCTg = _normalize_feature_groups(
+            x_RiBCT=x_RiBgCTg, num_features_per_group=self.features_per_group
         )
 
-        x_RiBgF_concat = torch.cat([x_RiBgF, nan_and_inf_indicator_RiBgF], dim=-1)
+        x_RiBgCTg_concat = torch.cat([x_RiBgCTg, nan_and_inf_indicator_RiBgCTg], dim=-1)
         # X = embedding size
-        embedded_x_RiBgX = self.feature_group_embedder(x_RiBgF_concat)
+        embedded_x_RiBgCX = self.feature_group_embedder(x_RiBgCTg_concat)
         # G = number of feature groups (the number of columns the model will see).
-        embedded_x_RiBGX = embedded_x_RiBgX.unflatten(
+        embedded_x_RiBCGX = embedded_x_RiBgCX.unflatten(
             1, [batch_size, num_feature_groups]
-        )
-        embedded_x_BRiGX = embedded_x_RiBGX.transpose(0, 1)
+        ).transpose(1, 2)
+        embedded_x_BRiCGX = embedded_x_RiBCGX.transpose(0, 1)
 
-        return self._add_column_embeddings(embedded_x_BRiGX)
+        return self._add_column_embeddings(embedded_x_BRiCGX)
 
     def _preprocess_and_embed_targets(
         self,
@@ -889,6 +1228,7 @@ class TabPFNV2p5(Architecture):
         num_train_rows: int,
         num_train_labels: int,
         batch_size: int,
+        num_channels: int = 1
     ) -> torch.Tensor:
         """Preprocess and embed the target values.
 
@@ -919,8 +1259,14 @@ class TabPFNV2p5(Architecture):
 
         y_RiB1_concat = torch.cat([y_RiB1, y_nan_and_inf_indicator_RiB1], dim=-1)
         embedded_y_RiBX = self.target_embedder(y_RiB1_concat)
+        
+        if num_channels > 1:
+            # If there are multiple channels, we need to repeat the target embedding for each channel.
+            embedded_y_RiBCX = embedded_y_RiBX.repeat(1, 1, num_channels, 1)
+        else:
+            embedded_y_RiBCX = embedded_y_RiBX.unsqueeze(2)  # Add a channel dimension
 
-        return embedded_y_RiBX.transpose(0, 1)
+        return embedded_y_RiBCX.transpose(0, 1)
 
     @override
     def load_state_dict(
@@ -983,8 +1329,8 @@ def get_architecture(
     if cache_trainset_representation:
         raise NotImplementedError("TabPFNV2.5 does not support kv cache yet.")
     task_type = "multiclass" if config.max_num_classes > 0 else "regression"
-    n_out = config.max_num_classes if task_type == "multiclass" else config.num_buckets
-    return TabPFNV2p5(config=config, n_out=n_out, task_type=task_type)
+    max_n_out = config.max_num_classes if task_type == "multiclass" else config.num_buckets
+    return TabPFNV2p5(config=config, max_n_out=max_n_out, task_type=task_type)
 
 
 def _prepare_targets(
@@ -1128,16 +1474,16 @@ def _replace_keys_from_base_architecture(
     return new_state_dict
 
 
-def _remove_constant_features(x_RiBC: torch.Tensor) -> torch.Tensor:
+def _remove_constant_features(x_RiBCT: torch.Tensor) -> torch.Tensor:
     """Removes constant features from the input data."""
-    if x_RiBC.shape[0] <= 1:
-        return x_RiBC
-    column_selection_mask = ~(x_RiBC[1:] == x_RiBC[0]).all(0)
-    return select_features(x_RiBC, column_selection_mask.type(torch.bool))
+    if x_RiBCT.shape[0] <= 1:
+        return x_RiBCT
+    column_selection_mask = ~(x_RiBCT[1:] == x_RiBCT[0]).all(0)
+    return select_features(x_RiBCT, column_selection_mask.type(torch.bool))
 
 
 def _pad_and_reshape_feature_groups(
-    x_RiBC: torch.Tensor, num_features_per_group: int
+    x_RiBCT: torch.Tensor, num_features_per_group: int
 ) -> tuple[torch.Tensor, int]:
     """Pad the feature groups and reshape so the feature group dimension is last.
 
@@ -1150,18 +1496,18 @@ def _pad_and_reshape_feature_groups(
         - G = number of feature groups
         - F = number of features per group
     """
-    num_columns = x_RiBC.shape[-1]
+    num_columns = x_RiBCT.shape[-1]
     num_padding_features = -num_columns % num_features_per_group
-    x_RiBC_padded = torch.nn.functional.pad(
-        x_RiBC, pad=(0, num_padding_features), value=0
+    x_RiBCT_padded = torch.nn.functional.pad(
+        x_RiBCT, pad=(0, num_padding_features), value=0
     )
-    num_rows, B, num_padded_columns = x_RiBC_padded.shape
+    num_rows, B, num_channels, num_padded_columns = x_RiBCT_padded.shape
     num_feature_groups = num_padded_columns // num_features_per_group
 
-    x_RiBgF = x_RiBC_padded.reshape(
-        num_rows, B * num_feature_groups, num_features_per_group
+    x_RiBgCTg = x_RiBCT_padded.reshape(
+        num_rows, B * num_feature_groups, num_channels, num_features_per_group
     )
-    return x_RiBgF, num_feature_groups
+    return x_RiBgCTg, num_feature_groups
 
 
 def _impute_nan_and_inf_with_mean(
@@ -1212,23 +1558,23 @@ def _impute_target_nan_and_inf(
 
 
 def _normalize_feature_groups(
-    x_RiBF: torch.Tensor,
+    x_RiBCT: torch.Tensor,
     num_features_per_group: int,
 ) -> torch.Tensor:
     """Normalize the feature groups."""
-    Ri = x_RiBF.shape[0]
-    non_constant_mask = (x_RiBF[1:] == x_RiBF[0]).sum(0) != (Ri - 1)
+    Ri = x_RiBCT.shape[0]
+    non_constant_mask = (x_RiBCT[1:] == x_RiBCT[0]).sum(0) != (Ri - 1)
     number_of_used_features = torch.clip(
         non_constant_mask.sum(-1).unsqueeze(-1),
         min=1,
-    ).to(x_RiBF.device)
+    ).to(x_RiBCT.device)
     scale = num_features_per_group / number_of_used_features
-    x_RiBF = x_RiBF * torch.sqrt(scale)
+    x_RiBCT = x_RiBCT * torch.sqrt(scale)
 
     return torch.where(
-        non_constant_mask.unsqueeze(0).expand_as(x_RiBF),
-        x_RiBF,
-        torch.zeros_like(x_RiBF),
+        non_constant_mask.unsqueeze(0).expand_as(x_RiBCT),
+        x_RiBCT,
+        torch.zeros_like(x_RiBCT),
     )
 
 
@@ -1247,48 +1593,65 @@ class TSPFNEncoder(nn.Module, ABC):
         seed: int,
         tabpfn_kwargs: dict,
         use_checkpoint: bool = True,
-        # features_per_group: int,
-        # embed_dim: int,
-        # updated_pfn_path: Union[Path, None] = None,
-        # random_init: bool = False,
-        # recompute_layer: bool = True,
-        # num_channels: int = None,
-        # time_points: int = None,
-        # use_tabpfn_pe: bool = True,
-        # positional_encoding: Literal["none", "sinusoidal", "rope", "learned", "cwpe", "cwpe+rope"] = "none",
+        pretraining: bool = False,
         **kwargs,
     ):
         super().__init__()
 
-        # list_model, _, model_config, _ = load_model_criterion_config(**tabpfn_kwargs)
-        # model = list_model[0]
+        self.pretraining = pretraining
 
-        # resolved = str(tabpfn_kwargs["model_path"].resolve())
         resolved = str(tabpfn_kwargs.pop("model_path"))
         checkpoint = _load_checkpoint_cached(resolved, Checkpoint(resolved).identity())
 
-        # try:
-        #     architecture_name = checkpoint["architecture_name"]
-        # except KeyError:
-        #     architecture_name = "base"
-        # architecture = ARCHITECTURES[architecture_name]
         full_state = checkpoint["state_dict"]
         criterion_state_keys = [k for k in full_state if "criterion." in k]
+
+        if "performance_options" in tabpfn_kwargs:
+            performance_options = tabpfn_kwargs.pop("performance_options")
+        else:
+            performance_options = {}
 
         model = TabPFNV2p5(**tabpfn_kwargs, device="cuda", dtype=torch.float32)
 
         if use_checkpoint:
             model_state = {k: v for k, v in full_state.items() if k not in criterion_state_keys}
-            model.load_state_dict(model_state)
+            missing_keys = []
+            unexpected_keys = []
+            for k in model_state.keys():
+                if k not in model.state_dict():
+                    unexpected_keys.append(k)
+            for k in model.state_dict().keys():
+                if k not in model_state:
+                    missing_keys.append(k)
+            if missing_keys:
+                _logger.warning("Missing keys in model state dict: %s", missing_keys)
+            if unexpected_keys:
+                _logger.warning("Unexpected keys in model state dict: %s", unexpected_keys)
+            model.load_state_dict(model_state, strict=False)
+
 
         self.model = model
+        self.performance_options = PerformanceOptions(**performance_options)
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
-        # x is (B, Ri, C) and y is (train_size, B)
-        x = x.flatten(-2)  # (Ri, B, Ch, C) -> (Ri, B, Ch*C)
-        output = self.model(x, y)
-        if isinstance(output, dict):
-            return output["test_embeddings"]
-        if output.dim() == 3:
-            return output.squeeze(1)  # (B, 1, T) -> (B, T)
-        return output
+    # def forward(self, ts: Tensor, ts_diff: Tensor, ts_ftt: Tensor, ts_croped: Tensor, y: Tensor, **kwargs) -> Tensor:
+    def forward(self, ts: Tensor, y: Optional[Tensor] = None, ts_diff: Optional[Tensor] = None, **kwargs) -> Tensor:
+        """Forward pass of the TSPFN encoder, using the forward pass of the TabPFN-2p5 model.
+
+        Args:
+            ts (Tensor): time series input tensor of shape (Ri, B, C, T)
+            y (Tensor): target tensor of shape (Ri, B)
+            ts_diff (Tensor): time series difference input tensor of shape (Ri, B, C, T)
+
+        Returns:
+            Tensor: Embeddings of shape (Ri, C, E) for each input time series.
+        """
+        # x is (Ri, B, C, T) and y is (train_size, B)
+        # x = x.flatten(-2)  # (Ri, B, C, T) -> (Ri, B, C*T)
+        ts_emb = self.model(ts, y, performance_options=self.performance_options).squeeze(0)
+        if ts_diff is not None and self.pretraining:
+            diff_emb = self.model(ts_diff, y, performance_options=self.performance_options).squeeze(0)
+            ts_emb = torch.cat([ts_emb["train_embeddings"], ts_emb["test_embeddings"]], dim=0)
+            ts_diff_emb = torch.cat([diff_emb["train_embeddings"], diff_emb["test_embeddings"]], dim=0)
+            return ts_emb, diff_emb
+        else:
+            return ts_emb["standard"]
