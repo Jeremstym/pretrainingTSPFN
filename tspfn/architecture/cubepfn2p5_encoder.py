@@ -839,6 +839,7 @@ class TabPFNV2p5(Architecture):
         self,
         *,
         config: TabPFNV2p5Config,
+        additional_config: dict[str, Any] | None = None,
         task_type: TaskType,
         max_n_out: int = 160,
         feature_positional_embedding: Literal["subspace"] | None = "subspace",
@@ -882,7 +883,7 @@ class TabPFNV2p5(Architecture):
                 dim_feedforward=self.hidden_size,
                 device=device,
                 dtype=dtype,
-                use_rope=True,
+                use_rope=additional_config.use_rope,
             )
             for _ in range(config.nlayers)
         )
@@ -895,7 +896,7 @@ class TabPFNV2p5(Architecture):
                 dtype=dtype,
                 use_rope=False,  
             )
-            for _ in range(config.channel_nlayers)
+            for _ in range(config.nlayers)
         )
         self.output_projection = nn.Sequential(
             nn.Linear(self.input_size, self.hidden_size),
@@ -904,18 +905,18 @@ class TabPFNV2p5(Architecture):
         )
         decoder_softmax_scaling = (
             SoftmaxScalingMLP(
-                num_heads=config.decoder_num_heads,
-                head_dim=config.decoder_head_dim,
-                n_hidden=config.softmax_scaling_mlp_hidden_dim,
+                num_heads=additional_config.decoder_num_heads,
+                head_dim=additional_config.decoder_head_dim,
+                n_hidden=additional_config.softmax_scaling_mlp_hidden_dim,
             )
-            if config.decoder_use_softmax_scaling
+            if additional_config.decoder_use_softmax_scaling
             else None
         )
         self.many_class_decoder = ManyClassDecoder(
             max_num_classes=config.max_num_classes,
-            input_size=self.icl_emsize,
-            head_dim=config.decoder_head_dim,
-            num_heads=config.decoder_num_heads,
+            input_size=config.emsize,
+            head_dim=additional_config.decoder_head_dim,
+            num_heads=additional_config.decoder_num_heads,
             softmax_scaling_layer=decoder_softmax_scaling,
         )
         self.standard_scaler = TorchStandardScaler()
@@ -1587,7 +1588,7 @@ def _generate_nan_and_inf_indicator(x: torch.Tensor) -> torch.Tensor:
         * NEG_INFINITY_INDICATOR
     ).to(x.dtype)
 
-class TSPFNEncoder(nn.Module, ABC):
+class CubePFNEncoder(nn.Module, ABC):
     def __init__(
         self,
         seed: int,
@@ -1627,7 +1628,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 _logger.warning("Missing keys in model state dict: %s", missing_keys)
             if unexpected_keys:
                 _logger.warning("Unexpected keys in model state dict: %s", unexpected_keys)
-            model.load_state_dict(model_state, strict=False)
+            model.load_state_dict(model_state, strict=True)
 
 
         self.model = model
