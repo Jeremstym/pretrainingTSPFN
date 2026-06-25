@@ -1,0 +1,37 @@
+_target_: tspfn.architecture.cubepfn2p5_encoder.CubePFNEncoder
+seed: ${seed}
+use_checkpoint: True
+tabpfn_kwargs:
+  model_path: ${oc.env:LARGETABPFN2p5_MODEL_PATH}
+  # use_nan_indicators: True
+  # inference_row_chunk_size: 2048
+  # inference_col_chunk_size: 512
+  feature_positional_embedding: "subspace"
+  task_type: multiclass
+  max_n_out: 160
+  config: 
+    _target_: tabpfn.architectures.tabpfn_v2_5.TabPFNV2p5Config
+    name: "TabPFN-v2.5"
+    emsize: 192
+    nlayers: 24
+    nhead: 3
+    features_per_group: 3
+    num_thinking_rows: 64
+    encoder_type: "linear"
+    encoder_mlp_hidden_dim: 1024
+    max_num_classes: 160
+    num_buckets: 5000
+  performance_options:
+    use_chunkwise_inference: True
+    enable_torch_compile: False
+    force_recompute_layer: True
+  additional_config:
+    softmax_scaling_mlp_hidden_dim: 64
+    decoder_head_dim: 64
+    decoder_num_heads: 6
+    decoder_use_softmax_scaling: True
+    use_rope: True
+    layernorm_elementwise_affine: True
+    # rope_base: 100_000
+  # device: cuda
+  # dtype: torch.float32
