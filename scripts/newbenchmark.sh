@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=hard
-#SBATCH --job-name=TSPFN-finetuning
+#SBATCH --job-name=CubePFN-eval
 ####BATCH --cpus-per-task=5
 ####SBATCH --mem-per-cpu=8G
 #SBATCH --nodes=1
@@ -150,7 +150,7 @@ UCR2019_univariate=(
 
 for dataset in "${UCR2019_univariate[@]}"; do
     poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-contrastive-last/seed\${seed}" \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-CauKer100K-noFFT/seed\${seed}" \
         +experiment=finetuningTSPFN/tspfn3-finetuning \
         data=benchmark/evaluating-ucrunivariate \
         data.dataset="$dataset" \
@@ -159,9 +159,24 @@ for dataset in "${UCR2019_univariate[@]}"; do
         +dataset="$dataset" \
         train=False \
         test=True \
-        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/CubePFN-contrastive-last.ckpt" \
+        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubePFN-pretrained-cauker100K-noFFT.ckpt" \
         strict=False
 done
+
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-contrastive-last/seed\${seed}" \
+#         +experiment=finetuningTSPFN/tspfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=False \
+#         test=True \
+#         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/CubePFN-contrastive-last.ckpt" \
+#         strict=False
+# done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
