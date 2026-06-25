@@ -2513,6 +2513,17 @@ class TSPFNEncoder(nn.Module, ABC):
 
     # def forward(self, ts: Tensor, ts_diff: Tensor, ts_ftt: Tensor, ts_croped: Tensor, y: Tensor, **kwargs) -> Tensor:
     def forward(self, ts: Tensor, ts_diff: Tensor, ts_croped: Tensor, y: Tensor, **kwargs) -> Tensor:
+        """Forward pass of the TSPFN encoder, using the forward pass of the TabPFN-3 model.
+
+        Args:
+            ts (Tensor): time series input tensor of shape (Ri, B, C, T)
+            ts_diff (Tensor): time series difference input tensor of shape (Ri, B, C, T)
+            ts_croped (Tensor): time series cropped input tensor of shape (Ri, B, C, T)
+            y (Tensor): target tensor of shape (Ri, B)
+
+        Returns:
+            Tensor: Embeddings of shape (Ri, C, E) for each input time series.
+        """
         # x is (Ri, B, C, T) and y is (train_size, B)
         # x = x.flatten(-2)  # (Ri, B, C, T) -> (Ri, B, C*T)
         ts_emb = self.model(ts, y, performance_options=self.performance_options).squeeze(0)
