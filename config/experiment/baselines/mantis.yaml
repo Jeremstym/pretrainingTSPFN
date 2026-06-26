@@ -1,0 +1,70 @@
+# @package _global_
+
+defaults:
+  - override /task/model: null
+  - override /task/optim: adamw
+  - override /data: benchmark/evaluating-ucrunivariate
+
+
+
+test: True
+trainer:
+  devices: ${sys.num_gpus:}
+  accelerator: gpu
+  precision: 32 #16-mixed, 32
+  
+output_dir: ${sys.getcwd:}
+
+data:
+  batch_size: null
+  support_size: null # Number of samples to use for training in the support set (for few-shot learning). If null, use all available samples.
+  fold: null # If not null, use this fold for validation in evaluation datasets (0-4)
+  num_workers: 4 # try 4, 8, 16 depending on the system capabilities
+  filter_labels: False # Whether to filter the dataset to only include labels present in the training set (for evaluation datasets)
+
+task:
+  _target_: tspfn.baselines.mantis.Mantis2_SOTA
+  num_classes: ${data.num_classes}
+  num_channels: ${data.num_channels}
+  mantis_params:
+    num_patches: 32
+    output_token: cls_token
+    device: cuda
+    pre_training: False
+  rf_params:
+    n_estimators: 200
+    max_depth: null
+
+# Change checkpoint loading defaults to:
+ckpt: ??? # Make it mandatory to provide a checkpoint
+weights_only: True  # Only load the weights and ignore the hyperparameters
+strict: True # Only load weights where they match the defined network, to only some changes (e.g. heads, etc.)
+
+
+experiment_dirname: data=${hydra:runtime.choices.task/data}/contrastive=${oc.select:task.contrastive_loss_weight,0}/time_series_tokenizer=${hydra:runtime.choices.task/time_series_tokenizer/model}
+hydra:
+  job:
+    config:
+      override_dirname:
+        exclude_keys:
+          - hydra/launcher
+          - hydra.launcher.n_jobs
+          - hydra.run.dir
+          - hydra.sweep.dir
+          - hydra.sweep.subdir
+
+          - experiment
+          - trainer.enable_progress_bar
+          - trainer.max_epochs
+
+          - callbacks.learning_rate_finder
+
+          - ckpt
+
+          - data
+          - task.predict_losses
+
+          - task.embed_dim
+          - task/time_series_tokenizer/model
+
+          - task/model/encoder

@@ -1,0 +1,192 @@
+import torch
+import numpy as np
+import csv
+import pytorch_lightning as pl
+from torchmetrics import MetricCollection
+from torchmetrics.classification import (
+    MulticlassAccuracy,
+    MulticlassAUROC,
+    MulticlassF1Score,
+    MulticlassAveragePrecision,
+    MulticlassCohenKappa,
+    MulticlassRecall,
+    BinaryAveragePrecision,
+    BinaryF1Score,
+    BinaryAUROC,
+    BinaryAccuracy,
+    BinaryCohenKappa,
+    BinaryRecall,
+)
+
+from mantis.architecture import MantisV2
+from sklearn.ensemble import RandomForestClassifier
+
+
+def resize(X):
+    X_scaled = F.interpolate(torch.tensor(X, dtype=torch.float), size=512, mode="linear", align_corners=False)
+    return X_scaled.numpy()
+
+
+class Mantis2_SOTA(pl.LightningModule):
+    def __init__(
+        self,
+        num_classes: int = 10,
+        num_channels: int = 1,
+        mantis_params: dict = None,
+        rf_params: dict = None,
+        **kwargs,
+    ):
+        super().__init__()
+        self.save_hyperparameters()
+        self.num_classes = num_classes
+        self.num_channels = num_channels
+        print(f"num_classes: {num_classes}, num_channels: {num_channels}")
+        # Optimized Mantis params for large tabular data
+        self.mantis_params = mantis_params
+        self.rf_params = rf_params
+        self.num_patches = self.mantis_params.get("num_patches", 32)
+
+        # Metric Collection for clean evaluation
+        if num_classes == 2:
+            # Binary classification metrics
+            metrics = MetricCollection(
+                {
+                    "acc": BinaryAccuracy(),
+                    "auroc": BinaryAUROC(),
+                    "f1": BinaryF1Score(),
+                    "auprc": BinaryAveragePrecision(),
+                    "cohen_kappa": BinaryCohenKappa(),
+                    "recall": BinaryRecall(),
+                }
+            )
+        else:
+            # Multiclass classification metrics
+            metrics = MetricCollection(
+                {
+                    "acc": MulticlassAccuracy(num_classes=num_classes),
+                    "auroc": MulticlassAUROC(num_classes=num_classes),
+                    "f1": MulticlassF1Score(num_classes=num_classes, average="macro"),
+                    "auprc": MulticlassAveragePrecision(num_classes=num_classes),
+                    "cohen_kappa": MulticlassCohenKappa(num_classes=num_classes),
+                    "recall": MulticlassRecall(num_classes=num_classes, average="macro"),
+                }
+            )
+
+        self.test_metrics = metrics.clone(prefix="test")
+        self.encoder = MantisV2(device="cuda", **self.mantis_params)
+        self.encoder = self.encoder.from_pretrained("paris-noah/MantisV2")
+        self.clf = RandomForestClassifier(**self.rf_params)  # Using Random Forest as the classifier
+
+    def configure_metrics(self):
+        # Binary classification metrics
+        metrics = MetricCollection(
+            {
+                "acc": BinaryAccuracy(),
+                "auroc": BinaryAUROC(),
+                "f1": BinaryF1Score(),
+                "auprc": BinaryAveragePrecision(),
+                "cohen_kappa": BinaryCohenKappa(),
+                "recall": BinaryRecall(),
+            }
+        )
+        self.metrics_binary = nn.ModuleDict({"test_metrics": binary_metrics_template.clone(prefix="test/")})
+        # Multiclass classification metrics
+        metrics = MetricCollection(
+            {
+                "acc": MulticlassAccuracy(num_classes=self.num_classes),
+                "auroc": MulticlassAUROC(num_classes=self.num_classes),
+                "f1": MulticlassF1Score(num_classes=self.num_classes, average="macro"),
+                "auprc": MulticlassAveragePrecision(num_classes=self.num_classes),
+                "cohen_kappa": MulticlassCohenKappa(num_classes=self.num_classes),
+                "recall": MulticlassRecall(num_classes=self.num_classes, average="macro"),
+            }
+        )
+        self.metrics = nn.ModuleDict({"test_metrics": metrics_template.clone(prefix="test/")})
+
+        # Set to device
+        self.metrics = self.metrics.to(self.device)
+        self.metrics_binary = self.metrics_binary.to(self.device)
+
+    def setup(self, stage=None):
+        # Trigger fitting for both fit and validate stages
+        if stage in ["fit", "validate", "test"] or stage is None:
+            if self.clf is None:
+                print("--- Fitting Mantis on Training Data ---")
+                # Access the underlying train_dataloader from the datamodule
+                train_loader = self.trainer.datamodule.train_dataloader()
+
+                all_x, all_y = [], []
+                for batch in train_loader:
+                    # Handle if train_loader is also a CombinedLoader or simple tuple
+                    x, y = batch if isinstance(batch, (tuple, list)) else batch["train"]
+                    batch_size, num_channels, seq_len = x.shape
+                    if seq_len % self.num_patches != 0:
+                        x = resize(x)  # Resize to ensure divisibility by num_patches
+                    all_x.append(x.cpu())
+                    all_y.append(y.cpu())
+
+                X_train = torch.cat(all_x, dim=0).numpy()
+                y_train = torch.cat(all_y, dim=0).numpy()
+                print(f"--- Training Data Loaded: {X_train.shape[0]} samples ---")
+                print(f"Mantis Parameters: {self.mantis_params}")
+
+                print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
+                X_train = self.encoder(X_train)
+                print(f"--- Mantis Embedding Complete: {X_train.shape[0]} samples ---")
+                self.clf.fit(X_train, y_train)
+                print(f"--- Random Forest Fit Complete ({len(X_train)} samples) ---")
+
+                num_classes = np.unique(y_train).shape[0]
+                if self.num_classes != num_classes:
+                    self.num_classes = num_classes
+                    self.configure_metrics()
+
+    def test_step(self, batch, batch_idx):
+        batch_dict, _, _ = batch if isinstance(batch, (tuple, list)) else (batch, None, None)
+        if "val" not in batch_dict:
+            raise ValueError("Expected 'val' key in batch for validation data.")
+
+        x, y = batch_dict["val"]
+        print(f"Original test batch shape: {x.shape}, labels shape: {y.shape}")
+        batch_size, num_channels, seq_len = x.shape
+        if seq_len % self.num_patches != 0:
+            x = resize(x)  # Resize to ensure divisibility by num_patches
+        x_eval = self.encoder(x).cpu().numpy()
+
+        print(f"Query shape for Random Forest: {x_eval.shape}, Labels shape: {y_eval.shape}")
+        y_probs = self.clf.predict_proba(x_eval)
+        y_probs_ts = torch.tensor(y_probs, device=self.device)
+
+        print(f"--- Test Step {batch_idx}: Evaluated {x_eval.shape[0]} samples ---")
+
+        if self.num_classes == 2:
+            # For binary classification, use probabilities of the positive class
+            y_probs_ts = torch.softmax(y_probs_ts, dim=-1)[:, 1]
+            self.metrics_binary["test_metrics"].update(y_probs_ts, y.long())
+        elif self.num_classes > 2:
+            # For multiclass classification, use the full probability distribution
+            self.metrics["test_metrics"].update(y_probs_ts, y)
+
+    def on_test_epoch_end(self):
+        output_data = []
+        if self.num_classes == 2:
+            metrics_collection = self.metrics_binary
+        else:
+            metrics_collection = self.metrics
+        results = metrics_collection["test_metrics"].compute()
+        for metric_name, value in results.items():
+            self.log(metric_name, value, prog_bar=True, on_epoch=True, on_step=False)
+            output_data.append({"metric": metric_name, "value": value.item()})
+        
+        metrics_collection["test_metrics"].reset()  # Reset metrics after logging
+
+        with open("mantis_rf_test_metrics.csv", mode="w", newline="") as csvfile:
+            fieldnames = ["metric", "value"]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in output_data:
+                writer.writerow(row)
+
+    def configure_optimizers(self):
+        # Dummy optimizer since Random Forest isn't trained via AdamW
+        return torch.optim.Adam(self.parameters(), lr=1e-3)
