@@ -25,7 +25,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 def resize(X):
     X_scaled = F.interpolate(torch.tensor(X, dtype=torch.float), size=512, mode="linear", align_corners=False)
-    return X_scaled.numpy()
+    return X_scaled
 
 
 class Mantis2_SOTA(pl.LightningModule):
