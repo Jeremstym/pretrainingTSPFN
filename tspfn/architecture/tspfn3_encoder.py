@@ -2503,10 +2503,10 @@ class TSPFNEncoder(nn.Module, ABC):
         self.model = model
         self.performance_options = PerformanceOptions(**performance_options)
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
-        # x is (Ri, B, Ch, C) and y is (train_size, B)
-        # x = x.flatten(-2)  # (Ri, B, Ch, C) -> (Ri, B, Ch*C)
-        output = self.model(x, y, performance_options=self.performance_options)
+    def forward(self, ts: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
+        # ts is (Ri, B, Ch, C) and y is (train_size, B)
+        # ts = ts.flatten(-2)  # (Ri, B, Ch, C) -> (Ri, B, Ch*C)
+        output = self.model(ts, y, performance_options=self.performance_options)
         if isinstance(output, dict):
             return output["test_embeddings"]
         if output.dim() == 3:
