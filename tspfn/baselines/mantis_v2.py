@@ -46,6 +46,7 @@ class Mantis2_SOTA(pl.LightningModule):
         self.mantis_params = mantis_params
         self.rf_params = rf_params
         self.num_patches = self.mantis_params.get("num_patches", 32)
+        self.encoder_device = self.mantis_params.get("device", "cuda" if torch.cuda.is_available() else "cpu")
 
         self.encoder = MantisV2(**self.mantis_params)
         self.encoder = self.encoder.from_pretrained("paris-noah/MantisV2")
@@ -106,7 +107,7 @@ class Mantis2_SOTA(pl.LightningModule):
         print(f"Mantis Parameters: {self.mantis_params}")
 
         print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
-        X_train = self.encoder(X_train.to(self.device))
+        X_train = self.encoder(X_train.to(self.encoder_device))
         X_train = X_train.cpu().numpy()  # Convert to numpy for Random Forest
         print(f"--- Mantis Embedding Complete: {X_train.shape[0]} samples ---")
         self.clf.fit(X_train, y_train)
@@ -153,7 +154,7 @@ class Mantis2_SOTA(pl.LightningModule):
         for metric_name, value in results.items():
             self.log(metric_name, value, prog_bar=True, on_epoch=True, on_step=False)
             output_data.append({"metric": metric_name, "value": value.item()})
-        
+
         metrics_collection["test_metrics"].reset()  # Reset metrics after logging
 
         with open("mantis_rf_test_metrics.csv", mode="w", newline="") as csvfile:
