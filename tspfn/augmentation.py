@@ -25,6 +25,7 @@ class Differentiation:
         """
         # Apply differentiation along the time dimension (last dimension)
         x_diff = torch.diff(x, dim=-1, n=self.order)
+        x_diff = F.pad(x_diff, (0, self.order), mode="constant", value=0)  # Match original length (n_samples, n_channels, seq_len)
 
         return x_diff
 
