@@ -1780,12 +1780,12 @@ class TabPFNV3(Architecture):
             )
             x_BRiAClE_2_emb = torch.cat([x_BRiAClE, x_BRiAClE_diff], dim=-1)
             
-            std_ts = torch.std(x_RiBAC, dim=-1, keepdim=True)
-            mean_ts = torch.mean(x_RiBAC, dim=-1, keepdim=True)
+            std_ts = torch.std(x_RiBAC.transpose(0, 1), dim=-1, keepdim=True)
+            mean_ts = torch.mean(x_RiBAC.transpose(0, 1), dim=-1, keepdim=True)
             std_emb = self.scalar_encoders[0](std_ts)
             mean_emb = self.scalar_encoders[1](mean_ts)
-            batched_std_emb = std_emb.unsqueeze(0).expand(-1, -1, x_BRiAClE.shape[2], -1, -1)
-            batched_mean_emb = mean_emb.unsqueeze(0).expand(-1, -1, x_BRiAClE.shape[2], -1, -1)
+            batched_std_emb = std_emb.unsqueeze(-2).expand(-1, -1, -1, x_BRiAClE.shape[3], -1)
+            batched_mean_emb = mean_emb.unsqueeze(-2).expand(-1, -1, -1, x_BRiAClE.shape[3], -1)
             x_BRiAClE_2_emb_std_mean = torch.cat([x_BRiAClE_2_emb, batched_std_emb, batched_mean_emb], dim=-1)
             x_BRiAClE = self.linear_encoder(x_BRiAClE_2_emb_std_mean)
         
