@@ -108,7 +108,7 @@ class Mantis2_SOTA(pl.LightningModule):
 
         print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
         X_train = self.encoder(X_train.to(self.encoder_device))
-        X_train = X_train.cpu().numpy()  # Convert to numpy for Random Forest
+        X_train = X_train.detach().cpu().numpy()  # Convert to numpy for Random Forest
         print(f"--- Mantis Embedding Complete: {X_train.shape[0]} samples ---")
         self.clf.fit(X_train, y_train)
         print(f"--- Random Forest Fit Complete ({len(X_train)} samples) ---")
@@ -128,7 +128,8 @@ class Mantis2_SOTA(pl.LightningModule):
         batch_size, num_channels, seq_len = x.shape
         if seq_len % self.num_patches != 0:
             x = resize(x)  # Resize to ensure divisibility by num_patches
-        x_eval = self.encoder(x).cpu().numpy()
+        x_eval = self.encoder(x.to(self.encoder_device))
+        x_eval = x_eval.detach().cpu().numpy()  # Convert to numpy for Random Forest
 
         print(f"Query shape for Random Forest: {x_eval.shape}, Labels shape: {y_eval.shape}")
         y_probs = self.clf.predict_proba(x_eval)
