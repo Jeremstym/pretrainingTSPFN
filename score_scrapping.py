@@ -51,6 +51,13 @@ def simplify_csv_pandas(df: pd.DataFrame) -> pd.DataFrame:
         "test/BinaryF1Score/classification": "f1_score",
         "test/BinaryCohenKappa/classification": "cohen_kappa",
         "test/BinaryRecall/classification": "recall",
+        # --- Mantis Metrics ----
+        "test/acc": "accuracy",
+        "test/auroc": "auroc",
+        "test/auprc": "average_precision",
+        "test/f1": "f1_score",
+        "test/cohen_kappa": "cohen_kappa",
+        "test/recall": "recall",
     }
 
     df["metric"] = df["metric"].map(name_mapping).fillna(df["metric"])
@@ -107,7 +114,7 @@ def main():
 
 def main_v3():
     # Define the path to the directory containing the results
-    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-MantisV2-RF*")
+    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-CubePFN3-contrastive*")
 
     # Initialize a list to store the results
     results = []
@@ -115,7 +122,7 @@ def main_v3():
     # Iterate over each dataset directory
     for dataset_dir in tqdm(results_dir, desc="Processing datasets"):
         if dataset_dir.is_dir():
-            dataset_name = dataset_dir.name.split("-MantisV2-RF")[0]  # Extract dataset name
+            dataset_name = dataset_dir.name.split("-TSPFN")[0]  # Extract dataset name
 
             # Iterate over each seed directory within the dataset directory
             for seed_dir in dataset_dir.iterdir():
@@ -145,9 +152,52 @@ def main_v3():
     results_df = pd.DataFrame(results).sort_values(by=["dataset", "seed"])
     # results_df = filter_datasets_by_class_count(results_df)
     output_dir = "/data/stympopper/TSPFN-Benchmark"
+    results_df.to_csv(f"{output_dir}/less_10_ucr_univariate_results_summary-CubePFN3-contrastive.csv", index=False)
+    print("Results summary saved to less_10_ucr_univariate_results_summary-CubePFN3-contrastive.csv")
+
+def main_mantis_rf():
+    # Define the path to the directory containing the results
+    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-MantisV2-RF*")
+
+    # Initialize a list to store the results
+    results = []
+
+    # Iterate over each dataset directory
+    for dataset_dir in tqdm(results_dir, desc="Processing datasets"):
+        if dataset_dir.is_dir():
+            dataset_name = dataset_dir.name.split("-MantisV2-RF")[0]  # Extract dataset name
+
+            # Iterate over each seed directory within the dataset directory
+            for seed_dir in dataset_dir.iterdir():
+                if seed_dir.is_dir() and seed_dir.name.startswith("seed"):
+                    seed_value = seed_dir.name.split("seed")[1]  # Extract seed value
+
+                    # Define the path to the metrics file (assuming it's named "test_metrics.csv")
+                    metrics_file = seed_dir / "mantis_rf_test_metrics.csv"
+
+                    if metrics_file.exists():
+                        # Read the metrics file (assuming it's a CSV)
+                        df = pd.read_csv(metrics_file)
+                        df = simplify_csv_pandas(df)
+
+                        # Extract relevant metrics (e.g., accuracy, F1-score)
+                        accuracy = df.loc[df["metric"] == "accuracy", "value"].values[0]
+                        f1_score = df.loc[df["metric"] == "f1_score", "value"].values[0]
+
+                        # Append the results to the list
+                        results.append(
+                            {"dataset": dataset_name, "seed": seed_value, "accuracy": accuracy, "f1_score": f1_score}
+                        )
+                    else:
+                        print(f"Metrics file not found for {dataset_name} with seed {seed_value}")
+
+    # Convert results to a DataFrame and save to a CSV file
+    results_df = pd.DataFrame(results).sort_values(by=["dataset", "seed"])
+    # results_df = filter_datasets_by_class_count(results_df)
+    output_dir = "/data/stympopper/TSPFN-Benchmark"
     results_df.to_csv(f"{output_dir}/less_10_ucr_univariate_results_summary-MantisV2-RF.csv", index=False)
     print("Results summary saved to less_10_ucr_univariate_results_summary-MantisV2-RF.csv")
 
 
 if __name__ == "__main__":
-    main_v3()
+    main_mantis_rf()
