@@ -46,38 +46,13 @@ class Mantis2_SOTA(pl.LightningModule):
         self.rf_params = rf_params
         self.num_patches = self.mantis_params.get("num_patches", 32)
 
-        # Metric Collection for clean evaluation
-        if num_classes == 2:
-            # Binary classification metrics
-            metrics = MetricCollection(
-                {
-                    "acc": BinaryAccuracy(),
-                    "auroc": BinaryAUROC(),
-                    "f1": BinaryF1Score(),
-                    "auprc": BinaryAveragePrecision(),
-                    "cohen_kappa": BinaryCohenKappa(),
-                    "recall": BinaryRecall(),
-                }
-            )
-        else:
-            # Multiclass classification metrics
-            metrics = MetricCollection(
-                {
-                    "acc": MulticlassAccuracy(num_classes=num_classes),
-                    "auroc": MulticlassAUROC(num_classes=num_classes),
-                    "f1": MulticlassF1Score(num_classes=num_classes, average="macro"),
-                    "auprc": MulticlassAveragePrecision(num_classes=num_classes),
-                    "cohen_kappa": MulticlassCohenKappa(num_classes=num_classes),
-                    "recall": MulticlassRecall(num_classes=num_classes, average="macro"),
-                }
-            )
-
-        self.test_metrics = metrics.clone(prefix="test")
         self.encoder = MantisV2(device="cuda", **self.mantis_params)
         self.encoder = self.encoder.from_pretrained("paris-noah/MantisV2")
         self.clf = RandomForestClassifier(**self.rf_params)  # Using Random Forest as the classifier
 
-    def configure_metrics(self):
+        self.configure_metrics(device="cpu")  # Initialize metrics for both binary and multiclass
+
+    def configure_metrics(self, device):
         # Binary classification metrics
         metrics = MetricCollection(
             {
@@ -104,42 +79,42 @@ class Mantis2_SOTA(pl.LightningModule):
         self.metrics = nn.ModuleDict({"test_metrics": metrics_template.clone(prefix="test/")})
 
         # Set to device
-        self.metrics = self.metrics.to(self.device)
-        self.metrics_binary = self.metrics_binary.to(self.device)
+        self.metrics = self.metrics.to(device)
+        self.metrics_binary = self.metrics_binary.to(device)
 
     def setup(self, stage=None):
         # Trigger fitting for both fit and validate stages
-        if stage in ["fit", "validate", "test"] or stage is None:
-            if self.clf is None:
-                print("--- Fitting Mantis on Training Data ---")
-                # Access the underlying train_dataloader from the datamodule
-                train_loader = self.trainer.datamodule.train_dataloader()
+        assert stage in ["fit", "validate", None], f"Unexpected stage: {stage}"
+        print("--- Fitting Mantis on Training Data ---")
+        # Access the underlying train_dataloader from the datamodule
+        train_loader = self.trainer.datamodule.train_dataloader()
 
-                all_x, all_y = [], []
-                for batch in train_loader:
-                    # Handle if train_loader is also a CombinedLoader or simple tuple
-                    x, y = batch if isinstance(batch, (tuple, list)) else batch["train"]
-                    batch_size, num_channels, seq_len = x.shape
-                    if seq_len % self.num_patches != 0:
-                        x = resize(x)  # Resize to ensure divisibility by num_patches
-                    all_x.append(x.cpu())
-                    all_y.append(y.cpu())
+        all_x, all_y = [], []
+        for batch in train_loader:
+            # Handle if train_loader is also a CombinedLoader or simple tuple
+            x, y = batch if isinstance(batch, (tuple, list)) else batch["train"]
+            batch_size, num_channels, seq_len = x.shape
+            if seq_len % self.num_patches != 0:
+                x = resize(x)  # Resize to ensure divisibility by num_patches
+            all_x.append(x)
+            all_y.append(y)
 
-                X_train = torch.cat(all_x, dim=0).numpy()
-                y_train = torch.cat(all_y, dim=0).numpy()
-                print(f"--- Training Data Loaded: {X_train.shape[0]} samples ---")
-                print(f"Mantis Parameters: {self.mantis_params}")
+        X_train = torch.cat(all_x, dim=0)
+        y_train = torch.cat(all_y, dim=0).cpu().numpy()  # Convert to numpy for Random Forest
+        print(f"--- Training Data Loaded: {X_train.shape[0]} samples ---")
+        print(f"Mantis Parameters: {self.mantis_params}")
 
-                print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
-                X_train = self.encoder(X_train)
-                print(f"--- Mantis Embedding Complete: {X_train.shape[0]} samples ---")
-                self.clf.fit(X_train, y_train)
-                print(f"--- Random Forest Fit Complete ({len(X_train)} samples) ---")
+        print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
+        X_train = self.encoder(X_train)
+        X_train = X_train.cpu().numpy()  # Convert to numpy for Random Forest
+        print(f"--- Mantis Embedding Complete: {X_train.shape[0]} samples ---")
+        self.clf.fit(X_train, y_train)
+        print(f"--- Random Forest Fit Complete ({len(X_train)} samples) ---")
 
-                num_classes = np.unique(y_train).shape[0]
-                if self.num_classes != num_classes:
-                    self.num_classes = num_classes
-                    self.configure_metrics()
+        num_classes = np.unique(y_train).shape[0]
+        if self.num_classes != num_classes:
+            self.num_classes = num_classes
+            self.configure_metrics(device="cpu")  # Reconfigure metrics if number of classes has changed
 
     def test_step(self, batch, batch_idx):
         batch_dict, _, _ = batch if isinstance(batch, (tuple, list)) else (batch, None, None)
