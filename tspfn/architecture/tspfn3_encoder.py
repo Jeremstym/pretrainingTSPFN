@@ -1612,6 +1612,7 @@ class TabPFNV3(Architecture):
         self,
         x: torch.Tensor | dict[str, torch.Tensor],
         y: torch.Tensor | dict[str, torch.Tensor] | None,
+        x_diff: torch.Tensor | dict[str, torch.Tensor] | None = None,
         *,
         only_return_standard_out: bool = True,
         categorical_inds: list[list[int]] | None = None,
@@ -1681,6 +1682,21 @@ class TabPFNV3(Architecture):
             kv_cache=kv_cache,
             x_is_test_only=x_is_test_only,
         )
+
+        if x_diff is not None:
+            if isinstance(x_diff, dict):
+                x_diff = x_diff["main"]
+            x_RiBAC_diff = x_diff
+            x_BRiAClE_diff, _ = self._stages_0_to_2(
+                x_RiBAC_diff,
+                y,
+                performance_options=performance_options,
+                return_inducing_hidden=False,
+                kv_cache=kv_cache,
+                x_is_test_only=x_is_test_only,
+            )
+            x_BRiAClE = x_BRiAClE + x_BRiAClE_diff
+            del x_BRiAClE_diff
 
         # ---- Stage 3: ICL ----
         x_BRiAD = x_BRiAClE.flatten(-2)  # (B, Ri, Ch, Cl * E)
@@ -1971,7 +1987,7 @@ class TabPFNV3(Architecture):
         x_BRiAC, nan_ind_BRiAC = self._preprocess_raw(rows_RiBAC, num_train, scaler_cache)
         y_col_emb_BNE: torch.Tensor | None = None
         if scaler_cache is None and num_train > 0:
-            y_col_BN = self._prepare_y(y, num_train, B) # Do not provide num channels here
+            y_col_BN = self._prepare_y(y, num_train, B)  # Do not provide num channels here
             y_col_emb_BNE = self._embed_col_y(y_col_BN)
 
         x_grouped_BRiACG = self._group_features(x_BRiAC, nan_ind_BRiAC)
@@ -2175,22 +2191,24 @@ class TabPFNV3(Architecture):
                     transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
                     # --- REPLACE THE ENTIRE 'for row in range(...)' LOOP WITH THIS ---
                     B, R_chunk, Ch, Cl, E = row_embedding_chunk.shape
-                    
+
                     # 1. Flatten rows and treat (Cl * Ch) as the true structural sequence layout
                     # Shape transitions: (B, R_chunk, Ch, Cl, E) -> (B * R_chunk, Cl * Ch, E)
                     flat_q = transposed_row_embedding_chunk.reshape(B * R_chunk, Cl * Ch, E)
-                    
+
                     # 2. Add an explicit head dimension at dim 1 to satisfy standard SDPA layout: (Batch, Heads, Seq, Dim)
                     # Treating it as 1 head prevents mathematical inflation during compile tracing
-                    q_sdpa = flat_q.unsqueeze(1).contiguous() # Shape: (B * R_chunk, 1, Cl * Ch, E)
-                    
+                    q_sdpa = flat_q.unsqueeze(1).contiguous()  # Shape: (B * R_chunk, 1, Cl * Ch, E)
+
                     # 3. Call standard SDPA vectorially over the unified chunk
                     _transposed_row_embedding_chunk = F.scaled_dot_product_attention(
                         q_sdpa, q_sdpa, q_sdpa, attn_mask=None, dropout_p=0.0, is_causal=False
                     )
-                    
+
                     # 4. Remove head dim and restore original target architectural shapes
-                    transposed_row_embedding_chunk = _transposed_row_embedding_chunk.squeeze(1).view(B, R_chunk, Cl, Ch, E)
+                    transposed_row_embedding_chunk = _transposed_row_embedding_chunk.squeeze(1).view(
+                        B, R_chunk, Cl, Ch, E
+                    )
                     row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
                     # -----------------------------------------------------------------
 
@@ -2493,7 +2511,7 @@ class TSPFNEncoder(nn.Module, ABC):
             performance_options = tabpfn_kwargs.pop("performance_options")
         else:
             performance_options = {}
-            
+
         model = TabPFNV3(**tabpfn_kwargs, device="cuda", dtype=torch.float32)
 
         if use_checkpoint:
@@ -2503,10 +2521,16 @@ class TSPFNEncoder(nn.Module, ABC):
         self.model = model
         self.performance_options = PerformanceOptions(**performance_options)
 
-    def forward(self, ts: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
+    def forward(
+        self,
+        ts: torch.Tensor,
+        y: torch.Tensor,
+        ts_diff: Optional[torch.Tensor] = None,
+        **kwargs
+    ) -> torch.Tensor:
         # ts is (Ri, B, Ch, C) and y is (train_size, B)
         # ts = ts.flatten(-2)  # (Ri, B, Ch, C) -> (Ri, B, Ch*C)
-        output = self.model(ts, y, performance_options=self.performance_options)
+        output = self.model(ts, y, x_diff=ts_diff, performance_options=self.performance_options)
         if isinstance(output, dict):
             return output["test_embeddings"]
         if output.dim() == 3:
