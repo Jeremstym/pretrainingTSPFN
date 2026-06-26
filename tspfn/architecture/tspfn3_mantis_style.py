@@ -1786,8 +1786,8 @@ class TabPFNV3(Architecture):
             mean_emb = self.scalar_encoders[1](mean_ts)
             batched_std_emb = std_emb.unsqueeze(0).expand(-1, -1, x_BRiAClE.shape[2], -1, -1)
             batched_mean_emb = mean_emb.unsqueeze(0).expand(-1, -1, x_BRiAClE.shape[2], -1, -1)
-            x_BRiAClE = torch.cat([x_BRiAClE, batched_std_emb, batched_mean_emb], dim=-1)
-            x_BRiAClE = self.linear_encoder(x_BRiAClE)
+            x_BRiAClE_2_emb_std_mean = torch.cat([x_BRiAClE_2_emb, batched_std_emb, batched_mean_emb], dim=-1)
+            x_BRiAClE = self.linear_encoder(x_BRiAClE_2_emb_std_mean)
         
             del x_BRiAClE_diff
             del x_BRiAClE_2_emb
