@@ -1,5 +1,6 @@
 #!/bin/bash
-#SBATCH --partition=hard
+#SBATCH --partition=electronic
+#SBATCH --nodelist=punk
 #SBATCH --job-name=CubePFN-eval
 ####BATCH --cpus-per-task=5
 ####SBATCH --mem-per-cpu=8G
