@@ -177,22 +177,22 @@ class CubePFNPretraining(TSPFNSystem):
         # ts_diff = F.pad(ts_diff, (0, 1), mode="constant", value=0).unsqueeze(1)  # Match original length (S, B, C, T)
         ts_augmented1 = self.crop_resize1(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         ts_diff_aug1 = self.differentiate(ts_augmented1.squeeze(1)).unsqueeze(1)  # (S, B, C, T-1)
-        ts_diff_aug1 = F.pad(ts_diff_aug1, (0, 1), mode="constant", value=0)  # Match original length (S, B, C, T)
+        # ts_diff_aug1 = F.pad(ts_diff_aug1, (0, 1), mode="constant", value=0)  # Match original length (S, B, C, T)
         ts_augmented2 = self.crop_resize2(time_series_attrs).unsqueeze(1)  # (S, B, C, T)
         ts_diff_aug2 = self.differentiate(ts_augmented2.squeeze(1)).unsqueeze(1)  # (S, B, C, T-1)
-        ts_diff_aug2 = F.pad(ts_diff_aug2, (0, 1), mode="constant", value=0)  # Match original length (S, B, C, T)
+        # ts_diff_aug2 = F.pad(ts_diff_aug2, (0, 1), mode="constant", value=0)  # Match original length (S, B, C, T)
 
         y_nan = torch.empty(ts.shape[0], 1)  # (S, 1)
         out_aug1 = self.encoder(
-            ts_augmented1,
-            ts_diff_aug1,
-            y_nan,
+            ts=ts_augmented1,
+            ts_diff=ts_diff_aug1,
+            y=y_nan,
         )
 
         out_aug2 = self.encoder(
-            ts_augmented2,
-            ts_diff_aug2,
-            y_nan,
+            ts=ts_augmented2,
+            ts_diff=ts_diff_aug2,
+            y=y_nan,
         )
 
         return out_aug1, out_aug2
