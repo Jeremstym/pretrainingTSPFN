@@ -107,7 +107,7 @@ def main():
 
 def main_v3():
     # Define the path to the directory containing the results
-    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-CubePFN3-contrastive*")
+    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-MantisV2-RF*")
 
     # Initialize a list to store the results
     results = []
@@ -115,7 +115,7 @@ def main_v3():
     # Iterate over each dataset directory
     for dataset_dir in tqdm(results_dir, desc="Processing datasets"):
         if dataset_dir.is_dir():
-            dataset_name = dataset_dir.name.split("-TSPFN")[0]  # Extract dataset name
+            dataset_name = dataset_dir.name.split("-MantisV2-RF")[0]  # Extract dataset name
 
             # Iterate over each seed directory within the dataset directory
             for seed_dir in dataset_dir.iterdir():
@@ -145,8 +145,8 @@ def main_v3():
     results_df = pd.DataFrame(results).sort_values(by=["dataset", "seed"])
     # results_df = filter_datasets_by_class_count(results_df)
     output_dir = "/data/stympopper/TSPFN-Benchmark"
-    results_df.to_csv(f"{output_dir}/less_10_ucr_univariate_results_summary-CubePFN3-contrastive.csv", index=False)
-    print("Results summary saved to less_10_ucr_univariate_results_summary-CubePFN3-contrastive.csv")
+    results_df.to_csv(f"{output_dir}/less_10_ucr_univariate_results_summary-MantisV2-RF.csv", index=False)
+    print("Results summary saved to less_10_ucr_univariate_results_summary-MantisV2-RF.csv")
 
 
 if __name__ == "__main__":
