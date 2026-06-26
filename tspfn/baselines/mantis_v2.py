@@ -20,6 +20,7 @@ from torchmetrics.classification import (
 )
 
 from mantis.architecture import MantisV2
+from mantis.trainer import MantisTrainer
 from sklearn.ensemble import RandomForestClassifier
 
 
@@ -48,8 +49,9 @@ class Mantis2_SOTA(pl.LightningModule):
         self.num_patches = self.mantis_params.get("num_patches", 32)
         self.encoder_device = self.mantis_params.get("device", "cuda" if torch.cuda.is_available() else "cpu")
 
-        self.encoder = MantisV2(**self.mantis_params)
-        self.encoder = self.encoder.from_pretrained("paris-noah/MantisV2")
+        network = MantisV2(**self.mantis_params)
+        network = network.from_pretrained("paris-noah/MantisV2")
+        self.encoder = MantisTrainer(device=self.encoder_device, network=network)
         self.clf = RandomForestClassifier(**self.rf_params)  # Using Random Forest as the classifier
 
         self.configure_metrics(device="cpu")  # Initialize metrics for both binary and multiclass
@@ -107,7 +109,7 @@ class Mantis2_SOTA(pl.LightningModule):
         print(f"Mantis Parameters: {self.mantis_params}")
 
         print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
-        X_train = self.encoder(X_train.to(self.encoder_device))
+        X_train = self.encoder.transform(X_train.to(self.encoder_device))
         X_train = X_train.detach().cpu().numpy()  # Convert to numpy for Random Forest
         print(f"--- Mantis Embedding Complete: {X_train.shape[0]} samples ---")
         self.clf.fit(X_train, y_train)
@@ -128,7 +130,7 @@ class Mantis2_SOTA(pl.LightningModule):
         batch_size, num_channels, seq_len = x.shape
         if seq_len % self.num_patches != 0:
             x = resize(x)  # Resize to ensure divisibility by num_patches
-        x_eval = self.encoder(x.to(self.encoder_device))
+        x_eval = self.encoder.transform(x.to(self.encoder_device))
         x_eval = x_eval.detach().cpu().numpy()  # Convert to numpy for Random Forest
 
         print(f"Query shape for Random Forest: {x_eval.shape}, Labels shape: {y.shape}")
