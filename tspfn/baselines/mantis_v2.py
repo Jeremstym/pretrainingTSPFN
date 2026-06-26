@@ -46,7 +46,7 @@ class Mantis2_SOTA(pl.LightningModule):
         self.rf_params = rf_params
         self.num_patches = self.mantis_params.get("num_patches", 32)
 
-        self.encoder = MantisV2(device="cuda", **self.mantis_params)
+        self.encoder = MantisV2(**self.mantis_params)
         self.encoder = self.encoder.from_pretrained("paris-noah/MantisV2")
         self.clf = RandomForestClassifier(**self.rf_params)  # Using Random Forest as the classifier
 
