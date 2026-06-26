@@ -84,7 +84,7 @@ class Mantis2_SOTA(pl.LightningModule):
 
     def setup(self, stage=None):
         # Trigger fitting for both fit and validate stages
-        assert stage in ["fit", "validate", None], f"Unexpected stage: {stage}"
+        assert stage in ["fit", "validate", "test"], f"Unexpected stage: {stage}"
         print("--- Fitting Mantis on Training Data ---")
         # Access the underlying train_dataloader from the datamodule
         train_loader = self.trainer.datamodule.train_dataloader()
