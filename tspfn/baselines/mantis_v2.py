@@ -54,7 +54,7 @@ class Mantis2_SOTA(pl.LightningModule):
 
     def configure_metrics(self, device):
         # Binary classification metrics
-        metrics = MetricCollection(
+        binary_metrics_template = MetricCollection(
             {
                 "acc": BinaryAccuracy(),
                 "auroc": BinaryAUROC(),
@@ -66,7 +66,7 @@ class Mantis2_SOTA(pl.LightningModule):
         )
         self.metrics_binary = torch.nn.ModuleDict({"test_metrics": binary_metrics_template.clone(prefix="test/")})
         # Multiclass classification metrics
-        metrics = MetricCollection(
+        metrics_template = MetricCollection(
             {
                 "acc": MulticlassAccuracy(num_classes=self.num_classes),
                 "auroc": MulticlassAUROC(num_classes=self.num_classes),
