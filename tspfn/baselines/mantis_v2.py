@@ -64,7 +64,7 @@ class Mantis2_SOTA(pl.LightningModule):
                 "recall": BinaryRecall(),
             }
         )
-        self.metrics_binary = nn.ModuleDict({"test_metrics": binary_metrics_template.clone(prefix="test/")})
+        self.metrics_binary = torch.nn.ModuleDict({"test_metrics": binary_metrics_template.clone(prefix="test/")})
         # Multiclass classification metrics
         metrics = MetricCollection(
             {
@@ -76,7 +76,7 @@ class Mantis2_SOTA(pl.LightningModule):
                 "recall": MulticlassRecall(num_classes=self.num_classes, average="macro"),
             }
         )
-        self.metrics = nn.ModuleDict({"test_metrics": metrics_template.clone(prefix="test/")})
+        self.metrics = torch.nn.ModuleDict({"test_metrics": metrics_template.clone(prefix="test/")})
 
         # Set to device
         self.metrics = self.metrics.to(device)
