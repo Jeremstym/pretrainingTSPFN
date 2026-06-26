@@ -131,7 +131,7 @@ class Mantis2_SOTA(pl.LightningModule):
         x_eval = self.encoder(x.to(self.encoder_device))
         x_eval = x_eval.detach().cpu().numpy()  # Convert to numpy for Random Forest
 
-        print(f"Query shape for Random Forest: {x_eval.shape}, Labels shape: {y_eval.shape}")
+        print(f"Query shape for Random Forest: {x_eval.shape}, Labels shape: {y.shape}")
         y_probs = self.clf.predict_proba(x_eval)
         y_probs_ts = torch.tensor(y_probs, device=self.device)
 
