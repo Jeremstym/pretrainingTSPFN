@@ -542,7 +542,7 @@ class CubePFNFineTuning(TSPFNSystem):
             ts_inference_support=ts_train_support,
             already_tokenized=already_tokenized,
             evaluation=(not self.training),
-            return_logits=self.return_logits,   
+            return_logits=self.return_logits,
         )
 
         # Compute the loss/metrics for each target label, ignoring items for which targets are missing
@@ -587,9 +587,8 @@ class CubePFNFineTuning(TSPFNSystem):
                     target = target.long()
                 else:
                     target = target.float()
-                    y_prob = torch.softmax(y_hat, dim=-1)[
-                        :, 1
-                    ]  # (N=Query,) Take positive class probabilities for binary classification
+                    # Take positive class probabilities for binary classification
+                    y_prob = torch.softmax(y_hat, dim=-1)[:, 1]
                     y_hat = y_hat[:, 1]  # (N=Query,) Take positive class logits for binary classification
                 losses[f"{target_loss.__class__.__name__.lower().replace('loss', '')}/{target_task}"] = target_loss(
                     y_hat,
