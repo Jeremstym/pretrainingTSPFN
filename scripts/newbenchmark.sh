@@ -156,6 +156,7 @@ for dataset in "${UCR2019_univariate[@]}"; do
         data.dataset="$dataset" \
         seed=42 \
         +dataset="$dataset" \
+        train=False \
         test=True
 done
 
