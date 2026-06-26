@@ -106,10 +106,7 @@ class Mantis2_SOTA(pl.LightningModule):
         print(f"Mantis Parameters: {self.mantis_params}")
 
         print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
-        # Check devices
-        print(f"Encoder device: {next(self.encoder.parameters()).device}, X_train device: {X_train.device}")
-        raise Exception("Debugging: Check device placement before encoding.")
-        X_train = self.encoder(X_train)
+        X_train = self.encoder(X_train.to(self.device))
         X_train = X_train.cpu().numpy()  # Convert to numpy for Random Forest
         print(f"--- Mantis Embedding Complete: {X_train.shape[0]} samples ---")
         self.clf.fit(X_train, y_train)
