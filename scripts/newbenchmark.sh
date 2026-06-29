@@ -151,15 +151,29 @@ UCR2019_univariate=(
 
 for dataset in "${UCR2019_univariate[@]}"; do
     poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-MantisV2-RF/seed\${seed}" \
-        +experiment=baselines/mantis_v2 \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-Mantis/seed\${seed}" \
+        +experiment=finetuningTSPFN/cubepfn3-finetuning \
         data=benchmark/evaluating-ucrunivariate \
         data.dataset="$dataset" \
         seed=42 \
         +dataset="$dataset" \
         train=False \
-        test=True
+        test=True \
+        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubepfn-pretrained-mantis-v2.ckpt" \
+        strict=False
 done
+
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-MantisV2-RF/seed\${seed}" \
+#         +experiment=baselines/mantis_v2 \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=False \
+#         test=True
+# done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
