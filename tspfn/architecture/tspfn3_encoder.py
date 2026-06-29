@@ -642,6 +642,67 @@ def _batched_scaled_dot_product_attention(
     return scaled_dot_product_attention(q_BSHD, k_BSJD, v_BSJD, _backends_override)
 
 
+class LinearEncoder(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(LinearEncoder, self).__init__()
+        self.linear = nn.Linear(input_dim, output_dim)
+        self.layer_norm = nn.LayerNorm(normalized_shape=output_dim, eps=1e-15)
+
+    def forward(self, x):
+        return self.layer_norm(self.linear(x))
+
+
+class ScalarEncoder(nn.Module):
+    def __init__(self, k, hidden_dim):
+        super(ScalarEncoder, self).__init__()
+        self.w = torch.nn.Parameter(torch.rand(
+            (1, hidden_dim), dtype=torch.float, requires_grad=True))
+        self.b = torch.nn.Parameter(torch.rand(
+            (1, hidden_dim), dtype=torch.float, requires_grad=True))
+        self.k = k
+        self.layer_norm = torch.nn.LayerNorm(
+            normalized_shape=hidden_dim, eps=1e-15)
+
+    def forward(self, x):
+        z = x * self.w + self.k * self.b
+        emb = self.layer_norm(z)
+        return emb
+
+
+class MultiScaledScalarEncoder(nn.Module):
+
+    def __init__(self, scales, hidden_dim, epsilon):
+        """
+        A multi-scaled encoding of a scalar variable:
+        https://arxiv.org/pdf/2310.07402.pdf
+
+        Parameters
+        ----------
+        scales: list, default=None
+            List of scales. By default, initialized as [1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4].
+        hidden_dim: int, default=32
+            Hidden dimension of a scalar encoder.
+        epsilon: float, default=1.1
+            A constant term used to tolerate the computational error in computation of scale weights.
+        """
+        super(MultiScaledScalarEncoder, self).__init__()
+        self.register_buffer('scales', torch.tensor(scales))
+        self.epsilon = epsilon
+        self.encoders = nn.ModuleList(
+            [ScalarEncoder(k, hidden_dim) for k in scales])
+
+    def forward(self, x):
+        alpha = abs(1 / torch.log(torch.matmul(abs(x), 1 /
+                    self.scales.reshape(1, -1)) + self.epsilon))
+        alpha = alpha / torch.sum(alpha, dim=-1, keepdim=True)
+        alpha = torch.unsqueeze(alpha, dim=-1)
+        emb = [encoder(x) for encoder in self.encoders]
+        emb = torch.stack(emb, dim=-2)
+        emb = torch.sum(emb * alpha, dim=-2)
+        return emb
+
+
+
 # ---------------------------------------------------------------------------
 # Attention modules
 # ---------------------------------------------------------------------------
@@ -1538,6 +1599,28 @@ class TabPFNV3(Architecture):
         #     **kw,
         # )
 
+        # ---- Mantis additional modules -----
+        
+        scalar_scales = [1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4]
+        num_scalar_stats = 2  # mean + std
+        num_ts_feats = 2
+        epsilon_scalar_enc = 1.1
+        hidden_dim_scalar_enc = 32
+
+        self.scalar_encoders = nn.ModuleList([
+            MultiScaledScalarEncoder(
+                scalar_scales, hidden_dim_scalar_enc, epsilon_scalar_enc)
+            for i in range(num_scalar_stats)
+        ])
+        
+        # final token projector
+        self.linear_encoder = LinearEncoder(
+            hidden_dim_scalar_enc * num_scalar_stats + config.embed_dim * (num_ts_feats), config.embed_dim)
+
+        # scales each time-series w.r.t. its mean and std
+        self.ts_scaler = lambda x: (
+            x - torch.mean(x, axis=-1, keepdim=True)) / (torch.std(x, axis=-1, keepdim=True) + 1e-5)
+
         # ---- ICL target encoder ----
         if task_type == "multiclass":
             self.icl_y_encoder: nn.Module = TrainableOrthogonalEmbedding(
@@ -1695,8 +1778,21 @@ class TabPFNV3(Architecture):
                 kv_cache=kv_cache,
                 x_is_test_only=x_is_test_only,
             )
-            x_BRiAClE = x_BRiAClE + x_BRiAClE_diff
+            x_BRiAClE_2_emb = torch.cat([x_BRiAClE, x_BRiAClE_diff], dim=-1)
+            
+            std_ts = torch.std(x_RiBAC.transpose(0, 1), dim=-1, keepdim=True)
+            mean_ts = torch.mean(x_RiBAC.transpose(0, 1), dim=-1, keepdim=True)
+            std_emb = self.scalar_encoders[0](std_ts)
+            mean_emb = self.scalar_encoders[1](mean_ts)
+            batched_std_emb = std_emb.unsqueeze(-2).expand(-1, -1, -1, x_BRiAClE.shape[3], -1)
+            batched_mean_emb = mean_emb.unsqueeze(-2).expand(-1, -1, -1, x_BRiAClE.shape[3], -1)
+            x_BRiAClE_2_emb_std_mean = torch.cat([x_BRiAClE_2_emb, batched_std_emb, batched_mean_emb], dim=-1)
+            x_BRiAClE = self.linear_encoder(x_BRiAClE_2_emb_std_mean)
+        
             del x_BRiAClE_diff
+            del x_BRiAClE_2_emb
+            del std_ts
+            del mean_ts
 
         # ---- Stage 3: ICL ----
         x_BRiAD = x_BRiAClE.flatten(-2)  # (B, Ri, Ch, Cl * E)
@@ -2516,7 +2612,19 @@ class TSPFNEncoder(nn.Module, ABC):
 
         if use_checkpoint:
             model_state = {k: v for k, v in full_state.items() if k not in criterion_state_keys}
-            model.load_state_dict(model_state)
+            missing_keys = []
+            unexpected_keys = []
+            for k in model_state.keys():
+                if k not in model.state_dict():
+                    unexpected_keys.append(k)
+            for k in model.state_dict().keys():
+                if k not in model_state:
+                    missing_keys.append(k)
+            if missing_keys:
+                _logger.warning("Missing keys in model state dict: %s", missing_keys)
+            if unexpected_keys:
+                _logger.warning("Unexpected keys in model state dict: %s", unexpected_keys)
+            model.load_state_dict(model_state, strict=False) # Remove ManyClassDecoder for pretraining with no labels
 
         self.model = model
         self.performance_options = PerformanceOptions(**performance_options)
