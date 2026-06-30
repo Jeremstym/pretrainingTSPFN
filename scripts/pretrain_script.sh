@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=heavy
-###SBATCH --nodelist=dc
+###SBATCH --nodelist=ac
 #SBATCH --job-name=CubePFN-pretraining
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
@@ -65,4 +65,5 @@ nvidia-smi
 #? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-SSL-Cauker100K-noFFT' +experiment=pretrainingTSPFN/cubepfn3-contrastive-pretraining seed=42
 
 #? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-MantisPretraining-FFT' +experiment=pretrainingTSPFN/cubepfn3-mantis-pretraining seed=42
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-MantisPretraining-v2' +experiment=pretrainingTSPFN/cubepfn3-mantis-pretraining seed=42
+#? poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-MantisPretraining-v2' +experiment=pretrainingTSPFN/cubepfn3-mantis-pretraining seed=42
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-MantisPretraining-noDiff' +experiment=pretrainingTSPFN/cubepfn3-mantis-pretraining seed=42
