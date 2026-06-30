@@ -47,6 +47,8 @@ ulimit -n 4096
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/eicu-labram-full/seed${seed}' +experiment=baselines/baseline data=finetuning-eicucrd task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-labram-full/seed${seed}' +experiment=baselines/baseline data=finetuning-cpsc task/model/encoder=labram task/model/prediction_head=prediction task.embed_dim=200 seed=42 train=True test=True use_last=True trainer.max_epochs=15 +trainer.limit_val_batches=0.0
 
+ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-MantisV2-RF' data=evaluating-orchid +experiment=baselines/mantis_v2 seed=42 train=False test=True
+
 # Supsize spanning
 
 # for supsize in 50, 100, 250, 500, 750, 1000; do
