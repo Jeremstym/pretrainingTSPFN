@@ -67,7 +67,7 @@ class Mantis2_SOTA(pl.LightningModule):
                 "auprc": BinaryAveragePrecision(),
                 "cohen_kappa": BinaryCohenKappa(),
                 "recall": BinaryRecall(),
-                "confusion_matrix": ConfusionMatrix(num_classes=2),
+                "confusion_matrix": ConfusionMatrix(task="binary", num_classes=2),
             }
         )
         self.metrics_binary = torch.nn.ModuleDict({"test_metrics": binary_metrics_template.clone(prefix="test/")})
@@ -80,7 +80,7 @@ class Mantis2_SOTA(pl.LightningModule):
                 "auprc": MulticlassAveragePrecision(num_classes=self.num_classes),
                 "cohen_kappa": MulticlassCohenKappa(num_classes=self.num_classes),
                 "recall": MulticlassRecall(num_classes=self.num_classes, average="macro"),
-                "confusion_matrix": ConfusionMatrix(num_classes=self.num_classes),
+                "confusion_matrix": ConfusionMatrix(task="multiclass", num_classes=self.num_classes),
             }
         )
         self.metrics = torch.nn.ModuleDict({"test_metrics": metrics_template.clone(prefix="test/")})
