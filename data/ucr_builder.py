@@ -169,7 +169,8 @@ UEA_multivariate = [
 ]
 
 def main():
-    path = "/data/stympopper/UCR_PADDED/"
+    path = "/data/stympopper/UCR/"
+    output_path = "/data/stympopper/UCR/processed/"
     for dataset in tqdm(UCR2019_univariate, desc="Processing UCR datasets", unit="dataset", total=len(UCR2019_univariate)):
         if not os.path.exists(f"{path}/{dataset}"):
             os.mkdir(f"{path}/{dataset}")
@@ -180,10 +181,10 @@ def main():
             # Pad sequences to the maximum length
             X_train = np.array([np.pad(x[0], (0, max_length - len(x[0])), mode='constant') for x in X_train])
             X_test = np.array([np.pad(x[0], (0, max_length - len(x[0])), mode='constant') for x in X_test])
-            np.save(f"{path}/{dataset}/X_train.npy", X_train)
-            np.save(f"{path}/{dataset}/y_train.npy", y_train)
-            np.save(f"{path}/{dataset}/X_test.npy", X_test)
-            np.save(f"{path}/{dataset}/y_test.npy", y_test)
+            np.save(f"{output_path}/{dataset}/X_train.npy", X_train)
+            np.save(f"{output_path}/{dataset}/y_train.npy", y_train)
+            np.save(f"{output_path}/{dataset}/X_test.npy", X_test)
+            np.save(f"{output_path}/{dataset}/y_test.npy", y_test)
             # X_test = np.array([np.pad(x[0], (0, max_length_test - len(x[0])), mode='constant') for x in X_test])
             # np.save(f"{path}/{dataset}/X_train.npy", X_train)
             # np.save(f"{path}/{dataset}/y_train.npy", y_train)
