@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
+import pandas as pd
 import csv
 import pytorch_lightning as pl
 from torchmetrics import MetricCollection
@@ -164,6 +165,26 @@ class Mantis2_SOTA(pl.LightningModule):
             writer.writeheader()
             for row in output_data:
                 writer.writerow(row)
+        # Initialize a custom attribute to store predictions
+        self.test_predictions_storage = []
+
+        for batch in self.trainer.datamodule.test_dataloader():
+            batch_dict, _, _ = batch if isinstance(batch, (tuple, list)) else (batch, None, None)
+
+            x_test, y_test = batch_dict["val"]
+            if x_test.shape[2] % self.num_patches != 0:
+                x_test = resize(x_test)  # Resize to ensure divisibility by num_patches
+            x_eval_test = self.encoder.transform(x_test.to(self.encoder_device))
+            y_probs_test = self.clf.predict_proba(x_eval_test)
+            y_probs_ts_test = torch.tensor(y_probs_test, device=self.device)
+
+            # Store predictions and true labels for later use
+            self.test_predictions_storage.append({"probs": y_probs_ts_test.cpu(), "targets": y_test.cpu()})
+
+        df = pd.DataFrame(self.test_predictions_storage)
+        df.to_csv("mantis_rf_test_predictions.csv", index=False)
+
+        self.test_predictions_storage.clear()
 
     def configure_optimizers(self):
         # Dummy optimizer since Random Forest isn't trained via AdamW
