@@ -169,16 +169,26 @@ UEA_multivariate = [
 ]
 
 def main():
-    path = "/data/stympopper/UEA/"
-    for dataset in tqdm(UEA_multivariate, desc="Processing UEA datasets", unit="dataset", total=len(UEA_multivariate)):
+    path = "/data/stympopper/UCR_PADDED/"
+    for dataset in tqdm(UCR2019_univariate, desc="Processing UCR datasets", unit="dataset", total=len(UCR2019_univariate)):
         if not os.path.exists(f"{path}/{dataset}"):
             os.mkdir(f"{path}/{dataset}")
-            X_train, y_train = load_classification(dataset, split="train")
-            X_test, y_test = load_classification(dataset, split="test")
+            X_train, y_train = load_classification(dataset, split="train",load_equal_length=False)
+            X_test, y_test = load_classification(dataset, split="test",load_equal_length=False)
+            list_lengths = [len(x[0]) for x in X_train]
+            max_length = max(list_lengths)
+            # Pad sequences to the maximum length
+            X_train = np.array([np.pad(x[0], (0, max_length - len(x[0])), mode='constant') for x in X_train])
+            X_test = np.array([np.pad(x[0], (0, max_length - len(x[0])), mode='constant') for x in X_test])
             np.save(f"{path}/{dataset}/X_train.npy", X_train)
             np.save(f"{path}/{dataset}/y_train.npy", y_train)
             np.save(f"{path}/{dataset}/X_test.npy", X_test)
             np.save(f"{path}/{dataset}/y_test.npy", y_test)
+            # X_test = np.array([np.pad(x[0], (0, max_length_test - len(x[0])), mode='constant') for x in X_test])
+            # np.save(f"{path}/{dataset}/X_train.npy", X_train)
+            # np.save(f"{path}/{dataset}/y_train.npy", y_train)
+            # np.save(f"{path}/{dataset}/X_test.npy", X_test)
+            # np.save(f"{path}/{dataset}/y_test.npy", y_test)
 
 if __name__ == "__main__":
     main()
