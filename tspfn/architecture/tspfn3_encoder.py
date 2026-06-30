@@ -2231,59 +2231,6 @@ class TabPFNV3(Architecture):
                         row_chunk_by_channel.append(row_embedding_chunk)
 
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
-
-                    # row_embedding_chunk_by_column = []
-                    # for col in range(num_columns):
-                    #     row_embedding_chunk, _ = process_row_chunk(
-                    #         x_grouped_chunk_BRjCG=transposed_row_embedding_chunk[:, :, col],
-                    #         y_col_emb=y_col_emb_BNE,
-                    #         chunk_start=row_chunk_start,
-                    #         chunk_end=row_chunk_end,
-                    #         effective_num_train=effective_num_train,
-                    #         precomputed_hidden=(
-                    #             precomputed_hidden_by_column[col] if precomputed_hidden is not None else None
-                    #         ),
-                    #         save_peak_memory_factor=save_peak_memory_factor,
-                    #         force_recompute_layer=force_recompute_layer,
-                    #         return_inducing_hidden=False,
-                    #         is_full_path=is_full_path,
-                    #     )
-                    #     assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, Ch, E), got {row_embedding_chunk.shape}"
-                    #     row_embedding_chunk_by_column.append(row_embedding_chunk)
-                    # row_embedding_chunk = torch.stack(row_embedding_chunk_by_column, dim=2)
-
-                    # transposed_row_embedding_chunk = self.multi_channel_attention(
-                    #     row_embedding_chunk.flatten(2, 3).contiguous()
-                    # ).view_as(transposed_row_embedding_chunk)
-                    # row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
-
-                    # transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
-                    # row_embedding_chunk_list = []
-                    # for row in range(row_embedding_chunk.shape[1]):
-                    #     B, Ch, Cl, E = (
-                    #         row_embedding_chunk.shape[0],
-                    #         row_embedding_chunk.shape[2],
-                    #         row_embedding_chunk.shape[3],
-                    #         row_embedding_chunk.shape[4],
-                    #     )
-                    #     _transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
-                    #         transposed_row_embedding_chunk[:, row]
-                    #         .flatten(1, 2)
-                    #         .contiguous()
-                    #         .unsqueeze(2),  # (B, Cl*Ch, 1, E)
-                    #         transposed_row_embedding_chunk[:, row]
-                    #         .flatten(1, 2)
-                    #         .contiguous()
-                    #         .unsqueeze(2),  # (B, Cl*Ch, 1, E)
-                    #         transposed_row_embedding_chunk[:, row]
-                    #         .flatten(1, 2)
-                    #         .contiguous()
-                    #         .unsqueeze(2),  # (B, Cl*Ch, 1, E)
-                    #     ).view(B, Cl, Ch, E)  # (B, Cl, Ch, E)
-                    #     row_embedding_chunk_list.append(_transposed_row_embedding_chunk)
-                    # transposed_row_embedding_chunk = torch.stack(row_embedding_chunk_list, dim=1)
-                    # row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
-
                     transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
                     # --- REPLACE THE ENTIRE 'for row in range(...)' LOOP WITH THIS ---
                     B, R_chunk, Ch, Cl, E = row_embedding_chunk.shape
