@@ -158,7 +158,8 @@ class Mantis2_SOTA(pl.LightningModule):
         for metric_name, value in results.items():
             if "confusion_matrix" not in metric_name:  # Skip confusion matrix for logging
                 self.log(metric_name, value, prog_bar=True, on_epoch=True, on_step=False)
-            output_data.append({"metric": metric_name, "value": value.item()})
+                value = value.item() if isinstance(value, torch.Tensor) else value
+            output_data.append({"metric": metric_name, "value": value})
 
         metrics_collection["test_metrics"].reset()  # Reset metrics after logging
 
