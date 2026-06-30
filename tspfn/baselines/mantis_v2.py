@@ -156,7 +156,7 @@ class Mantis2_SOTA(pl.LightningModule):
             metrics_collection = self.metrics
         results = metrics_collection["test_metrics"].compute()
         for metric_name, value in results.items():
-            if metric_name != "confusion_matrix":  # Skip confusion matrix for logging
+            if "confusion_matrix" not in metric_name:  # Skip confusion matrix for logging
                 self.log(metric_name, value, prog_bar=True, on_epoch=True, on_step=False)
             output_data.append({"metric": metric_name, "value": value.item()})
 
