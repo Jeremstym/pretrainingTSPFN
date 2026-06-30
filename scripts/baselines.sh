@@ -95,6 +95,10 @@ ulimit -n 4096
 #   done
 # done
 
+for fold in 0 1 2 3 4; do
+   poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-MantisV2-RF/fold${fold}' data=evaluating-orchid +experiment=baselines/mantis_v2 seed=42 train=False test=True 'data.subsets.train=/data/stympopper/ORCHID/databaseALLTAB/split_to_5/${fold}/train_ALL.txt' 'data.subsets.val=/data/stympopper/ORCHID/databaseALLTAB/split_to_5/${fold}/val.txt' 'data.subsets.test=/data/stympopper/ORCHID/databaseALLTAB/split_to_5/${fold}/test_ALL.txt' +fold=$fold
+done
+
 # ----------------------------
 
 for fold in 0 1 2; do
