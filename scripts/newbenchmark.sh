@@ -155,6 +155,7 @@ for dataset in "${UCR2019_univariate[@]}"; do
         +experiment=finetuningTSPFN/cubepfn3-finetuning \
         data=benchmark/evaluating-ucrunivariate \
         data.dataset="$dataset" \
+        task.adaptable_metrics=True \
         seed=42 \
         +dataset="$dataset" \
         train=False \
