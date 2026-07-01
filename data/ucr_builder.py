@@ -186,7 +186,7 @@ def main():
                 if len(X_array[0]) < max_length:
                     X_array = np.pad(X_array, [(0,0),(0, max_length - len(X_array[0]))], mode='constant')
             if not os.path.exists(f"{output_path}/{dataset}"):
-                os.mkdir(f"{output_path}/{dataset}")
+                os.mkdir(f"{output_path}/{dataset}", exist_ok=True)
             np.save(f"{output_path}/{dataset}/X_train.npy", X_train)
             np.save(f"{output_path}/{dataset}/y_train.npy", y_train)
             np.save(f"{output_path}/{dataset}/X_test.npy", X_test)
