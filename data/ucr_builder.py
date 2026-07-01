@@ -179,8 +179,12 @@ def main():
             list_lengths = [len(x[0]) for x in X_train]
             max_length = max(list_lengths)
             # Pad sequences to the maximum length
-            X_train = np.array([np.pad(x[0], (0, max_length - len(x[0])), mode='constant') for x in X_train])
-            X_test = np.array([np.pad(x[0], (0, max_length - len(x[0])), mode='constant') for x in X_test])
+            for X_array in X_train:
+                if len(X_array[0]) < max_length:
+                    X_array = np.pad(X_array, [(0,0),(0, max_length - len(X_array[0]))], mode='constant')
+            for X_array in X_test:
+                if len(X_array[0]) < max_length:
+                    X_array = np.pad(X_array, [(0,0),(0, max_length - len(X_array[0]))], mode='constant')
             np.save(f"{output_path}/{dataset}/X_train.npy", X_train)
             np.save(f"{output_path}/{dataset}/y_train.npy", y_train)
             np.save(f"{output_path}/{dataset}/X_test.npy", X_test)
