@@ -176,13 +176,18 @@ def main():
             os.mkdir(f"{path}/{dataset}")
         X_train, y_train = load_classification(dataset, split="train",load_equal_length=False)
         X_test, y_test = load_classification(dataset, split="test",load_equal_length=False)
-        list_lengths = [len(x[0]) for x in X_train]
-        max_length = max(list_lengths)
+        list_lengths_train = [len(x[0]) for x in X_train]
+        max_length_train = max(list_lengths_train)
+        list_lengths_test = [len(x[0]) for x in X_test]
+        max_length_test = max(list_lengths_test)
+        max_length = max(max_length_train, max_length_test)
         # Pad sequences to the maximum length
         X_array_train_list = []
         for X_array in X_train:
             if len(X_array[0]) < max_length:
                 X_array = np.pad(X_array, [(0,0),(0, max_length - len(X_array[0]))], mode='constant')
+            elif len(X_array[0]) > max_length:
+                raise ValueError(f"Train sequence length {len(X_array[0])} is greater than max length {max_length} for dataset {dataset}.")
             X_array_train_list.append(X_array)
         X_train = np.array(X_array_train_list)
         print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
