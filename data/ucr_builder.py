@@ -174,34 +174,35 @@ def main():
     for dataset in tqdm(UCR2019_univariate, desc="Processing UCR datasets", unit="dataset", total=len(UCR2019_univariate)):
         if not os.path.exists(f"{path}/{dataset}"):
             os.mkdir(f"{path}/{dataset}")
-            X_train, y_train = load_classification(dataset, split="train",load_equal_length=False)
-            X_test, y_test = load_classification(dataset, split="test",load_equal_length=False)
-            list_lengths = [len(x[0]) for x in X_train]
-            max_length = max(list_lengths)
-            # Pad sequences to the maximum length
-            X_array_train_list = []
-            for X_array in X_train:
-                if len(X_array[0]) < max_length:
-                    X_array = np.pad(X_array, [(0,0),(0, max_length - len(X_array[0]))], mode='constant')
-                X_array_train_list.append(X_array)
-            X_train = np.array(X_array_train_list)
-            X_array_test_list = []
-            for X_array in X_test:
-                if len(X_array[0]) < max_length:
-                    X_array = np.pad(X_array, [(0,0),(0, max_length - len(X_array[0]))], mode='constant')
-                X_array_test_list.append(X_array)
-            X_test = np.array(X_array_test_list)
-            if not os.path.exists(f"{output_path}/{dataset}"):
-                os.makedirs(f"{output_path}/{dataset}", exist_ok=True)
-            np.save(f"{output_path}/{dataset}/X_train.npy", X_train)
-            np.save(f"{output_path}/{dataset}/y_train.npy", y_train)
-            np.save(f"{output_path}/{dataset}/X_test.npy", X_test)
-            np.save(f"{output_path}/{dataset}/y_test.npy", y_test)
-            # X_test = np.array([np.pad(x[0], (0, max_length_test - len(x[0])), mode='constant') for x in X_test])
-            # np.save(f"{path}/{dataset}/X_train.npy", X_train)
-            # np.save(f"{path}/{dataset}/y_train.npy", y_train)
-            # np.save(f"{path}/{dataset}/X_test.npy", X_test)
-            # np.save(f"{path}/{dataset}/y_test.npy", y_test)
+        X_train, y_train = load_classification(dataset, split="train",load_equal_length=False)
+        X_test, y_test = load_classification(dataset, split="test",load_equal_length=False)
+        list_lengths = [len(x[0]) for x in X_train]
+        max_length = max(list_lengths)
+        # Pad sequences to the maximum length
+        X_array_train_list = []
+        for X_array in X_train:
+            if len(X_array[0]) < max_length:
+                X_array = np.pad(X_array, [(0,0),(0, max_length - len(X_array[0]))], mode='constant')
+            X_array_train_list.append(X_array)
+        X_train = np.array(X_array_train_list)
+        print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
+        X_array_test_list = []
+        for X_array in X_test:
+            if len(X_array[0]) < max_length:
+                X_array = np.pad(X_array, [(0,0),(0, max_length - len(X_array[0]))], mode='constant')
+            X_array_test_list.append(X_array)
+        X_test = np.array(X_array_test_list)
+        print(f"X_test shape: {X_test.shape}, y_test shape: {y_test.shape}")
+        os.makedirs(f"{output_path}/{dataset}", exist_ok=True)
+        np.save(f"{output_path}/{dataset}/X_train.npy", X_train)
+        np.save(f"{output_path}/{dataset}/y_train.npy", y_train)
+        np.save(f"{output_path}/{dataset}/X_test.npy", X_test)
+        np.save(f"{output_path}/{dataset}/y_test.npy", y_test)
+        # X_test = np.array([np.pad(x[0], (0, max_length_test - len(x[0])), mode='constant') for x in X_test])
+        # np.save(f"{path}/{dataset}/X_train.npy", X_train)
+        # np.save(f"{path}/{dataset}/y_train.npy", y_train)
+        # np.save(f"{path}/{dataset}/X_test.npy", X_test)
+        # np.save(f"{path}/{dataset}/y_test.npy", y_test)
 
 if __name__ == "__main__":
     main()
