@@ -330,6 +330,9 @@ class CubePFNFineTuning(TSPFNSystem):
                 :, :, -1, :
             ]  # Take last token as output feature
 
+            #CHECK set ts_diff to none for evaluation purpose (remember to set it back to differentiate for training)
+            ts_diff = None
+
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
             if self.ts_tokenizer is None:
@@ -337,6 +340,10 @@ class CubePFNFineTuning(TSPFNSystem):
             else:
                 ts = torch.cat([ts_inference_support, ts_batch_query], dim=0)
             ts_diff = self.differentiate(ts) if self.differentiate is not None else None  # (B, S+Q, C, T)
+            
+            # CHECK set ts_diff to none for evaluation purpose (remember to set it back to differentiate for training)
+            ts_diff = None
+            
             y_train = y_inference_support
             if not return_logits:
                 out_features = self.encoder(
