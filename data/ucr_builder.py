@@ -190,6 +190,8 @@ def main():
         for X_array in X_test:
             if len(X_array[0]) < max_length:
                 X_array = np.pad(X_array, [(0,0),(0, max_length - len(X_array[0]))], mode='constant')
+            elif len(X_array[0]) > max_length:
+                raise ValueError(f"Test sequence length {len(X_array[0])} is greater than max length {max_length} for dataset {dataset}.")
             X_array_test_list.append(X_array)
         X_test = np.array(X_array_test_list)
         print(f"X_test shape: {X_test.shape}, y_test shape: {y_test.shape}")
