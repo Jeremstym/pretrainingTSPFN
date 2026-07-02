@@ -242,11 +242,19 @@ class UCRUnivariateDataModule(TSPFNDataModule):
         """Create datasets. Called on every process in distributed settings."""
         self.train_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="train")
         self.val_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="test")
+        self.support_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="train", fine_tune=True)
+        self.query_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="test", fine_tune=True)
 
         return
 
     def train_dataloader(self):
-        return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.query_dataset)
+        loaders = {
+            "val": self._dataloader(self.query_dataset, shuffle=False, batch_size=self.test_batch_size),
+            "train": self._dataloader(self.support_dataset, shuffle=False, batch_size=len(self.support_dataset)),
+        }
+        return CombinedLoader(loaders, mode="max_size_cycle")
 
     def val_dataloader(self):
         if self.test_batch_size is None:
@@ -258,8 +266,13 @@ class UCRUnivariateDataModule(TSPFNDataModule):
         return CombinedLoader(loaders, mode="max_size_cycle")
 
     def test_dataloader(self):
-        # This is identical to val_dataloader for the final evaluation
-        return self.val_dataloader()
+        if self.test_batch_size is None:
+            self.test_batch_size = len(self.val_dataset)
+        loaders = {
+            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
+            "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
+        }
+        return CombinedLoader(loaders, mode="max_size_cycle")
 
 
 class ECG5000DataModule(TSPFNDataModule):
