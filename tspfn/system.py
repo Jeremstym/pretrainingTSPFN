@@ -125,7 +125,8 @@ class TSPFNSystem(pl.LightningModule, ABC):
         if scheduler_cfg:
             total_steps = self.trainer.estimated_stepping_batches
             warmup_ratio = scheduler_cfg.get("warmup_ratio", 0.1)
-            steps_per_epoch = len(self.trainer.datamodule.train_dataloader())
+            # steps_per_epoch = len(self.trainer.datamodule.train_dataloader())
+            steps_per_epoch = self.trainer.num_training_batches
             total_training_steps = steps_per_epoch * total_steps
             # num_warmup = int(total_steps * warmup_ratio)
             num_warmup_steps = int(total_training_steps * warmup_ratio)
