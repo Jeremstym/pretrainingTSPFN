@@ -3,7 +3,7 @@ defaults:
 
 _target_: data.benchmark_data_module.UCRUnivariateDataModule
 data_roots: ${oc.env:UCR_UNIVARIATE_DATA_PATH}
-dataset: null
+dataset: null # Must be set to a valid dataset name from the UCR archive
 time_series_length: null
 time_points: null
 num_channels: null
