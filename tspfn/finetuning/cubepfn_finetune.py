@@ -486,16 +486,16 @@ class CubePFNFineTuning(TSPFNSystem):
         time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
         time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
 
-        print(f"time_series_input shape: {time_series_input.shape}, target_labels shape: {target_labels.shape}")
+        # print(f"time_series_input shape: {time_series_input.shape}, target_labels shape: {target_labels.shape}")
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels, evaluation=(not self.training)
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
         # B not equal to N (dataset batch size = 1 here)
 
         assert support_labels is not None, "Support labels must be provided for inference."
-        print(
-            f"time_series_support shape: {time_series_support.shape}, support_labels shape: {support_labels.shape}"
-        )
+        # print(
+        #     f"time_series_support shape: {time_series_support.shape}, support_labels shape: {support_labels.shape}"
+        # )
         # Store inference data for val/test steps
         y_train_support, _, ts_train_support, _ = self.process_data(
             time_series_attrs=time_series_support, labels=support_labels, evaluation=True
@@ -570,7 +570,7 @@ class CubePFNFineTuning(TSPFNSystem):
 
                 # Metrics are automatically updated inside the Metric objects
                 if num_classes > 2:
-                    print(f"Num classes: {num_classes}, target: {target}, y_hat: {y_hat.shape}")
+                    # print(f"Num classes: {num_classes}, target: {target}, y_hat: {y_hat.shape}")
                     self.metrics[stage][target_task].update(y_hat, target)
                 else:
                     target = target.long()
