@@ -163,8 +163,6 @@ class CubePFNFineTuning(TSPFNSystem):
                     hydra.utils.instantiate(
                         self.hparams["model"]["prediction_head"],
                     )
-                    # if target_task != "location"
-                    # else self.loc_head
                 )
 
         return encoder, prediction_heads
