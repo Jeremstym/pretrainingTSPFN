@@ -584,6 +584,14 @@ class CubePFNFineTuning(TSPFNSystem):
 
         return metrics
 
+    def on_train_start(self):
+        # Initialize a custom attribute to store predictions
+        self.test_predictions_storage = []
+
+    def on_validation_start(self):
+        # Initialize a custom attribute to store predictions
+        self.test_predictions_storage = []
+
     def on_test_start(self):
         # Initialize a custom attribute to store predictions
         self.test_predictions_storage = []
