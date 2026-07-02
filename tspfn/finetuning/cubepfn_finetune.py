@@ -53,6 +53,7 @@ class CubePFNFineTuning(TSPFNSystem):
         time_series_length: int = 1000,
         channel_handler: Literal["average", "flatten", "convolution", "labram"] = None,
         use_tokenizer: bool = False,
+        differentiate_ts: bool = False,
         num_classes: int = 10,
         adaptable_metrics: bool = False,
         return_logits: bool = False,
@@ -104,6 +105,7 @@ class CubePFNFineTuning(TSPFNSystem):
         self.num_classes = num_classes
         self.adaptable_metrics = adaptable_metrics
         self.return_logits = return_logits
+        self.differentiate_ts = differentiate_ts
 
         self.configure_metrics()
 
@@ -127,9 +129,12 @@ class CubePFNFineTuning(TSPFNSystem):
         else:
             raise ValueError(f"Unknown foundation model name '{channel_handler}' provided.")
 
-        self.differentiate = hydra.utils.instantiate(
-            self.hparams["differentiate"],
-        )
+        if differentiate_ts:
+            self.differentiate = hydra.utils.instantiate(
+                self.hparams["differentiate"],
+            )
+        else:
+            self.differentiate = None
 
     @property
     def example_input_array(self) -> Tensor:
@@ -330,9 +335,6 @@ class CubePFNFineTuning(TSPFNSystem):
                 :, :, -1, :
             ]  # Take last token as output feature
 
-            #CHECK set ts_diff to none for evaluation purpose (remember to set it back to differentiate for training)
-            ts_diff = None
-
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
             if self.ts_tokenizer is None:
@@ -340,9 +342,6 @@ class CubePFNFineTuning(TSPFNSystem):
             else:
                 ts = torch.cat([ts_inference_support, ts_batch_query], dim=0)
             ts_diff = self.differentiate(ts) if self.differentiate is not None else None  # (B, S+Q, C, T)
-            
-            # CHECK set ts_diff to none for evaluation purpose (remember to set it back to differentiate for training)
-            ts_diff = None
             
             y_train = y_inference_support
             if not return_logits:
