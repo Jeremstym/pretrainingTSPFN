@@ -149,24 +149,9 @@ UCR2019_univariate=(
     "Yoga"
 )
 
-for dataset in "${UCR2019_univariate[@]}"; do
-    poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-Mantis-NoDiff/seed\${seed}" \
-        +experiment=finetuningTSPFN/cubepfn3-finetuning \
-        data=benchmark/evaluating-ucrunivariate \
-        data.dataset="$dataset" \
-        task.adaptable_metrics=True \
-        seed=42 \
-        +dataset="$dataset" \
-        train=False \
-        test=True \
-        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubepfn-pretrained-mantis-nodiff.ckpt" \
-        strict=False
-done
-
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
-#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-Mantis/seed\${seed}" \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-Mantis-NoDiff/seed\${seed}" \
 #         +experiment=finetuningTSPFN/cubepfn3-finetuning \
 #         data=benchmark/evaluating-ucrunivariate \
 #         data.dataset="$dataset" \
@@ -175,21 +160,36 @@ done
 #         +dataset="$dataset" \
 #         train=False \
 #         test=True \
-#         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubepfn-pretrained-mantis-v2.ckpt" \
+#         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubepfn-pretrained-mantis-nodiff.ckpt" \
 #         strict=False
 # done
 
 for dataset in "${UCR2019_univariate[@]}"; do
     poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-MantisV2-RF/seed\${seed}" \
-        +experiment=baselines/mantis_v2 \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-Mantis/seed\${seed}" \
+        +experiment=finetuningTSPFN/cubepfn3-finetuning \
         data=benchmark/evaluating-ucrunivariate \
         data.dataset="$dataset" \
+        task.adaptable_metrics=True \
         seed=42 \
         +dataset="$dataset" \
         train=False \
-        test=True
+        test=True \
+        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubepfn-pretrained-mantis-v2.ckpt" \
+        strict=False
 done
+
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-MantisV2-RF/seed\${seed}" \
+#         +experiment=baselines/mantis_v2 \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=False \
+#         test=True
+# done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
@@ -266,33 +266,33 @@ done
 #         strict=False
 # done
 
-for dataset in "${UCR2019_univariate[@]}"; do
-    poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN-v3-attchanCLSAVG/seed\${seed}" \
-        +experiment=finetuningTSPFN/tspfn3-finetuning \
-        data=benchmark/evaluating-ucrunivariate \
-        data.dataset="$dataset" \
-        task.adaptable_metrics=True \
-        seed=42 \
-        +dataset="$dataset" \
-        train=False \
-        test=True \
-        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubePFN3-pretrained-attchanCLSAVG.ckpt"
-done
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN-v3-attchanCLSAVG/seed\${seed}" \
+#         +experiment=finetuningTSPFN/tspfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=False \
+#         test=True \
+#         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubePFN3-pretrained-attchanCLSAVG.ckpt"
+# done
 
-for dataset in "${UCR2019_univariate[@]}"; do
-    poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubeICL-v3-attchanCLSAVG/seed\${seed}" \
-        +experiment=finetuningTSPFN/tspfn3-finetuning \
-        data=benchmark/evaluating-ucrunivariate \
-        data.dataset="$dataset" \
-        task.adaptable_metrics=True \
-        seed=42 \
-        +dataset="$dataset" \
-        train=False \
-        test=True \
-        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubeICL3-pretrained-attchanCLSAVG.ckpt"
-done
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubeICL-v3-attchanCLSAVG/seed\${seed}" \
+#         +experiment=finetuningTSPFN/tspfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=False \
+#         test=True \
+#         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubeICL3-pretrained-attchanCLSAVG.ckpt"
+# done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
