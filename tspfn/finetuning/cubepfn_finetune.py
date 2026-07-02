@@ -423,6 +423,7 @@ class CubePFNFineTuning(TSPFNSystem):
                 ts_support,
                 ts_query,
                 already_tokenized=already_tokenized,
+                return_logits=self.return_logits,
             )  # (B, S, E) -> (B, E)
 
         # Early return if requested task requires no prediction heads
