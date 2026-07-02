@@ -451,23 +451,23 @@ class UCRUnivariateDataset(Dataset):
         self.X = np.load(os.path.join(self.root, self.dataset, f"X_{split}.npy"))
         self.Y = np.load(os.path.join(self.root, self.dataset, f"y_{split}.npy")).astype(int)
 
-        # 2. Filter for Top 10 Labels if necessary
-        unique_labels, counts = np.unique(self.Y, return_counts=True)
+        # # 2. Filter for Top 10 Labels if necessary
+        # unique_labels, counts = np.unique(self.Y, return_counts=True)
         
-        if len(unique_labels) > 10:
-            print(f"Dataset has {len(unique_labels)} classes. Reducing to top 10.")
+        # if len(unique_labels) > 10:
+        #     print(f"Dataset has {len(unique_labels)} classes. Reducing to top 10.")
             
-            # Get indices of the 10 most frequent labels
-            # sort_indices sorts ascending, so we take the last 10
-            top_10_indices = np.argsort(counts)[-10:]
-            top_10_labels = unique_labels[top_10_indices]
+        #     # Get indices of the 10 most frequent labels
+        #     # sort_indices sorts ascending, so we take the last 10
+        #     top_10_indices = np.argsort(counts)[-10:]
+        #     top_10_labels = unique_labels[top_10_indices]
             
-            # Create a mask to filter the data
-            mask = np.isin(self.Y, top_10_labels)
-            self.X = self.X[mask]
-            self.Y = self.Y[mask]
+        #     # Create a mask to filter the data
+        #     mask = np.isin(self.Y, top_10_labels)
+        #     self.X = self.X[mask]
+        #     self.Y = self.Y[mask]
 
-        # 3. Re-encode labels to be contiguous (0 to 9)
+        # 2. Re-encode labels to be contiguous (0 to 9)
         le = LabelEncoder()
         self.Y = le.fit_transform(self.Y)
         
