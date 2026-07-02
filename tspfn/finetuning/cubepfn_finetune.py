@@ -248,7 +248,7 @@ class CubePFNFineTuning(TSPFNSystem):
         """
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        if not evaluation or summary_mode:
+        if summary_mode:
             ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = half_batch_split(
                 data=time_series_attrs,
                 labels=labels,
@@ -259,41 +259,16 @@ class CubePFNFineTuning(TSPFNSystem):
             y_batch_support = labels.to(self.device)  # (Support, 1)
             y_batch_query = labels.to(self.device)  # (Query, 1)
 
-        if self.ts_foundation is not None:
-            ts_batch_support = self.ts_foundation(
-                ts_batch_support,
-                input_chans=list(range(self.ts_num_channels)),
-            )  # (Support, num_tokens)
-            ts_batch_query = self.ts_foundation(
-                ts_batch_query,
-                input_chans=list(range(self.ts_num_channels)),
-            )  # (Query, num_tokens)
 
-            # Unsqueeze to comply with expected input shape for TabPFN encoder
-            if ts_batch_support.ndim == 2:
-                ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C*T)
-            if ts_batch_query.ndim == 2:
-                ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C*T)
-            if y_batch_support.ndim == 1:
-                y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
-            if y_batch_query.ndim == 1:
-                y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
-
-        elif self.ts_tokenizer is not None:
-            ts_batch_support = self.ts_tokenizer(ts_batch_support)  # (Support, C, num_tokens, E)
-            ts_batch_query = self.ts_tokenizer(ts_batch_query)  # (Query, C, num_tokens, E)
-
-        if self.ts_foundation is None:
-
-            # Unsqueeze to comply with expected input shape for TabPFN encoder
-            if ts_batch_support.ndim == 3:
-                ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C, T)
-            if ts_batch_query.ndim == 3:
-                ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C, T)
-            if y_batch_support.ndim == 1:
-                y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
-            if y_batch_query.ndim == 1:
-                y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
+        # Unsqueeze to comply with expected input shape for TabPFN encoder
+        if ts_batch_support.ndim == 3:
+            ts_batch_support = ts_batch_support.unsqueeze(0)  # (1, Support, C, T)
+        if ts_batch_query.ndim == 3:
+            ts_batch_query = ts_batch_query.unsqueeze(0)  # (1, Query, C, T)
+        if y_batch_support.ndim == 1:
+            y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
+        if y_batch_query.ndim == 1:
+            y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
 
         return (
             y_batch_support,
@@ -457,10 +432,6 @@ class CubePFNFineTuning(TSPFNSystem):
                 pred = prediction_head(prediction)
                 predictions[target_task] = pred.squeeze(dim=0).squeeze(dim=0)  # (B=Query, num_classes)
 
-            # # Squeeze out the singleton dimension from the predictions' features (only relevant for scalar predictions)
-            # predictions = {target_task: prediction.squeeze(dim=1) for target_task, prediction in predictions.items()}
-            # return predictions
-
         else:
             raise ValueError(f"Unknown task '{task}' requested for forward pass.")
 
@@ -501,17 +472,10 @@ class CubePFNFineTuning(TSPFNSystem):
         batch: Union[Tensor, Tuple[Tensor, ...]],
         num_classes: int,
     ) -> Dict[str, Tensor]:
-        # Forward pass through the encoder without gradient computation to fine-tune only the prediction heads
-        assert (
-            self.prediction_heads is not None
-        ), "You requested to perform a prediction task, but the model does not include any prediction heads."
-        if self.training:
-            time_series_input, target_labels = batch  # (N, C, T), (N,)
-            time_series_support = None
-        else:
-            batch_dict, _, _ = batch
-            time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
-            time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
+        
+        batch_dict, _, _ = batch
+        time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
+        time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
 
         print(f"time_series_input shape: {time_series_input.shape}, target_labels shape: {target_labels.shape}")
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
@@ -519,23 +483,19 @@ class CubePFNFineTuning(TSPFNSystem):
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
         # B not equal to N (dataset batch size = 1 here)
 
-        if time_series_support is not None:
-            assert support_labels is not None, "Support labels must be provided for inference."
-            print(
-                f"time_series_support shape: {time_series_support.shape}, support_labels shape: {support_labels.shape}"
+        assert support_labels is not None, "Support labels must be provided for inference."
+        print(
+            f"time_series_support shape: {time_series_support.shape}, support_labels shape: {support_labels.shape}"
+        )
+        # Store inference data for val/test steps
+        y_train_support, _, ts_train_support, _ = self.process_data(
+            time_series_attrs=time_series_support, labels=support_labels, evaluation=True
+        )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+        y_inference_support = y_train_support
+        if self.ts_tokenizer is None and self.ts_foundation is None:
+            ts_train_support, ts_query, y_inference_support, y_query = z_scoring_per_channel(
+                ts_train_support, ts_query, y_inference_support, y_batch_query
             )
-            # Store inference data for val/test steps
-            y_train_support, _, ts_train_support, _ = self.process_data(
-                time_series_attrs=time_series_support, labels=support_labels, evaluation=True
-            )  # (B, Support, 1), (B, Query, 1), (B, S, T)
-            y_inference_support = y_train_support
-            if self.ts_tokenizer is None and self.ts_foundation is None:
-                ts_train_support, ts_query, y_inference_support, y_query = z_scoring_per_channel(
-                    ts_train_support, ts_query, y_inference_support, y_batch_query
-                )
-        else:
-            y_inference_support = None
-            ts_train_support = None
 
         already_tokenized = self.ts_tokenizer is not None
         prediction = self.encode(
