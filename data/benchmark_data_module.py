@@ -248,28 +248,22 @@ class UCRUnivariateDataModule(TSPFNDataModule):
         return
 
     def train_dataloader(self):
-        if self.test_batch_size is None:
-            self.test_batch_size = len(self.query_dataset)
         loaders = {
-            "val": self._dataloader(self.query_dataset, shuffle=False, batch_size=self.test_batch_size),
+            "val": self._dataloader(self.query_dataset, shuffle=False, batch_size=len(self.query_dataset)),
             "train": self._dataloader(self.support_dataset, shuffle=False, batch_size=len(self.support_dataset)),
         }
         return CombinedLoader(loaders, mode="max_size_cycle")
 
     def val_dataloader(self):
-        if self.test_batch_size is None:
-            self.test_batch_size = len(self.query_dataset)
         loaders = {
-            "val": self._dataloader(self.query_dataset, shuffle=False, batch_size=self.test_batch_size),
+            "val": self._dataloader(self.query_dataset, shuffle=False, batch_size=len(self.query_dataset)),
             "train": self._dataloader(self.support_dataset, shuffle=False, batch_size=len(self.support_dataset)),
         }
         return CombinedLoader(loaders, mode="max_size_cycle")
 
     def test_dataloader(self):
-        if self.test_batch_size is None:
-            self.test_batch_size = len(self.val_dataset)
         loaders = {
-            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
+            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset)),
             "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
         }
         return CombinedLoader(loaders, mode="max_size_cycle")
