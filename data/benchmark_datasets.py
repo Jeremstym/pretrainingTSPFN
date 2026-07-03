@@ -472,6 +472,10 @@ class UCRUnivariateDataset(Dataset):
             # 2. Re-encode labels to be contiguous (0 to 9)
             le = LabelEncoder()
             self.Y = le.fit_transform(self.Y)
+
+            print(f"Final labels in {split} split: {np.unique(self.Y).shape[0]}")
+            print(f"Class counts in {split} split: {np.unique(self.Y, return_counts=True)}")
+
         else:
             print(f"Loading UCR Univariate dataset for fine-tuning: {dataset}, split: {split}")
 
@@ -489,12 +493,14 @@ class UCRUnivariateDataset(Dataset):
             if split == "train":
                 self.X = X_train
                 self.Y = Y_train
+                subsplit = "support"
             else:
                 self.X = X_test
                 self.Y = Y_test
+                subsplit = "query"
             
-        print(f"Final labels in {split} split: {np.unique(self.Y).shape[0]}")
-        print(f"Class counts in {split} split: {np.unique(self.Y, return_counts=True)}")
+            print(f"Final labels in {subsplit} split: {np.unique(self.Y).shape[0]}")
+            print(f"Class counts in {subsplit} split: {np.unique(self.Y, return_counts=True)}")
 
     def __len__(self):
         return len(self.X)
