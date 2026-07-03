@@ -526,8 +526,6 @@ class CubePFNFineTuning(TSPFNSystem):
         # Convert target to long if classification with >2 classes, float otherwise
         y_num_classes = np.unique(target.cpu()).shape[0]
         if y_num_classes != self.num_classes and self.adaptable_metrics:
-            print(f"Target is {target}, unique classes: {np.unique(target.cpu())}, number of classes: {y_num_classes}")
-            print(f"Adapting number of classes from {self.num_classes} to {y_num_classes}")
             num_classes = y_num_classes
             self.num_classes = num_classes
             # Re instance metrics
