@@ -51,7 +51,9 @@ ENCODING_SIZE_MULTIPLIER = 2
 if TYPE_CHECKING:
     from tabpfn.constants import TaskType
 
-import logging
+import logging as _logging
+_logger = _logging.getLogger(__name__)
+
 
 """The TabPFN v2.5 architecture.
 
