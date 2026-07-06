@@ -114,7 +114,7 @@ def main():
 
 def main_v3():
     # Define the path to the directory containing the results
-    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-CubePFN3-Mantis.*")
+    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-CubePFN3-Mantis/*")
 
     # Initialize a list to store the results
     results = []
