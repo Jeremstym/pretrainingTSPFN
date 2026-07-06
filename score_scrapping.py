@@ -200,4 +200,4 @@ def main_mantis_rf():
 
 
 if __name__ == "__main__":
-    main_v3()
+    main_mantis_rf()
