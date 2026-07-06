@@ -2,7 +2,7 @@
 
 defaults:
   - /task/model/contrastive_head: linear
-  - /task/model/encoder: tspfn3-encoder-mantis
+  - /task/model/encoder: cubepfn2p5-pretraining
   - /task/model/tokenizer: null
   - override /task/model: null
   - override /task/optim: adamw

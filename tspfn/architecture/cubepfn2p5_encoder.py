@@ -977,6 +977,7 @@ class TabPFNV2p5(Architecture):
         self,
         x: torch.Tensor | dict[str, torch.Tensor],
         y: torch.Tensor | dict[str, torch.Tensor] | None,
+        ts_diff: torch.Tensor | None = None,
         *,
         only_return_standard_out: bool = True,
         categorical_inds: list[list[int]] | None = None,
@@ -1648,11 +1649,9 @@ class CubePFNEncoder(nn.Module, ABC):
         """
         # x is (Ri, B, C, T) and y is (train_size, B)
         # x = x.flatten(-2)  # (Ri, B, C, T) -> (Ri, B, C*T)
-        ts_emb = self.model(ts, y, performance_options=self.performance_options).squeeze(0)
-        if ts_diff is not None and self.pretraining:
-            diff_emb = self.model(ts_diff, y, performance_options=self.performance_options).squeeze(0)
-            ts_emb = torch.cat([ts_emb["train_embeddings"], ts_emb["test_embeddings"]], dim=0)
-            ts_diff_emb = torch.cat([diff_emb["train_embeddings"], diff_emb["test_embeddings"]], dim=0)
-            return ts_emb, diff_emb
-        else:
+        ts_emb = self.model(ts, y, ts_diff, performance_options=self.performance_options).squeeze(0)
+        if not self.pretraining:
             return ts_emb["standard"]
+        else:
+            ts_emb = torch.cat([ts_emb["train_embeddings"], ts_emb["test_embeddings"]], dim=0)
+            return ts_emb

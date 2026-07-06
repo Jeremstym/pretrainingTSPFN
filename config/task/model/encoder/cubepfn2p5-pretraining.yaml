@@ -1,5 +1,6 @@
 _target_: tspfn.architecture.cubepfn2p5_encoder.CubePFNEncoder
 seed: ${seed}
+pretraining: False
 use_checkpoint: True
 tabpfn_kwargs:
   model_path: ${oc.env:LARGETABPFN2p5_MODEL_PATH}

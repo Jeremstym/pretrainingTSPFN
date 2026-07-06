@@ -133,26 +133,6 @@ class CubePFNPretraining(TSPFNSystem):
             for param in self.encoder.parameters():
                 param.requires_grad = False
 
-        no_decay = ["bias", "LayerNorm.weight", "BatchNorm.weight", "ln_"]
-        # wd_value = float(optimizer_cfg.get("weight_decay", 0.01))
-        # optimizer_grouped_parameters = [
-        #     {
-        #         "params": [
-        #             p
-        #             for n, p in self.encoder.named_parameters()
-        #             if not any(nd in n for nd in no_decay) and p.requires_grad
-        #         ],
-        #         "weight_decay": self.hparams["optim"]["optimizer"]["weight_decay"],
-        #     },
-        #     {
-        #         "params": [
-        #             p
-        #             for n, p in self.encoder.named_parameters()
-        #             if any(nd in n for nd in no_decay) and p.requires_grad
-        #         ],
-        #         "weight_decay": 0.0,
-        #     },
-        # ]
         optimizer_grouped_parameters = None
         return super().configure_optimizers(params=optimizer_grouped_parameters)
 
@@ -250,24 +230,23 @@ class CubePFNPretraining(TSPFNSystem):
         losses, metrics = {}, {}
 
         for contrastive_task, target_loss in self.contrastive_losses.items():
-            if "channel_wise" in contrastive_task:
-                loss_val = 0
-                num_channels = ts_proj_aug1.shape[1]
-                for channel in range(num_channels):
-                    loss_val += target_loss(
-                        ts_proj_aug1[:, channel, :],
-                        ts_proj_aug2[:, channel, :],
-                        # freq_proj[:, channel, :],
-                        crop_proj[:, channel, :],
-                    )
-                metrics.update({f"{contrastive_task}_loss_channel": loss_val})
-            elif "augmentation_wise" in contrastive_task:
-                loss_val = (
-                    target_loss(ts_proj_aug1) + target_loss(ts_proj_aug2) + target_loss(crop_proj)
-                )
-                metrics.update({f"{contrastive_task}_loss_augmentation": loss_val})
+            # if "channel_wise" in contrastive_task:
+            #     loss_val = 0
+            #     num_channels = ts_proj_aug1.shape[1]
+            #     for channel in range(num_channels):
+            #         loss_val += target_loss(
+            #             ts_proj_aug1[:, channel, :],
+            #             ts_proj_aug2[:, channel, :],
+            #             crop_proj[:, channel, :],
+            #         )
+            #     metrics.update({f"{contrastive_task}_loss_channel": loss_val})
+            # elif "augmentation_wise" in contrastive_task:
+            #     loss_val = (
+            #         target_loss(ts_proj_aug1) + target_loss(ts_proj_aug2) + target_loss(crop_proj)
+            #     )
+            #     metrics.update({f"{contrastive_task}_loss_augmentation": loss_val})
             
-            elif "mantis_style" in contrastive_task:
+            if "contrastive_mantis" in contrastive_task:
                 loss_val = target_loss(ts_proj_aug1, ts_proj_aug2)
                 metrics.update({f"{contrastive_task}_loss_mantis": loss_val})
             else:
