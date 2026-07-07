@@ -109,7 +109,7 @@ class Mantis2_SOTA(pl.LightningModule):
             all_y.append(y)
 
         X_train = torch.cat(all_x, dim=0)
-        y_train = torch.cat(all_y, dim=0).cpu().numpy()  # Convert to numpy for Random Forest
+        y_train = torch.cat(all_y, dim=0)
         print(f"--- Training Data Loaded: {X_train.shape[0]} samples ---")
         print(f"Mantis Parameters: {self.mantis_params}")
 
@@ -117,6 +117,7 @@ class Mantis2_SOTA(pl.LightningModule):
             print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
             X_train = self.encoder.transform(X_train.to(self.encoder_device))
             print(f"--- Mantis Embedding Complete: {X_train.shape[0]} samples ---")
+            y_train = y_train.cpu().numpy() # Convert to numpy for Random Forest
             self.clf.fit(X_train, y_train)
             print(f"--- Random Forest Fit Complete ({len(X_train)} samples) ---")
         else:
