@@ -18,26 +18,26 @@ ulimit -n 4096
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN-Benchmark/ecgfivedays-TSPFN/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=benchmark/evaluating-ecgfivedays seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" task.time_series_positional_encoding=cwpe+rope
 
 UCR2019_univariate=(
-    # "ACSF1"
-    # "Adiac"
-    # "AllGestureWiimoteX"
-    # "AllGestureWiimoteY"
-    # "AllGestureWiimoteZ"
-    # "ArrowHead"
-    # "Beef"
-    # "BeetleFly"
-    # "BirdChicken"
-    # "BME"
-    # "Car"
-    # "CBF"
-    # "Chinatown"
-    # "ChlorineConcentration"
-    # "CinCECGTorso"
-    # "Coffee"
-    # "Computers"
-    # "CricketX"
-    # "CricketY"
-    # "CricketZ"
+    "ACSF1"
+    "Adiac"
+    "AllGestureWiimoteX"
+    "AllGestureWiimoteY"
+    "AllGestureWiimoteZ"
+    "ArrowHead"
+    "Beef"
+    "BeetleFly"
+    "BirdChicken"
+    "BME"
+    "Car"
+    "CBF"
+    "Chinatown"
+    "ChlorineConcentration"
+    "CinCECGTorso"
+    "Coffee"
+    "Computers"
+    "CricketX"
+    "CricketY"
+    "CricketZ"
     # "Crop"
     "DiatomSizeReduction"
     # "DistalPhalanxOutlineAgeGroup"
@@ -150,18 +150,32 @@ UCR2019_univariate=(
 
 for dataset in "${UCR2019_univariate[@]}"; do
     poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-Mantis-FineTune/seed\${seed}" \
-        +experiment=finetuningTSPFN/cubepfn3-finetuning \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-MantisV2-FineTune/seed\${seed}" \
+        +experiment=baselines/mantis_v2 \
         data=benchmark/evaluating-ucrunivariate \
         data.dataset="$dataset" \
-        task.adaptable_metrics=True \
+        data.mantis_training=True \
         seed=42 \
         +dataset="$dataset" \
-        train=True \
-        test=True \
-        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubepfn-pretrained-mantis-v2.ckpt" \
-        strict=False
+        task.finetuning=True \
+        train=False \
+        test=True
 done
+
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-Mantis-FineTune/seed\${seed}" \
+#         +experiment=finetuningTSPFN/cubepfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=True \
+#         test=True \
+#         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubepfn-pretrained-mantis-v2.ckpt" \
+#         strict=False
+# done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
@@ -191,18 +205,6 @@ done
 #         test=True \
 #         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubepfn-pretrained-mantis-v2.ckpt" \
 #         strict=False
-# done
-
-# for dataset in "${UCR2019_univariate[@]}"; do
-#     poetry run tspfn-pretrain \
-#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-MantisV2-RF/seed\${seed}" \
-#         +experiment=baselines/mantis_v2 \
-#         data=benchmark/evaluating-ucrunivariate \
-#         data.dataset="$dataset" \
-#         seed=42 \
-#         +dataset="$dataset" \
-#         train=False \
-#         test=True
 # done
 
 # for dataset in "${UCR2019_univariate[@]}"; do

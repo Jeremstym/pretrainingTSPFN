@@ -7,6 +7,7 @@ dataset: null # Must be set to a valid dataset name from the UCR archive
 time_series_length: 512 # For example input array
 num_channels: 4 # For example input array
 num_classes: 10
+mantis_training: False
 
 predict_losses:
   classification:

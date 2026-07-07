@@ -222,6 +222,7 @@ class UCRUnivariateDataModule(TSPFNDataModule):
         test_batch_size: Optional[int] = None,
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
+        mantis_training: bool = False,
         seed: int = 42,
         **kwargs,
     ) -> None:
@@ -235,38 +236,48 @@ class UCRUnivariateDataModule(TSPFNDataModule):
             transform=transform,
             seed=seed,
         )
-
+        self.mantis_training = mantis_training
         print(f"num workers: {self.num_workers}")
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Create datasets. Called on every process in distributed settings."""
         self.train_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="train")
         self.val_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="test")
-        self.support_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="train", fine_tune=True)
-        self.query_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="test", fine_tune=True)
+        if not self.mantis_training:
+            self.support_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="train", fine_tune=True)
+            self.query_dataset = UCRUnivariateDataset(root=self.data_roots, dataset=self.dataset, split="test", fine_tune=True)
 
         return
 
     def train_dataloader(self):
-        loaders = {
-            "val": self._dataloader(self.query_dataset, shuffle=False, batch_size=len(self.query_dataset)),
-            "train": self._dataloader(self.support_dataset, shuffle=False, batch_size=len(self.support_dataset)),
-        }
-        return CombinedLoader(loaders, mode="max_size_cycle")
+        if not self.mantis_training:
+            loaders = {
+                "val": self._dataloader(self.query_dataset, shuffle=False, batch_size=len(self.query_dataset)),
+                "train": self._dataloader(self.support_dataset, shuffle=False, batch_size=len(self.support_dataset)),
+            }
+            return CombinedLoader(loaders, mode="max_size_cycle")
+        else:
+            return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
 
     def val_dataloader(self):
-        loaders = {
-            "val": self._dataloader(self.query_dataset, shuffle=False, batch_size=len(self.query_dataset)),
-            "train": self._dataloader(self.support_dataset, shuffle=False, batch_size=len(self.support_dataset)),
-        }
-        return CombinedLoader(loaders, mode="max_size_cycle")
+        if not self.mantis_training:
+            loaders = {
+                "val": self._dataloader(self.query_dataset, shuffle=False, batch_size=len(self.query_dataset)),
+                "train": self._dataloader(self.support_dataset, shuffle=False, batch_size=len(self.support_dataset)),
+            }
+            return CombinedLoader(loaders, mode="max_size_cycle")
+        else:
+            return self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset))
 
     def test_dataloader(self):
-        loaders = {
-            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset)),
-            "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
-        }
-        return CombinedLoader(loaders, mode="max_size_cycle")
+        if not self.mantis_training:
+            loaders = {
+                "val": self._dataloader(self.query_dataset, shuffle=False, batch_size=len(self.query_dataset)),
+                "train": self._dataloader(self.support_dataset, shuffle=False, batch_size=len(self.support_dataset)),
+            }
+            return CombinedLoader(loaders, mode="max_size_cycle")
+        else:
+            return self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset))
 
 
 class ECG5000DataModule(TSPFNDataModule):
