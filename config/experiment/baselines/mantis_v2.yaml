@@ -26,6 +26,7 @@ task:
   _target_: tspfn.baselines.mantis_v2.Mantis2_SOTA
   num_classes: ${data.num_classes}
   num_channels: ${data.num_channels}
+  finetuning: False
   mantis_params:
     num_patches: 32
     output_token: cls_token

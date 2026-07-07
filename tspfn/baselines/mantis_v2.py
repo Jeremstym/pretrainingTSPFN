@@ -37,12 +37,14 @@ class Mantis2_SOTA(pl.LightningModule):
         num_channels: int = 1,
         mantis_params: dict = None,
         rf_params: dict = None,
+        finetuning: bool = False,
         **kwargs,
     ):
         super().__init__()
         self.save_hyperparameters()
         self.num_classes = num_classes
         self.num_channels = num_channels
+        self.finetuning = finetuning
         print(f"num_classes: {num_classes}, num_channels: {num_channels}")
         # Optimized Mantis params for large tabular data
         self.mantis_params = mantis_params
@@ -111,11 +113,21 @@ class Mantis2_SOTA(pl.LightningModule):
         print(f"--- Training Data Loaded: {X_train.shape[0]} samples ---")
         print(f"Mantis Parameters: {self.mantis_params}")
 
-        print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
-        X_train = self.encoder.transform(X_train.to(self.encoder_device))
-        print(f"--- Mantis Embedding Complete: {X_train.shape[0]} samples ---")
-        self.clf.fit(X_train, y_train)
-        print(f"--- Random Forest Fit Complete ({len(X_train)} samples) ---")
+        if not self.finetuning:
+            print(f"Support shape: {X_train.shape}, Labels shape: {y_train.shape}")
+            X_train = self.encoder.transform(X_train.to(self.encoder_device))
+            print(f"--- Mantis Embedding Complete: {X_train.shape[0]} samples ---")
+            self.clf.fit(X_train, y_train)
+            print(f"--- Random Forest Fit Complete ({len(X_train)} samples) ---")
+        else:
+            print("Fine-tuning Mantis on training data...")
+            self.encoder.fit(X_train.to(self.encoder_device), y_train)
+            print("Fine-tuning complete.")
+
+            print("Extracting fine-tuned embeddings for Random Forest...")
+            X_train_embedded = self.encoder.transform(X_train.to(self.encoder_device))
+            self.clf.fit(X_train_embedded, y_train)
+            print("--- Random Forest Fit Complete ---")
 
         num_classes = np.unique(y_train).shape[0]
         if self.num_classes != num_classes:
