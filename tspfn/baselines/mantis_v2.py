@@ -136,11 +136,14 @@ class Mantis2_SOTA(pl.LightningModule):
             self.configure_metrics(device="cpu")  # Reconfigure metrics if number of classes has changed
 
     def test_step(self, batch, batch_idx):
-        batch_dict, _, _ = batch if isinstance(batch, (tuple, list)) else (batch, None, None)
-        if "val" not in batch_dict:
-            raise ValueError("Expected 'val' key in batch for validation data.")
+        if not self.finetuning:
+            batch_dict, _, _ = batch if isinstance(batch, (tuple, list)) else (batch, None, None)
+            if "val" not in batch_dict:
+                raise ValueError("Expected 'val' key in batch for validation data.")
+            x, y = batch_dict["val"]
+        else:
+            x, y = batch
 
-        x, y = batch_dict["val"]
         print(f"Original test batch shape: {x.shape}, labels shape: {y.shape}")
         batch_size, num_channels, seq_len = x.shape
         if seq_len % self.num_patches != 0:
