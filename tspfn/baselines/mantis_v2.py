@@ -148,11 +148,18 @@ class Mantis2_SOTA(pl.LightningModule):
         batch_size, num_channels, seq_len = x.shape
         if seq_len % self.num_patches != 0:
             x = resize(x)  # Resize to ensure divisibility by num_patches
-        x_eval = self.encoder.transform(x.to(self.encoder_device))
 
-        print(f"Query shape for Random Forest: {x_eval.shape}, Labels shape: {y.shape}")
-        y_probs = self.clf.predict_proba(x_eval)
-        y_probs_ts = torch.tensor(y_probs, device=self.device)
+        if not self.finetuning:
+            x_eval = self.encoder.transform(x.to(self.encoder_device))
+
+            print(f"Query shape for Random Forest: {x_eval.shape}, Labels shape: {y.shape}")
+            y_probs = self.clf.predict_proba(x_eval)
+            y_probs_ts = torch.tensor(y_probs, device=self.device)
+        else:
+            x_eval = self.encoder.transform(x.to(self.encoder_device))
+            print(f"Query shape for Random Forest (fine-tuned): {x_eval.shape}, Labels shape: {y.shape}")
+            y_probs = self.encoder.predict_proba(x_eval)
+            y_probs_ts = torch.tensor(y_probs, device=self.device)
 
         print(f"--- Test Step {batch_idx}: Evaluated {x_eval.shape[0]} samples ---")
 
