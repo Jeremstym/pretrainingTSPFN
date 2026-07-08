@@ -159,7 +159,8 @@ for dataset in "${UCR2019_univariate[@]}"; do
         +dataset="$dataset" \
         train=True \
         test=True \
-        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubePFN3-pretrained-attchanCLSAVG.ckpt"
+        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubePFN3-pretrained-attchanCLSAVG.ckpt" \
+        strict=False
 done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
