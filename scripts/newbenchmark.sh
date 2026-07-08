@@ -172,7 +172,7 @@ for dataset in "${UCR2019_univariate[@]}"; do
         seed=42 \
         +dataset="$dataset" \
         train=True \
-        test=True \
+        test=True
 done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
