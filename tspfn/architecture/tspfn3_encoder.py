@@ -60,6 +60,8 @@ import torch.nn.functional as F  # noqa: N812
 import torch.utils.checkpoint
 from torch import nn
 
+torch.autograd.set_detect_anomaly(True)
+
 from tabpfn.architectures.interface import (
     Architecture,
     ArchitectureConfig,
