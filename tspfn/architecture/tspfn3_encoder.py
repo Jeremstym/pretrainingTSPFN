@@ -1530,6 +1530,13 @@ class TabPFNV3(Architecture):
             **kw,
         )
 
+        self.unified_channel_attention = Attention(
+            embedding_size=config.embed_dim,
+            num_heads=1,  # Set to 1 head to mirror your custom layout mechanics
+            head_dim=config.embed_dim,
+            **kw,
+        )
+
         # # ---- Multi-channel attention encoder ----
 
         # self.multi_channel_attention = Attention(
@@ -2121,79 +2128,29 @@ class TabPFNV3(Architecture):
 
                     row_embedding_chunk = torch.stack(row_chunk_by_channel, dim=2)
 
-                    # row_embedding_chunk_by_column = []
-                    # for col in range(num_columns):
-                    #     row_embedding_chunk, _ = process_row_chunk(
-                    #         x_grouped_chunk_BRjCG=transposed_row_embedding_chunk[:, :, col],
-                    #         y_col_emb=y_col_emb_BNE,
-                    #         chunk_start=row_chunk_start,
-                    #         chunk_end=row_chunk_end,
-                    #         effective_num_train=effective_num_train,
-                    #         precomputed_hidden=(
-                    #             precomputed_hidden_by_column[col] if precomputed_hidden is not None else None
-                    #         ),
-                    #         save_peak_memory_factor=save_peak_memory_factor,
-                    #         force_recompute_layer=force_recompute_layer,
-                    #         return_inducing_hidden=False,
-                    #         is_full_path=is_full_path,
-                    #     )
-                    #     assert row_embedding_chunk.ndim == 4, f"Expected (B, row_chunk, Ch, E), got {row_embedding_chunk.shape}"
-                    #     row_embedding_chunk_by_column.append(row_embedding_chunk)
-                    # row_embedding_chunk = torch.stack(row_embedding_chunk_by_column, dim=2)
-
-                    # transposed_row_embedding_chunk = self.multi_channel_attention(
-                    #     row_embedding_chunk.flatten(2, 3).contiguous()
-                    # ).view_as(transposed_row_embedding_chunk)
-                    # row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
+                    row_embedding_chunk = self._process_channel_chunks(row_embedding_chunk)
 
                     # transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
-                    # row_embedding_chunk_list = []
-                    # for row in range(row_embedding_chunk.shape[1]):
-                    #     B, Ch, Cl, E = (
-                    #         row_embedding_chunk.shape[0],
-                    #         row_embedding_chunk.shape[2],
-                    #         row_embedding_chunk.shape[3],
-                    #         row_embedding_chunk.shape[4],
-                    #     )
-                    #     _transposed_row_embedding_chunk = _batched_scaled_dot_product_attention(
-                    #         transposed_row_embedding_chunk[:, row]
-                    #         .flatten(1, 2)
-                    #         .contiguous()
-                    #         .unsqueeze(2),  # (B, Cl*Ch, 1, E)
-                    #         transposed_row_embedding_chunk[:, row]
-                    #         .flatten(1, 2)
-                    #         .contiguous()
-                    #         .unsqueeze(2),  # (B, Cl*Ch, 1, E)
-                    #         transposed_row_embedding_chunk[:, row]
-                    #         .flatten(1, 2)
-                    #         .contiguous()
-                    #         .unsqueeze(2),  # (B, Cl*Ch, 1, E)
-                    #     ).view(B, Cl, Ch, E)  # (B, Cl, Ch, E)
-                    #     row_embedding_chunk_list.append(_transposed_row_embedding_chunk)
-                    # transposed_row_embedding_chunk = torch.stack(row_embedding_chunk_list, dim=1)
+                    # # --- REPLACE THE ENTIRE 'for row in range(...)' LOOP WITH THIS ---
+                    # B, R_chunk, Ch, Cl, E = row_embedding_chunk.shape
+
+                    # # 1. Flatten rows and treat (Cl * Ch) as the true structural sequence layout
+                    # # Shape transitions: (B, R_chunk, Ch, Cl, E) -> (B * R_chunk, Cl * Ch, E)
+                    # flat_q = transposed_row_embedding_chunk.reshape(B * R_chunk, Cl * Ch, E)
+
+                    # # 2. Add an explicit head dimension at dim 1 to satisfy standard SDPA layout: (Batch, Heads, Seq, Dim)
+                    # # Treating it as 1 head prevents mathematical inflation during compile tracing
+                    # q_sdpa = flat_q.unsqueeze(1).contiguous() # Shape: (B * R_chunk, 1, Cl * Ch, E)
+
+                    # # 3. Call standard SDPA vectorially over the unified chunk
+                    # _transposed_row_embedding_chunk = F.scaled_dot_product_attention(
+                    #     q_sdpa, q_sdpa, q_sdpa, attn_mask=None, dropout_p=0.0, is_causal=False
+                    # )
+
+                    # # 4. Remove head dim and restore original target architectural shapes
+                    # transposed_row_embedding_chunk = _transposed_row_embedding_chunk.squeeze(1).view(B, R_chunk, Cl, Ch, E)
                     # row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
-
-                    transposed_row_embedding_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
-                    # --- REPLACE THE ENTIRE 'for row in range(...)' LOOP WITH THIS ---
-                    B, R_chunk, Ch, Cl, E = row_embedding_chunk.shape
-
-                    # 1. Flatten rows and treat (Cl * Ch) as the true structural sequence layout
-                    # Shape transitions: (B, R_chunk, Ch, Cl, E) -> (B * R_chunk, Cl * Ch, E)
-                    flat_q = transposed_row_embedding_chunk.reshape(B * R_chunk, Cl * Ch, E)
-
-                    # 2. Add an explicit head dimension at dim 1 to satisfy standard SDPA layout: (Batch, Heads, Seq, Dim)
-                    # Treating it as 1 head prevents mathematical inflation during compile tracing
-                    q_sdpa = flat_q.unsqueeze(1).contiguous() # Shape: (B * R_chunk, 1, Cl * Ch, E)
-
-                    # 3. Call standard SDPA vectorially over the unified chunk
-                    _transposed_row_embedding_chunk = F.scaled_dot_product_attention(
-                        q_sdpa, q_sdpa, q_sdpa, attn_mask=None, dropout_p=0.0, is_causal=False
-                    )
-
-                    # 4. Remove head dim and restore original target architectural shapes
-                    transposed_row_embedding_chunk = _transposed_row_embedding_chunk.squeeze(1).view(B, R_chunk, Cl, Ch, E)
-                    row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
-                    # -----------------------------------------------------------------
+                    # # -----------------------------------------------------------------
 
                     assert (
                         row_embedding_chunk.shape[2] == C
@@ -2303,6 +2260,34 @@ class TabPFNV3(Architecture):
             force_recompute_layer=force_recompute_layer and is_full_path,
         )
         return row_embedding_chunk, chunk_hidden
+
+    def _process_channel_chunks(
+        self,
+        row_embedding_chunk: torch.Tensor,
+    ) -> torch.Tensor:
+        """Vectorially executes cross-channel/CLS token attention mapping over unified blocks.
+        
+        Args:
+            row_embedding_chunk: Tensor of shape (B, R_chunk, Ch, Cl, E) generated by process_row_chunk stacks.
+            
+        Returns:
+            Structured row chunk tensor of shape (B, R_chunk, Ch, Cl, E) tracked natively by autograd.
+        """
+        B, R_chunk, Ch, Cl, E = row_embedding_chunk.shape
+
+        # 1. Map to structural cross-view tracking layouts
+        transposed_chunk = row_embedding_chunk.transpose(2, 3).contiguous()
+        
+        # 2. Unified feature sequence representation structural flattening
+        flat_sequence = transposed_chunk.reshape(B * R_chunk, Cl * Ch, E)
+        
+        # 3. Dispatched execution through the module architecture node
+        # This automatically tracks gradient operations without requiring manual clones
+        attended_flat = self.unified_channel_attention(flat_sequence)
+        
+        # 4. Deconstruct layouts back to target architectural requirements
+        transposed_output = attended_flat.view(B, R_chunk, Cl, Ch, E)
+        return transposed_output.transpose(2, 3).contiguous()
 
 
 # ---------------------------------------------------------------------------
