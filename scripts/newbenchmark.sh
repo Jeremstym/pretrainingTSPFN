@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=electronic
-#SBATCH --job-name=Mantis-FineTune
+#SBATCH --job-name=CubePFN3-FineTune
 ####BATCH --cpus-per-task=5
 ####SBATCH --mem-per-cpu=8G
 #SBATCH --nodes=1
