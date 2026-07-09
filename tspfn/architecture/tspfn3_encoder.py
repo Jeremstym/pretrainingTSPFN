@@ -60,7 +60,6 @@ import torch.nn.functional as F  # noqa: N812
 import torch.utils.checkpoint
 from torch import nn
 
-torch.autograd.set_detect_anomaly(True)
 
 from tabpfn.architectures.interface import (
     Architecture,
@@ -2522,6 +2521,7 @@ class TSPFNEncoder(nn.Module, ABC):
     #     # x = x.flatten(-2)  # (Ri, B, Ch, C) -> (Ri, B, Ch*C)
     #     output = self.model(x, y, performance_options=self.performance_options)
     def forward(self, ts: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
+        torch.autograd.set_detect_anomaly(True)
         # ts is (Ri, B, Ch, C) and y is (train_size, B)
         # ts = ts.flatten(-2)  # (Ri, B, Ch, C) -> (Ri, B, Ch*C)
         output = self.model(ts, y, performance_options=self.performance_options)
