@@ -301,50 +301,32 @@ class TSPFNFineTuning(TSPFNSystem):
         time_series_attrs: Tensor,
         labels: Tensor,
         summary_mode: bool = False,
+        evaluation: bool = False,
     ) -> Tuple[Tensor, Tensor, Tensor]:
         """Tokenizes the input time-series attributes, providing a mask of non-missing attributes.
 
         Args:
-            time_series_attrs: (B, S, C, T), Batch of time-series datasets, where the last feature for each sample is the label.
+            time_series_attrs: (B, C, T), Batch of time-series datasets.
+            labels: (B, 1), Batch of labels corresponding to the multivariate time-series datasets.
 
         Returns:
-            - (B, Support, 1), Support set labels.
-            - (B, Query, 1), Query set labels.
-            - (B, S (=Support+Query), C, T), Time series input for .
+            - (Support, 1), Support set labels.
+            - (Query, 1), Query set labels.
+            - (Support+Query, C, T), Time series input for support and query sets.
         """
-
-        # Tokenize the attributes
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
 
-        # ts = time_series_attrs[:, :, :-1]  # (B, S, T)
-        # indices = torch.arange(ts.shape[0])
-        # indices = torch.arange(1024)  # Fix for pretraining with sequence length S =1024
-        # y = time_series_attrs[:, :, -1]  # (B, S, 1)
-
-        if self.training or summary_mode:
-            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = get_stratified_batch_split(
+        if summary_mode:
+            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = half_batch_split(
                 data=time_series_attrs,
                 labels=labels,
-                # n_total=self.chunk_size,
             )
         else:
-            ts_batch_support = time_series_attrs  # (Support+Query, C, T)
-            ts_batch_query = time_series_attrs  # (Support+Query, C, T)
-            y_batch_support = labels  # (Support, 1)
-            y_batch_query = labels  # (Query, 1)
+            ts_batch_support = time_series_attrs.to(self.device)  # (Support+Query, C, T)
+            ts_batch_query = time_series_attrs.to(self.device)  # (Support+Query, C, T)
+            y_batch_support = labels.to(self.device)  # (Support, 1)
+            y_batch_query = labels.to(self.device)  # (Query, 1)
 
-        # Apply z-scoring normalization to the time-series data using the support set statistics
-        if self.training:
-            ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = z_scoring_per_channel(
-                data_support=ts_batch_support,
-                data_query=ts_batch_query,
-                label_support=y_batch_support,
-                label_query=y_batch_query,
-            )
-
-        if self.ts_tokenizer is not None:
-            ts_batch_support = self.ts_tokenizer(ts_batch_support)  # (Support, C, num_tokens, E)
-            ts_batch_query = self.ts_tokenizer(ts_batch_query)  # (Query, C, num_tokens, E)
 
         # Unsqueeze to comply with expected input shape for TabPFN encoder
         if ts_batch_support.ndim == 3:
