@@ -65,7 +65,7 @@ from tabpfn.architectures.interface import (
     PerformanceOptions,
 )
 from tabpfn.architectures.kv_cache import (
-    QUANTIZED_KV_DTYPE,
+    # QUANTIZED_KV_DTYPE,
     KVCache,
     KVCacheEntry,
     QuantizedKVCacheEntry,
@@ -84,6 +84,7 @@ if TYPE_CHECKING:
 
 
 _logger = _logging.getLogger(__name__)
+QUANTIZED_KV_DTYPE: torch.dtype = torch.int8
 
 
 # ---------------------------------------------------------------------------
