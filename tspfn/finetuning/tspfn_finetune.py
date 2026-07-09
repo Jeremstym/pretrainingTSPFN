@@ -367,13 +367,20 @@ class TSPFNFineTuning(TSPFNSystem):
         """
         if not evaluation or y_inference_support is None:
             ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, C, T)
-            out_features = self.encoder(
-                ts.transpose(0, 1),
-                y_batch_support.transpose(0, 1),
-                already_tokenized=already_tokenized,
-            )[
-                :, :, -1, :
-            ]  # Take last token as output feature
+            if not return_logits:
+                out_features = self.elncoder(
+                    ts.transpose(0, 1),
+                    y_batch_support.transpose(0, 1),
+                    already_tokenized=already_tokenized,
+                )[
+                    :, :, -1, :
+                ]  # Take last token as output feature
+            else:
+                out_features = self.encoder(
+                    ts.transpose(0, 1),
+                    y_batch_support.transpose(0, 1),
+                    already_tokenized=already_tokenized,
+                )
 
         elif y_inference_support is not None and ts_inference_support is not None:
             # Use train set as context for predicting the query set on val/test inference
@@ -469,6 +476,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 evaluation=True,
                 y_inference_support=y_test_support,
                 ts_inference_support=ts_support,
+                return_logits=self.return_logits,
             )  # (B, S, E) -> (B, E)
 
         else:
@@ -478,6 +486,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 ts_support,
                 ts_query,
                 already_tokenized=already_tokenized,
+                return_logits=self.return_logits,
             )  # (B, S, E) -> (B, E)
 
         # Early return if requested task requires no prediction heads
