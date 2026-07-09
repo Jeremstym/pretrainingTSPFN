@@ -1766,7 +1766,7 @@ class TabPFNV3(Architecture):
             x_is_test_only=x_is_test_only,
         )
 
-        if x_diff is not None:
+        if None is not None:
             if isinstance(x_diff, dict):
                 x_diff = x_diff["main"]
             x_RiBAC_diff = x_diff
