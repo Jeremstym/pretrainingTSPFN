@@ -2498,7 +2498,19 @@ class TSPFNEncoder(nn.Module, ABC):
 
         if use_checkpoint:
             model_state = {k: v for k, v in full_state.items() if k not in criterion_state_keys}
-            model.load_state_dict(model_state)
+            missing_keys = []
+            unexpected_keys = []
+            for k in model_state.keys():
+                if k not in model.state_dict():
+                    unexpected_keys.append(k)
+            for k in model.state_dict().keys():
+                if k not in model_state:
+                    missing_keys.append(k)
+            if missing_keys:
+                _logger.warning("Missing keys in model state dict: %s", missing_keys)
+            if unexpected_keys:
+                _logger.warning("Unexpected keys in model state dict: %s", unexpected_keys)
+            model.load_state_dict(model_state, strict=False) # Remove ManyClassDecoder for pretraining with no labels
 
         self.model = model
         self.performance_options = PerformanceOptions(**performance_options)
