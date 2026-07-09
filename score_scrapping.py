@@ -155,9 +155,9 @@ def main_v3():
     results_df.to_csv(f"{output_dir}/less_10_ucr_univariate_results_summary-CubePFN3-Mantis-FineTune.csv", index=False)
     print("Results summary saved to less_10_ucr_univariate_results_summary-CubePFN3-Mantis-FineTune.csv")
 
-def main_mantis_rf():
+def main_mantis():
     # Define the path to the directory containing the results
-    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-MantisV2-RF*")
+    results_dir = Path("/data/stympopper/TSPFN-Benchmark/UCRUnivariate").glob("*-MantisV2-FineTune*")
 
     # Initialize a list to store the results
     results = []
@@ -195,9 +195,9 @@ def main_mantis_rf():
     results_df = pd.DataFrame(results).sort_values(by=["dataset", "seed"])
     # results_df = filter_datasets_by_class_count(results_df)
     output_dir = "/data/stympopper/TSPFN-Benchmark"
-    results_df.to_csv(f"{output_dir}/less_10_ucr_univariate_results_summary-MantisV2-RF.csv", index=False)
-    print("Results summary saved to less_10_ucr_univariate_results_summary-MantisV2-RF.csv")
+    results_df.to_csv(f"{output_dir}/less_10_ucr_univariate_results_summary-MantisV2-FineTune.csv", index=False)
+    print("Results summary saved to less_10_ucr_univariate_results_summary-MantisV2-FineTune.csv")
 
 
 if __name__ == "__main__":
-    main_v3()
+    main_mantis()
