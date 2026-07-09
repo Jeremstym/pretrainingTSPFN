@@ -1766,7 +1766,7 @@ class TabPFNV3(Architecture):
             x_is_test_only=x_is_test_only,
         )
 
-        if None is not None:
+        if x_diff is not None:
             if isinstance(x_diff, dict):
                 x_diff = x_diff["main"]
             x_RiBAC_diff = x_diff
@@ -2249,10 +2249,10 @@ class TabPFNV3(Architecture):
                     )
 
                     # 4. Remove head dim and restore original target architectural shapes
-                    transposed_row_embedding_chunk = _transposed_row_embedding_chunk.squeeze(1).view(
+                    transposed_row_embedding_chunk = _transposed_row_embedding_chunk.squeeze(1).reshape(
                         B, R_chunk, Cl, Ch, E
                     )
-                    row_embedding_chunk = transposed_row_embedding_chunk.transpose(2, 3).contiguous()
+                    row_embedding_chunk = transposed_row_embedding_chunk.permute(0, 1, 3, 2, 4).contiguous()
                     # -----------------------------------------------------------------
 
                     assert (
