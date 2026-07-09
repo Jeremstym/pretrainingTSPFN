@@ -176,6 +176,7 @@ done
 #         strict=False
 # done
 
+#! TO REDO
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
 #         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-FineTune/seed\${seed}" \
