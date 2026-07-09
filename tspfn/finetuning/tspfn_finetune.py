@@ -548,41 +548,26 @@ class TSPFNFineTuning(TSPFNSystem):
         batch: Union[Tensor, Tuple[Tensor, ...]],
         num_classes: int,
     ) -> Dict[str, Tensor]:
-        # Forward pass through the encoder without gradient computation to fine-tune only the prediction heads
-        assert (
-            self.prediction_heads is not None
-        ), "You requested to perform a prediction task, but the model does not include any prediction heads."
-        if self.training:
-            time_series_input, target_labels = batch  # (N, C, T), (N,)
-            time_series_support = None
-        else:
-            batch_dict, _, _ = batch
-            time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
-            time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
 
-        print(f"time_series_input shape: {time_series_input.shape}, target_labels shape: {target_labels.shape}")
+        batch_dict, _, _ = batch
+        time_series_input, target_labels = batch_dict["val"]  # (N, C, T), (N,)
+        time_series_support, support_labels = batch_dict["train"]  # (N, C, T), (N,)
+
         y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
             time_series_attrs=time_series_input, labels=target_labels, evaluation=(not self.training)
         )  # (B, Support, 1), (B, Query, 1), (B, S, T)
         # B not equal to N (dataset batch size = 1 here)
 
-        if time_series_support is not None:
-            assert support_labels is not None, "Support labels must be provided for inference."
-            print(
-                f"time_series_support shape: {time_series_support.shape}, support_labels shape: {support_labels.shape}"
+        assert support_labels is not None, "Support labels must be provided for inference."
+        # Store inference data for val/test steps
+        y_train_support, _, ts_train_support, _ = self.process_data(
+            time_series_attrs=time_series_support, labels=support_labels, evaluation=True
+        )  # (B, Support, 1), (B, Query, 1), (B, S, T)
+        y_inference_support = y_train_support
+        if self.ts_tokenizer is None and self.ts_foundation is None:
+            ts_train_support, ts_query, y_inference_support, y_query = z_scoring_per_channel(
+                ts_train_support, ts_query, y_inference_support, y_batch_query
             )
-            # Store inference data for val/test steps
-            y_train_support, _, ts_train_support, _ = self.process_data(
-                time_series_attrs=time_series_support, labels=support_labels, evaluation=True
-            )  # (B, Support, 1), (B, Query, 1), (B, S, T)
-            y_inference_support = y_train_support
-            if self.ts_tokenizer is None and self.ts_foundation is None:
-                ts_train_support, ts_query, y_inference_support, y_query = z_scoring_per_channel(
-                    ts_train_support, ts_query, y_inference_support, y_batch_query
-                )
-        else:
-            y_inference_support = None
-            ts_train_support = None
 
         already_tokenized = self.ts_tokenizer is not None
         prediction = self.encode(
