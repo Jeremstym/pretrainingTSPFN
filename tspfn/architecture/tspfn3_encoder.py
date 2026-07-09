@@ -547,8 +547,12 @@ class ManyClassDecoder(nn.Module):
             empty = test_embeddings.new_empty((0, B, self.max_num_classes))
             return empty + (q_BME.sum() + k_BNE.sum()) * 0.0
 
+        # WARNING Change the original code to compute num_classes_in_batch from targets
+        # to adapt to the new setting where we may have fewer classes in a batch than max_num_classes
+        num_classes_in_batch = targets.max().item() + 1
         one_hot_targets_BNT = (
-            F.one_hot(targets.long(), num_classes=self.max_num_classes)
+            # F.one_hot(targets.long(), num_classes=self.max_num_classes)
+            F.one_hot(targets.long(), num_classes=num_classes_in_batch)
             .to(dtype=q_BME.dtype)
             .contiguous()
         )
@@ -560,6 +564,7 @@ class ManyClassDecoder(nn.Module):
             .expand(-1, -1, self.num_heads, -1)
             .contiguous()
         )
+
         test_output_BMHT = _chunked_class_attention(
             q_BMHD,
             k_BNHD,
