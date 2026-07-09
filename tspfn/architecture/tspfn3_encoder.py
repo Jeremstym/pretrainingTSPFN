@@ -44,8 +44,6 @@ S: sequence length
 Copyright (c) Prior Labs GmbH 2026.
 """
 
-from __future__ import annotations
-
 import dataclasses
 import logging as _logging
 import math
