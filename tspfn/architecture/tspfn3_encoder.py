@@ -2248,11 +2248,13 @@ class TabPFNV3(Architecture):
                         q_sdpa, q_sdpa, q_sdpa, attn_mask=None, dropout_p=0.0, is_causal=False
                     )
 
-                    # 4. Remove head dim and restore original target architectural shapes
+                   # 4. Remove head dim and restore original target architectural shapes
                     transposed_row_embedding_chunk = _transposed_row_embedding_chunk.squeeze(1).reshape(
                         B, R_chunk, Cl, Ch, E
                     )
-                    row_embedding_chunk = transposed_row_embedding_chunk.permute(0, 1, 3, 2, 4).contiguous()
+                    # Using .clone() tells autograd: "Copy these values to a new, mutable memory buffer 
+                    # while safely recording the gradient link to the parent attention operation."
+                    row_embedding_chunk = transposed_row_embedding_chunk.permute(0, 1, 3, 2, 4).clone()
                     # -----------------------------------------------------------------
 
                     assert (
