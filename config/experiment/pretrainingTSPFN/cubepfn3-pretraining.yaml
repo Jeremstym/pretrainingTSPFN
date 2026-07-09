@@ -2,7 +2,7 @@
 
 defaults:
   - /task/model/prediction_head: identity
-  - /task/model/encoder: tspfn3-encoder
+  - /task/model/encoder: cubepfn3-encoder
   - /task/model/tokenizer: null
   - override /task/model: null
   - override /task/optim: adamw
