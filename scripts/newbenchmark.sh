@@ -164,6 +164,19 @@ missing_UCR=(
     "WordSynonyms"
 )
 
+for dataset in "${missing_UCR[@]}"; do
+    poetry run tspfn-pretrain \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune/seed\${seed}" \
+        +experiment=finetuningTSPFN/tspfn3-finetuning \
+        data=benchmark/evaluating-ucrunivariate \
+        data.dataset="$dataset" \
+        task.adaptable_metrics=True \
+        seed=42 \
+        +dataset="$dataset" \
+        train=True \
+        test=True
+done
+
 # #! TO REDO
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
@@ -178,18 +191,6 @@ missing_UCR=(
 #         test=True
 # done
 
-for dataset in "${missing_UCR[@]}"; do
-    poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune/seed\${seed}" \
-        +experiment=finetuningTSPFN/tspfn3-finetuning \
-        data=benchmark/evaluating-ucrunivariate \
-        data.dataset="$dataset" \
-        task.adaptable_metrics=True \
-        seed=42 \
-        +dataset="$dataset" \
-        train=True \
-        test=True
-done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \

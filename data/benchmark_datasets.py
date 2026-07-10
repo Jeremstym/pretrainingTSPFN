@@ -494,9 +494,7 @@ class UCRUnivariateDataset(Dataset):
             except ValueError as e:
                 print(f"Error occurred while splitting data for {dataset}: {e}")
                 print("No stratification possible")
-                X_train, X_test, Y_train, Y_test = train_test_split(
-                    self.X, self.Y, test_size=0.2, random_state=42
-                )
+                X_train, X_test, Y_train, Y_test = self.X, self.X, self.Y, self.Y
 
             if split == "train":
                 self.X = X_train
