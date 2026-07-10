@@ -515,9 +515,10 @@ class UCRUnivariateDataset(Dataset):
                     )
                 except ValueError as e:
                     print(f"Error during train-test split: {e}")
-                    print("Increasing test_size to 0.3 and trying again.")
+                    print("Keep only 1 occurrence of each class.")
+                    test_size = np.unique(self.Y).shape[0]  
                     X_train, X_test, Y_train, Y_test = train_test_split(
-                        self.X, self.Y, test_size=0.3, random_state=42
+                        self.X, self.Y, test_size=test_size, random_state=42
                     )
 
 
