@@ -58,11 +58,12 @@ class TSPFNSystem(pl.LightningModule, ABC):
 
     def configure_model(self) -> Tuple[nn.Module, Optional[nn.Module], Optional[nn.ModuleDict]]:
         """Configure the network architecture used by the system."""
-        return hydra.utils.instantiate(
-            self.hparams["model"],
-            input_shape=self.hparams["data_params"].in_shape,
-            output_shape=self.hparams["data_params"]["out_shape"],
-        )
+        # return hydra.utils.instantiate(
+        #     self.hparams["model"],
+        #     input_shape=self.hparams["data_params"].in_shape,
+        #     output_shape=self.hparams["data_params"]["out_shape"],
+        # )
+        raise NotImplementedError("The `configure_model` method must be implemented in the subclass.")
 
     def configure_optimizers(
         self, params: Union[Iterable[Tensor], Iterable[dict]] = None
