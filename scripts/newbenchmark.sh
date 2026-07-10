@@ -148,8 +148,23 @@ UCR2019_univariate=(
     # "Yoga"
 )
 
-#! TO REDO WITHOUT SCHEDULER
-for dataset in "${missing_UCR[@]}"; do
+
+# for dataset in "${missing_UCR[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune-NoScheduler/seed\${seed}" \
+#         +experiment=finetuningTSPFN/tspfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=True \
+#         test=True
+# done
+
+
+#! TO REDO
+for dataset in "${UCR2019_univariate[@]}"; do
     poetry run tspfn-pretrain \
         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune-NoScheduler/seed\${seed}" \
         +experiment=finetuningTSPFN/tspfn3-finetuning \
@@ -161,7 +176,6 @@ for dataset in "${missing_UCR[@]}"; do
         train=True \
         test=True
 done
-
 
 # #! TO REDO
 # for dataset in "${UCR2019_univariate[@]}"; do
