@@ -18,42 +18,42 @@ ulimit -n 4096
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN-Benchmark/ecgfivedays-TSPFN/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=benchmark/evaluating-ecgfivedays seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" task.time_series_positional_encoding=cwpe+rope
 
 UCR2019_univariate=(
-    "ACSF1"
-    "Adiac"
-    "AllGestureWiimoteX"
-    "AllGestureWiimoteY"
-    "AllGestureWiimoteZ"
-    "ArrowHead"
-    "Beef"
-    "BeetleFly"
-    "BirdChicken"
-    "BME"
-    "Car"
-    "CBF"
-    "Chinatown"
-    "ChlorineConcentration"
-    "CinCECGTorso"
-    "Coffee"
-    "Computers"
-    "CricketX"
-    "CricketY"
-    "CricketZ"
-    "Crop"
-    "DiatomSizeReduction"
-    "DistalPhalanxOutlineAgeGroup"
-    "DistalPhalanxOutlineCorrect"
-    "DistalPhalanxTW"
-    "DodgerLoopDay"
-    "DodgerLoopGame"
-    "DodgerLoopWeekend"
-    "Earthquakes"
-    "ECG200"
-    "ECG5000"
-    "ECGFiveDays"
-    "ElectricDevices"
-    "EOGHorizontalSignal"
-    "EOGVerticalSignal"
-    "EthanolLevel"
+    # "ACSF1"
+    # "Adiac"
+    # "AllGestureWiimoteX"
+    # "AllGestureWiimoteY"
+    # "AllGestureWiimoteZ"
+    # "ArrowHead"
+    # "Beef"
+    # "BeetleFly"
+    # "BirdChicken"
+    # "BME"
+    # "Car"
+    # "CBF"
+    # "Chinatown"
+    # "ChlorineConcentration"
+    # "CinCECGTorso"
+    # "Coffee"
+    # "Computers"
+    # "CricketX"
+    # "CricketY"
+    # "CricketZ"
+    # "Crop"
+    # "DiatomSizeReduction"
+    # "DistalPhalanxOutlineAgeGroup"
+    # "DistalPhalanxOutlineCorrect"
+    # "DistalPhalanxTW"
+    # "DodgerLoopDay"
+    # "DodgerLoopGame"
+    # "DodgerLoopWeekend"
+    # "Earthquakes"
+    # "ECG200"
+    # "ECG5000"
+    # "ECGFiveDays"
+    # "ElectricDevices"
+    # "EOGHorizontalSignal"
+    # "EOGVerticalSignal"
+    # "EthanolLevel"
     # "FaceAll"
     # "FaceFour"
     # "FacesUCR"
@@ -148,24 +148,27 @@ UCR2019_univariate=(
     # "Yoga"
 )
 
-#! TO REDO
-for dataset in "${UCR2019_univariate[@]}"; do
-    poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-FineTune/seed\${seed}" \
-        +experiment=finetuningTSPFN/cubepfn3-finetuning \
-        data=benchmark/evaluating-ucrunivariate \
-        data.dataset="$dataset" \
-        task.adaptable_metrics=True \
-        seed=42 \
-        +dataset="$dataset" \
-        train=True \
-        test=True
-done
+missing_UCR=(
+    "Symbols"
+    "PigArtPressure"
+    "FaceFour"
+    "PigCVP"
+    "FiftyWords"
+    "WormsTwoClass"
+    "Fungi"
+    "ECG5000"
+    "Phoneme"
+    "DiatomSizeReduction"
+    "PigAirwayPressure"
+    "HandOutlines"
+    "WordSynonyms"
+)
 
+# #! TO REDO
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
-#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune/seed\${seed}" \
-#         +experiment=finetuningTSPFN/tspfn3-finetuning \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-FineTune/seed\${seed}" \
+#         +experiment=finetuningTSPFN/cubepfn3-finetuning \
 #         data=benchmark/evaluating-ucrunivariate \
 #         data.dataset="$dataset" \
 #         task.adaptable_metrics=True \
@@ -174,6 +177,19 @@ done
 #         train=True \
 #         test=True
 # done
+
+for dataset in "${missing_UCR[@]}"; do
+    poetry run tspfn-pretrain \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune/seed\${seed}" \
+        +experiment=finetuningTSPFN/tspfn3-finetuning \
+        data=benchmark/evaluating-ucrunivariate \
+        data.dataset="$dataset" \
+        task.adaptable_metrics=True \
+        seed=42 \
+        +dataset="$dataset" \
+        train=True \
+        test=True
+done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
