@@ -137,7 +137,7 @@ class ECG200Dataset(Dataset):
         print(f"Count labels in {split} split before subsampling: {np.unique(self.data[:, -1], return_counts=True)}")
 
         self.X = self.data[:, :-1]
-        self.Y = (self.data[:, -1].astype(int) + 1) / 2 # Convert from {-1, 1} to {0, 1}
+        self.Y = (self.data[:, -1].astype(int) + 1) / 2  # Convert from {-1, 1} to {0, 1}
 
         if self.X.ndim == 2:
             self.X = self.X.reshape(
@@ -449,27 +449,9 @@ class UCRUnivariateDataset(Dataset):
         if not self.fine_tune:
             print(f"Loading UCR Univariate dataset: {dataset}, split: {split}")
 
-            # 1. Initial Load
             self.X = np.load(os.path.join(self.root, self.dataset, f"X_{split}.npy"))
             self.Y = np.load(os.path.join(self.root, self.dataset, f"y_{split}.npy")).astype(int)
 
-            # # 2. Filter for Top 10 Labels if necessary
-            # unique_labels, counts = np.unique(self.Y, return_counts=True)
-            
-            # if len(unique_labels) > 10:
-            #     print(f"Dataset has {len(unique_labels)} classes. Reducing to top 10.")
-                
-            #     # Get indices of the 10 most frequent labels
-            #     # sort_indices sorts ascending, so we take the last 10
-            #     top_10_indices = np.argsort(counts)[-10:]
-            #     top_10_labels = unique_labels[top_10_indices]
-                
-            #     # Create a mask to filter the data
-            #     mask = np.isin(self.Y, top_10_labels)
-            #     self.X = self.X[mask]
-            #     self.Y = self.Y[mask]
-
-            # 2. Re-encode labels to be contiguous (0 to 9)
             le = LabelEncoder()
             self.Y = le.fit_transform(self.Y)
 
@@ -479,11 +461,9 @@ class UCRUnivariateDataset(Dataset):
         else:
             print(f"Loading UCR Univariate dataset for fine-tuning: {dataset}, split: {split}")
 
-            # 1. Initial Load
             self.X = np.load(os.path.join(self.root, self.dataset, f"X_train.npy"))
             self.Y = np.load(os.path.join(self.root, self.dataset, f"y_train.npy")).astype(int)
 
-            # 2. Re-encode labels to be contiguous (0 to N-1)
             le = LabelEncoder()
             self.Y = le.fit_transform(self.Y)
             classes, counts = np.unique(self.Y, return_counts=True)
@@ -492,19 +472,19 @@ class UCRUnivariateDataset(Dataset):
             if len(lonely_classes) > 0:
                 print(f"Found {len(lonely_classes)} classes with only 1 sample. Copying them to both splits.")
                 lonely_mask = np.isin(self.Y, lonely_classes)
-                
+
                 X_lonely = self.X[lonely_mask]
                 Y_lonely = self.Y[lonely_mask]
                 X_safe = self.X[~lonely_mask]
                 Y_safe = self.Y[~lonely_mask]
-                
+
                 X_train, X_test, Y_train, Y_test = train_test_split(
                     X_safe, Y_safe, test_size=0.2, random_state=42, stratify=Y_safe
                 )
-                
+
                 X_train = np.concatenate([X_train, X_lonely], axis=0)
                 Y_train = np.concatenate([Y_train, Y_lonely], axis=0)
-                
+
                 X_test = np.concatenate([X_test, X_lonely], axis=0)
                 Y_test = np.concatenate([Y_test, Y_lonely], axis=0)
 
@@ -516,11 +496,10 @@ class UCRUnivariateDataset(Dataset):
                 except ValueError as e:
                     print(f"Error during train-test split: {e}")
                     print("Keep only 1 occurrence of each class.")
-                    test_size = np.unique(self.Y).shape[0]  
+                    test_size = np.unique(self.Y).shape[0]
                     X_train, X_test, Y_train, Y_test = train_test_split(
-                        self.X, self.Y, test_size=test_size, random_state=42
+                        self.X, self.Y, test_size=test_size, random_state=42, stratify=self.Y
                     )
-
 
             if split == "train":
                 self.X = X_train
@@ -530,7 +509,7 @@ class UCRUnivariateDataset(Dataset):
                 self.X = X_test
                 self.Y = Y_test
                 subsplit = "query"
-            
+
             print(f"Final labels in {subsplit} split: {np.unique(self.Y).shape[0]}")
             print(f"Class counts in {subsplit} split: {np.unique(self.Y, return_counts=True)}")
 
