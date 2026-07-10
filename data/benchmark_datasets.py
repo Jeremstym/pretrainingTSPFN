@@ -486,15 +486,33 @@ class UCRUnivariateDataset(Dataset):
             # 2. Re-encode labels to be contiguous (0 to N-1)
             le = LabelEncoder()
             self.Y = le.fit_transform(self.Y)
+            classes, counts = np.unique(self.Y, return_counts=True)
+            lonely_classes = classes[counts < 2]
 
-            try:
+            if len(lonely_classes) > 0:
+                print(f"Found {len(lonely_classes)} classes with only 1 sample. Copying them to both splits.")
+                lonely_mask = np.isin(self.Y, lonely_classes)
+                
+                X_lonely = self.X[lonely_mask]
+                Y_lonely = self.Y[lonely_mask]
+                X_safe = self.X[~lonely_mask]
+                Y_safe = self.Y[~lonely_mask]
+                
+                X_train, X_test, Y_train, Y_test = train_test_split(
+                    X_safe, Y_safe, test_size=0.2, random_state=42, stratify=Y_safe
+                )
+                
+                X_train = np.concatenate([X_train, X_lonely], axis=0)
+                Y_train = np.concatenate([Y_train, Y_lonely], axis=0)
+                
+                X_test = np.concatenate([X_test, X_lonely], axis=0)
+                Y_test = np.concatenate([Y_test, Y_lonely], axis=0)
+
+            else:
                 X_train, X_test, Y_train, Y_test = train_test_split(
                     self.X, self.Y, test_size=0.2, random_state=42, stratify=self.Y
                 )
-            except ValueError as e:
-                print(f"Error occurred while splitting data for {dataset}: {e}")
-                print("No stratification possible")
-                X_train, X_test, Y_train, Y_test = self.X, self.X, self.Y, self.Y
+
 
             if split == "train":
                 self.X = X_train
