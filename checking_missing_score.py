@@ -17,7 +17,7 @@ def check_scores(path: Path, pattern: str = "CubePFN3-FineTune"):
     if missing_files:
         print("Missing scores found in the following directories:")
         for missing in missing_files:
-            print(missing)
+            print(missing.split("-")[0])  # Print only the dataset name
 
 if __name__ == "__main__":
     path = "/data/stympopper/TSPFN-Benchmark/UCRUnivariate"
