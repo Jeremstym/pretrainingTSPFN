@@ -509,9 +509,16 @@ class UCRUnivariateDataset(Dataset):
                 Y_test = np.concatenate([Y_test, Y_lonely], axis=0)
 
             else:
-                X_train, X_test, Y_train, Y_test = train_test_split(
-                    self.X, self.Y, test_size=0.2, random_state=42, stratify=self.Y
-                )
+                try:
+                    X_train, X_test, Y_train, Y_test = train_test_split(
+                        self.X, self.Y, test_size=0.2, random_state=42, stratify=self.Y
+                    )
+                except ValueError as e:
+                    print(f"Error during train-test split: {e}")
+                    print("Increasing test_size to 0.3 and trying again.")
+                    X_train, X_test, Y_train, Y_test = train_test_split(
+                        self.X, self.Y, test_size=0.3, random_state=42
+                    )
 
 
             if split == "train":
