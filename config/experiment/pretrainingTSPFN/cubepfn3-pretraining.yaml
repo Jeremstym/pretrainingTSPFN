@@ -41,6 +41,7 @@ task:
       _target_: torch.nn.CrossEntropyLoss
   time_series_positional_encoding: none
   use_tokenizer: False
+  l2_sp_regularizer_coeff: 0.0
   seed : ${seed}
   crop_resize:
     _target_: tspfn.augmentation.RandomCropResize
@@ -66,9 +67,16 @@ task:
   optim:
     optimizer:
       _target_: torch.optim.AdamW
-      lr: 5e-5              # Slightly higher than single-set tuning, but still cautious
-      weight_decay: 0.1     # Stronger decay is essential for multi-dataset meta-learning
-      eps: 1e-8
+      lr: 3e-7              # Large batch size in CubePFN: up to 2048
+    scheduler:
+      _target_: transformers.get_cosine_schedule_with_warmup
+      warmup_ratio: 0.1
+  # optim:
+  #   optimizer:
+  #     _target_: torch.optim.AdamW
+  #     lr: 5e-5              # Slightly higher than single-set tuning, but still cautious
+  #     weight_decay: 0.1     # Stronger decay is essential for multi-dataset meta-learning
+  #     eps: 1e-8
 
 # Change checkpoint loading defaults to:
 ckpt: ??? # Make it mandatory to provide a checkpoint

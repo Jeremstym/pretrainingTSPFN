@@ -28,6 +28,7 @@ from torchmetrics.classification import (
 )
 from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError
 from torchmetrics import MetricCollection
+import copy
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
@@ -55,7 +56,7 @@ class CubePFNPretraining(TSPFNSystem):
         use_tokenizer: bool = False,
         adaptable_metrics: bool = True,
         return_logits: bool = True,
-        # time_series_positional_encoding: Literal["none", "sinusoidal", "learned"] = "none",
+        l2_sp_regularizer_coeff: Optional[float] = 0.0,
         *args,
         **kwargs,
     ):
@@ -80,22 +81,7 @@ class CubePFNPretraining(TSPFNSystem):
         self.num_classes = num_classes
         self.adaptable_metrics = adaptable_metrics
         self.return_logits = return_logits
-
-
-        # Configure losses/metrics to compute at each train/val/test step
-        # self.metrics = nn.ModuleDict()
-        # if target in TabularAttribute.numerical_attrs():
-        #     self.metrics[target] = MetricCollection([MeanAbsoluteError(), MeanSquaredError()])
-        # elif target in TabularAttribute.binary_attrs():
-        #     self.metrics[target] = MetricCollection(
-        #         [
-        #             BinaryAccuracy(),
-        #             BinaryAUROC(),
-        #             BinaryAveragePrecision(),
-        #             BinaryF1Score(),
-        #         ],
-        #     )
-        # else:  # attr in TabularAttribute.categorical_attrs()
+        self.alpha_l2_sp = l2_sp_regularizer_coeff
 
         # Supervised losses and metrics
         self.predict_losses = {}
@@ -110,38 +96,20 @@ class CubePFNPretraining(TSPFNSystem):
         # Initialize transformer encoder and self-supervised + prediction heads
         self.encoder, self.prediction_heads = self.configure_model()
 
+        if self.alpha_l2_sp > 0.0:
+            logger.info(f"Using L2-SP regularization with coefficient {self.alpha_l2_sp}.")
+            # Copy encoder weights
+            self.starting_point = copy.deepcopy(self.encoder)
+            self.starting_point.eval()
+            for param in self.starting_point.parameters():
+                param.requires_grad = False
+
         if use_tokenizer:
             self.ts_tokenizer = hydra.utils.instantiate(
                 self.hparams["model"]["tokenizer"],
             )
         else:
             self.ts_tokenizer = None
-
-        # Initialize inference storage tensors
-        # self.ts_train_for_inference = torch.Tensor().to(self.device)
-        # self.y_train_for_inference = torch.Tensor().to(self.device)
-
-        # self.time_series_positional_encoding = time_series_positional_encoding
-
-        # Use ModuleDict so metrics move to GPU automatically
-        # metrics_template = MetricCollection(
-        #     [
-        #         MulticlassAccuracy(num_classes=self.num_classes, average="micro"),
-        #         MulticlassAUROC(num_classes=self.num_classes, average="macro"),
-        #         MulticlassAveragePrecision(num_classes=self.num_classes, average="macro"),
-        #         MulticlassF1Score(num_classes=self.num_classes, average="macro"),
-        #         MulticlassCohenKappa(num_classes=self.num_classes),
-        #         MulticlassRecall(num_classes=self.num_classes, average="macro"),
-        #     ]
-        # )
-        # # Store them in a dict of ModuleDicts
-        # self.metrics = nn.ModuleDict(
-        #     {
-        #         "train_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="train/") for t in predict_losses}),
-        #         "val_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="val/") for t in predict_losses}),
-        #         "test_metrics": nn.ModuleDict({t: metrics_template.clone(prefix="test/") for t in predict_losses}),
-        #     }
-        # )
 
     @property
     def example_input_array(self) -> Tensor:
@@ -183,25 +151,6 @@ class CubePFNPretraining(TSPFNSystem):
                 param.requires_grad = False
 
         no_decay = ["bias", "LayerNorm.weight", "BatchNorm.weight", "ln_"]
-        # wd_value = float(optimizer_cfg.get("weight_decay", 0.01))
-        # optimizer_grouped_parameters = [
-        #     {
-        #         "params": [
-        #             p
-        #             for n, p in self.encoder.named_parameters()
-        #             if not any(nd in n for nd in no_decay) and p.requires_grad
-        #         ],
-        #         "weight_decay": self.hparams["optim"]["optimizer"]["weight_decay"],
-        #     },
-        #     {
-        #         "params": [
-        #             p
-        #             for n, p in self.encoder.named_parameters()
-        #             if any(nd in n for nd in no_decay) and p.requires_grad
-        #         ],
-        #         "weight_decay": 0.0,
-        #     },
-        # ]
         optimizer_grouped_parameters = None
         return super().configure_optimizers(params=optimizer_grouped_parameters)
 
@@ -225,11 +174,6 @@ class CubePFNPretraining(TSPFNSystem):
 
         # Tokenize the attributes
         assert time_series_attrs is not None, "At least time_series_attrs must be provided to process_data."
-
-        # ts = time_series_attrs[:, :, :-1]  # (B, S, T)
-        # indices = torch.arange(ts.shape[0])
-        # indices = torch.arange(1024)  # Fix for pretraining with sequence length S =1024
-        # y = time_series_attrs[:, :, -1]  # (B, S, 1)
 
         if self.training or summary_mode:
             ts_batch_support, ts_batch_query, y_batch_support, y_batch_query = get_stratified_batch_split(
@@ -291,18 +235,6 @@ class CubePFNPretraining(TSPFNSystem):
             ts: (B, S (=Support+Query), C, T), Tokens to feed to the encoder.
         Returns: (B, Query, E), Embeddings of the input sequences.
         """
-
-        # if self.training or y_inference_support is None:
-        #     out_features = self.encoder(
-        #         ts.transpose(0, 1), y_batch_support.transpose(0, 1), ts_pe=self.time_series_positional_encoding
-        #     )[:, :, -1, :]
-        # elif y_inference_support is not None and ts_inference_support is not None:
-        #     # Use train set as context for predicting the query set on val/test inference
-        #     ts_full = torch.cat([ts_inference_support, ts], dim=1)
-        #     y_train = y_inference_support
-        #     out_features = self.encoder(
-        #         ts_full.transpose(0, 1), y_train.transpose(0, 1), ts_pe=self.time_series_positional_encoding
-        #     )[:, :, -1, :]
 
         if self.training or y_inference_support is None:
             if not already_tokenized:
@@ -512,11 +444,9 @@ class CubePFNPretraining(TSPFNSystem):
         target_batch = y_batch_query
         target = target_batch.squeeze(dim=0)  # (N=Query,)
         y_num_classes = np.unique(target.cpu()).shape[0]
-        if y_num_classes != self.num_classes and self.adaptable_metrics:
-            num_classes = y_num_classes
-            self.num_classes = num_classes
-            # Re instance metrics
-            # self.configure_metrics()
+        # if y_num_classes != self.num_classes and self.adaptable_metrics:
+        #     num_classes = y_num_classes
+        #     self.num_classes = num_classes
 
         predictions = {}
         for target_task, prediction_head in self.prediction_heads.items():
@@ -532,6 +462,16 @@ class CubePFNPretraining(TSPFNSystem):
             stage = "val_metrics"
         else:
             stage = "test_metrics"
+
+        if self.alpha_l2_sp > 0.0:
+            # Compute L2-SP regularization loss
+            l2_sp_loss = 0.0
+            for param, param_O in zip(self.encoder.parameters(), self.starting_point.parameters()):
+                if param.requires_grad:
+                    param_0 = param_O.to(param.device)
+                    l2_sp_loss += torch.sum((param - param_O) ** 2)
+            l2_sp_loss *= self.alpha_l2_sp / 2.0
+            losses["l2_sp_loss"] = l2_sp_loss
 
         for target_task, target_loss in self.predict_losses.items():
             y_hat = predictions[target_task]  # Shape: (B, Q, num_classes)
