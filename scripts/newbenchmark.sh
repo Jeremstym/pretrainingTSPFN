@@ -163,19 +163,18 @@ UCR2019_univariate=(
 # done
 
 
-#! TO REDO
-for dataset in "${UCR2019_univariate[@]}"; do
-    poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune-NoScheduler/seed\${seed}" \
-        +experiment=finetuningTSPFN/tspfn3-finetuning \
-        data=benchmark/evaluating-ucrunivariate \
-        data.dataset="$dataset" \
-        task.adaptable_metrics=True \
-        seed=42 \
-        +dataset="$dataset" \
-        train=True \
-        test=True
-done
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune-NoScheduler/seed\${seed}" \
+#         +experiment=finetuningTSPFN/tspfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=True \
+#         test=True
+# done
 
 # #! TO REDO
 # for dataset in "${UCR2019_univariate[@]}"; do
@@ -403,18 +402,28 @@ done
 
 # POST PROCESSING
 
-# missing_UCR=(
-#     "Symbols"
-#     "PigArtPressure"
-#     "FaceFour"
-#     "PigCVP"
-#     "FiftyWords"
-#     "WormsTwoClass"
-#     "Fungi"
-#     "ECG5000"
-#     "Phoneme"
-#     "DiatomSizeReduction"
-#     "PigAirwayPressure"
-#     "HandOutlines"
-#     "WordSynonyms"
-# )
+missing_UCR=(
+    "Mallat"
+    "WordSynonyms"
+    "Phoneme"
+    "ECG5000"
+    "PigArtPressure"
+    "FiftyWords"
+    "FaceFour"
+    "PigCVP"
+    "Fungi"
+    "PigAirwayPressure"
+)
+
+for dataset in "${missing_UCR[@]}"; do
+    poetry run tspfn-pretrain \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune-NoScheduler/seed\${seed}" \
+        +experiment=finetuningTSPFN/tspfn3-finetuning \
+        data=benchmark/evaluating-ucrunivariate \
+        data.dataset="$dataset" \
+        task.adaptable_metrics=True \
+        seed=42 \
+        +dataset="$dataset" \
+        train=True \
+        test=True
+done
