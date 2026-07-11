@@ -403,16 +403,9 @@ UCR2019_univariate=(
 # POST PROCESSING
 
 missing_UCR=(
-    "Mallat"
-    "WordSynonyms"
     "Phoneme"
-    "ECG5000"
-    "PigArtPressure"
     "FiftyWords"
-    "FaceFour"
-    "PigCVP"
     "Fungi"
-    "PigAirwayPressure"
 )
 
 for dataset in "${missing_UCR[@]}"; do
