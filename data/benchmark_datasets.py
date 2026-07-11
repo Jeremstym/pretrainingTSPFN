@@ -500,7 +500,7 @@ class UCRUnivariateDataset(Dataset):
                     X_train, X_test, Y_train, Y_test = train_test_split(
                         self.X, self.Y, test_size=test_size, random_state=42, stratify=self.Y
                     )
-
+            assert np.unique(Y_train).shape[0] == np.unique(Y_test).shape[0], "Train and test splits must have the same number of classes."
             if split == "train":
                 self.X = X_train
                 self.Y = Y_train
