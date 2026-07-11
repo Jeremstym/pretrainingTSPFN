@@ -403,20 +403,29 @@ UCR2019_univariate=(
 # POST PROCESSING
 
 missing_UCR=(
+    "Mallat"
+    "WordSynonyms"
     "Phoneme"
+    "ECG5000"
+    "PigArtPressure"
     "FiftyWords"
+    "FaceFour"
+    "PigCVP"
     "Fungi"
+    "PigAirwayPressure"
 )
 
 for dataset in "${missing_UCR[@]}"; do
     poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune-NoScheduler/seed\${seed}" \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune/seed\${seed}" \
         +experiment=finetuningTSPFN/tspfn3-finetuning \
         data=benchmark/evaluating-ucrunivariate \
         data.dataset="$dataset" \
         task.adaptable_metrics=True \
         seed=42 \
         +dataset="$dataset" \
+        +task.optim.scheduler._target_=transformers.get_linear_schedule_with_warmup \
+        +task.optim.scheduler.num_warmup_steps=0.1 \
         train=True \
         test=True
 done
