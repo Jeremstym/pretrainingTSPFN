@@ -482,6 +482,18 @@ class UCRUnivariateDataset(Dataset):
                     X_safe, Y_safe, test_size=0.2, random_state=42, stratify=Y_safe
                 )
 
+                all_safe_classes = np.unique(Y_safe)
+                test_safe_classes = np.unique(Y_test)
+                missing_in_test = np.setdiff1d(all_safe_classes, test_safe_classes)
+
+                if len(missing_in_test) > 0:
+                    for classes in missing_in_test:
+                        idx = np.where(Y_train == classes)[0][0]
+                        X_test = np.concatenate([X_test, X_train[idx:idx+1]], axis=0)
+                        Y_test = np.concatenate([Y_test, Y_train[idx:idx+1]], axis=0)
+                        X_train = np.delete(X_train, idx, axis=0)
+                        Y_train = np.delete(Y_train, idx, axis=0)
+
                 X_train = np.concatenate([X_train, X_lonely], axis=0)
                 Y_train = np.concatenate([Y_train, Y_lonely], axis=0)
 
