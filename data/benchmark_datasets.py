@@ -493,6 +493,18 @@ class UCRUnivariateDataset(Dataset):
                     X_train, X_test, Y_train, Y_test = train_test_split(
                         self.X, self.Y, test_size=0.2, random_state=42, stratify=self.Y
                     )
+                    all_classes = np.unique(self.Y)
+                    test_classes = np.unique(Y_test)
+                    missing_in_test = np.setdiff1d(all_classes, test_classes)
+
+                    if len(missing_in_test) > 0:
+                        print(f"Classes missing from test split due to rounding: {missing_in_test}. Fixing...")
+                        for cls in missing_in_test:
+                            idx = np.where(Y_train == cls)[0][0]
+                            X_test = np.concatenate([X_test, X_train[idx:idx+1]], axis=0)
+                            Y_test = np.concatenate([Y_test, Y_train[idx:idx+1]], axis=0)
+                            X_train = np.delete(X_train, idx, axis=0)
+                            Y_train = np.delete(Y_train, idx, axis=0)
                 except ValueError as e:
                     print(f"Error during train-test split: {e}")
                     print("Keep only 1 occurrence of each class.")
