@@ -18,88 +18,88 @@ ulimit -n 4096
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN-Benchmark/ecgfivedays-TSPFN/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=benchmark/evaluating-ecgfivedays seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" task.time_series_positional_encoding=cwpe+rope
 
 UCR2019_univariate=(
-    # "ACSF1"
-    # "Adiac"
-    # "AllGestureWiimoteX"
-    # "AllGestureWiimoteY"
-    # "AllGestureWiimoteZ"
-    # "ArrowHead"
-    # "Beef"
-    # "BeetleFly"
-    # "BirdChicken"
-    # "BME"
-    # "Car"
-    # "CBF"
-    # "Chinatown"
-    # "ChlorineConcentration"
-    # "CinCECGTorso"
-    # "Coffee"
-    # "Computers"
-    # "CricketX"
-    # "CricketY"
-    # "CricketZ"
-    # "Crop"
-    # "DiatomSizeReduction"
-    # "DistalPhalanxOutlineAgeGroup"
-    # "DistalPhalanxOutlineCorrect"
-    # "DistalPhalanxTW"
-    # "DodgerLoopDay"
-    # "DodgerLoopGame"
-    # "DodgerLoopWeekend"
-    # "Earthquakes"
-    # "ECG200"
-    # "ECG5000"
-    # "ECGFiveDays"
-    # "ElectricDevices"
-    # "EOGHorizontalSignal"
-    # "EOGVerticalSignal"
-    # "EthanolLevel"
-    # "FaceAll"
-    # "FaceFour"
-    # "FacesUCR"
-    # "FiftyWords"
-    # "Fish"
-    # "FordA"
-    # "FordB"
-    # "FreezerRegularTrain"
-    # "FreezerSmallTrain"
-    # "Fungi"
-    # "GestureMidAirD1"
-    # "GestureMidAirD2"
-    # "GestureMidAirD3"
-    # "GesturePebbleZ1"
-    # "GesturePebbleZ2"
-    # "GunPoint"
-    # "GunPointAgeSpan"
-    # "GunPointMaleVersusFemale"
-    # "GunPointOldVersusYoung"
-    # "Ham"
-    # "HandOutlines"
-    # "Haptics"
-    # "Herring"
-    # "HouseTwenty"
-    # "InlineSkate"
-    # "InsectEPGRegularTrain"
-    # "InsectEPGSmallTrain"
-    # "InsectWingbeatSound"
-    # "ItalyPowerDemand"
-    # "LargeKitchenAppliances"
-    # "Lightning2"
-    # "Lightning7"
-    # "Mallat"
-    # "Meat"
-    # "MedicalImages"
-    # "MelbournePedestrian"
-    # "MiddlePhalanxOutlineCorrect"
-    # "MiddlePhalanxOutlineAgeGroup"
-    # "MiddlePhalanxTW"
-    # "MixedShapesRegularTrain"
-    # "MixedShapesSmallTrain"
-    # "MoteStrain"
-    # "NonInvasiveFetalECGThorax1"
-    # "NonInvasiveFetalECGThorax2"
-    # "OliveOil"
-    # "OSULeaf"
+    "ACSF1"
+    "Adiac"
+    "AllGestureWiimoteX"
+    "AllGestureWiimoteY"
+    "AllGestureWiimoteZ"
+    "ArrowHead"
+    "Beef"
+    "BeetleFly"
+    "BirdChicken"
+    "BME"
+    "Car"
+    "CBF"
+    "Chinatown"
+    "ChlorineConcentration"
+    "CinCECGTorso"
+    "Coffee"
+    "Computers"
+    "CricketX"
+    "CricketY"
+    "CricketZ"
+    "Crop"
+    "DiatomSizeReduction"
+    "DistalPhalanxOutlineAgeGroup"
+    "DistalPhalanxOutlineCorrect"
+    "DistalPhalanxTW"
+    "DodgerLoopDay"
+    "DodgerLoopGame"
+    "DodgerLoopWeekend"
+    "Earthquakes"
+    "ECG200"
+    "ECG5000"
+    "ECGFiveDays"
+    "ElectricDevices"
+    "EOGHorizontalSignal"
+    "EOGVerticalSignal"
+    "EthanolLevel"
+    "FaceAll"
+    "FaceFour"
+    "FacesUCR"
+    "FiftyWords"
+    "Fish"
+    "FordA"
+    "FordB"
+    "FreezerRegularTrain"
+    "FreezerSmallTrain"
+    "Fungi"
+    "GestureMidAirD1"
+    "GestureMidAirD2"
+    "GestureMidAirD3"
+    "GesturePebbleZ1"
+    "GesturePebbleZ2"
+    "GunPoint"
+    "GunPointAgeSpan"
+    "GunPointMaleVersusFemale"
+    "GunPointOldVersusYoung"
+    "Ham"
+    "HandOutlines"
+    "Haptics"
+    "Herring"
+    "HouseTwenty"
+    "InlineSkate"
+    "InsectEPGRegularTrain"
+    "InsectEPGSmallTrain"
+    "InsectWingbeatSound"
+    "ItalyPowerDemand"
+    "LargeKitchenAppliances"
+    "Lightning2"
+    "Lightning7"
+    "Mallat"
+    "Meat"
+    "MedicalImages"
+    "MelbournePedestrian"
+    "MiddlePhalanxOutlineCorrect"
+    "MiddlePhalanxOutlineAgeGroup"
+    "MiddlePhalanxTW"
+    "MixedShapesRegularTrain"
+    "MixedShapesSmallTrain"
+    "MoteStrain"
+    "NonInvasiveFetalECGThorax1"
+    "NonInvasiveFetalECGThorax2"
+    "OliveOil"
+    "OSULeaf"
     "PhalangesOutlinesCorrect"
     "Phoneme"
     "PickupGestureWiimoteZ"
@@ -148,6 +148,18 @@ UCR2019_univariate=(
     "Yoga"
 )
 
+for dataset in "${UCR2019_univariate[@]}"; do
+    poetry run tspfn-pretrain \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TSPFN3/seed\${seed}" \
+        +experiment=finetuningTSPFN/tspfn3-finetuning \
+        data=benchmark/evaluating-ucrunivariate \
+        data.dataset="$dataset" \
+        task.adaptable_metrics=True \
+        seed=42 \
+        +dataset="$dataset" \
+        train=False \
+        test=True
+done
 
 # for dataset in "${missing_UCR[@]}"; do
 #     poetry run tspfn-pretrain \
@@ -367,18 +379,6 @@ UCR2019_univariate=(
 #         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/cubeICL3-pretrained-attchanCLSAVG.ckpt"
 # done
 
-# for dataset in "${UCR2019_univariate[@]}"; do
-#     poetry run tspfn-pretrain \
-#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TSPFN-v3/seed\${seed}" \
-#         +experiment=finetuningTSPFN/tspfn3-finetuning \
-#         data=benchmark/evaluating-ucrunivariate \
-#         data.dataset="$dataset" \
-#         task.adaptable_metrics=True \
-#         seed=42 \
-#         +dataset="$dataset" \
-#         train=False \
-#         test=True
-# done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
@@ -402,30 +402,30 @@ UCR2019_univariate=(
 
 # POST PROCESSING
 
-missing_UCR=(
-    "Mallat"
-    "WordSynonyms"
-    "Phoneme"
-    "ECG5000"
-    "PigArtPressure"
-    "FiftyWords"
-    "FaceFour"
-    "PigCVP"
-    "Fungi"
-    "PigAirwayPressure"
-)
+# missing_UCR=(
+#     "Mallat"
+#     "WordSynonyms"
+#     "Phoneme"
+#     "ECG5000"
+#     "PigArtPressure"
+#     "FiftyWords"
+#     "FaceFour"
+#     "PigCVP"
+#     "Fungi"
+#     "PigAirwayPressure"
+# )
 
-for dataset in "${missing_UCR[@]}"; do
-    poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune/seed\${seed}" \
-        +experiment=finetuningTSPFN/tspfn3-finetuning \
-        data=benchmark/evaluating-ucrunivariate \
-        data.dataset="$dataset" \
-        task.adaptable_metrics=True \
-        seed=42 \
-        +dataset="$dataset" \
-        +task.optim.scheduler._target_=transformers.get_linear_schedule_with_warmup \
-        +task.optim.scheduler.num_warmup_steps=0.1 \
-        train=True \
-        test=True
-done
+# for dataset in "${missing_UCR[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune/seed\${seed}" \
+#         +experiment=finetuningTSPFN/tspfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         +task.optim.scheduler._target_=transformers.get_linear_schedule_with_warmup \
+#         +task.optim.scheduler.num_warmup_steps=0.1 \
+#         train=True \
+#         test=True
+# done
