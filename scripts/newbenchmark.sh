@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=electronic
-#SBATCH --job-name=TabPFN3-FineTune
+#SBATCH --job-name=TabPFN3-Eval
 ####BATCH --cpus-per-task=5
 ####SBATCH --mem-per-cpu=8G
 #SBATCH --nodes=1
