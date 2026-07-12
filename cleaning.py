@@ -18,4 +18,4 @@ def remove_checkpoints_directory(path: Path, pattern: str = "-FineTune"):
 
 if __name__ == "__main__":
     path = "/data/stympopper/TSPFN-Benchmark/UCRUnivariate"
-    remove_checkpoints_directory(path, pattern="-TabPFN3-FineTune")
+    remove_checkpoints_directory(path, pattern="-TabPFN3-FineTune-NoScheduler")
