@@ -157,6 +157,8 @@ for dataset in "${UCR2019_univariate[@]}"; do
         task.adaptable_metrics=True \
         seed=42 \
         +dataset="$dataset" \
+        +task.optim.scheduler._target_=transformers.get_linear_schedule_with_warmup \
+        +task.optim.scheduler.num_warmup_steps=0.1 \
         train=True \
         test=True
 done
