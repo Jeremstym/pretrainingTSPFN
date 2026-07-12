@@ -267,7 +267,7 @@ class UCRUnivariateDataModule(TSPFNDataModule):
             }
             return CombinedLoader(loaders, mode="max_size_cycle")
         else:
-            return self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset))
+            return self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset))
 
     def test_dataloader(self):
         if not self.mantis_training:
