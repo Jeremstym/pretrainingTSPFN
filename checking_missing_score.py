@@ -21,4 +21,4 @@ def check_scores(path: Path, pattern: str = "CubePFN3-FineTune"):
 
 if __name__ == "__main__":
     path = "/data/stympopper/TSPFN-Benchmark/UCRUnivariate"
-    check_scores(path, pattern="-TabPFN3-FineTune")
+    check_scores(path, pattern="-TabPFN3-FineTune-NoScheduler")
