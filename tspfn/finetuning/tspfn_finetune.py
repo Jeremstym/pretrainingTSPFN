@@ -352,8 +352,8 @@ class TSPFNFineTuning(TSPFNSystem):
         y_batch_support: Tensor,
         ts_batch_support: Tensor,
         ts_batch_query: Tensor,
-        y_inference_support: Optional[Tensor] = None,
-        ts_inference_support: Optional[Tensor] = None,
+        y_inference_support: Tensor,
+        ts_inference_support: Tensor,
         already_tokenized: bool = False,
         evaluation: bool = False,
         return_logits: bool = False,
@@ -365,12 +365,12 @@ class TSPFNFineTuning(TSPFNSystem):
             ts: (B, S (=Support+Query), C, T), Tokens to feed to the encoder.
         Returns: (B, Query, E), Embeddings of the input sequences.
         """
-        if not evaluation or y_inference_support is None:
-            ts = torch.cat([ts_batch_support, ts_batch_query], dim=1)  # (B, S+Q, C, T)
+        if not evaluation:
+            ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)  # (B, S+Q, C, T)
             if not return_logits:
                 out_features = self.elncoder(
                     ts.transpose(0, 1),
-                    y_batch_support.transpose(0, 1),
+                    y_inference_support.transpose(0, 1),
                     already_tokenized=already_tokenized,
                 )[
                     :, :, -1, :
@@ -378,11 +378,11 @@ class TSPFNFineTuning(TSPFNSystem):
             else:
                 out_features = self.encoder(
                     ts.transpose(0, 1),
-                    y_batch_support.transpose(0, 1),
+                    y_inference_support.transpose(0, 1),
                     already_tokenized=already_tokenized,
                 )
 
-        elif y_inference_support is not None and ts_inference_support is not None:
+        else:
             # Use train set as context for predicting the query set on val/test inference
             if self.ts_tokenizer is None:
                 ts = torch.cat([ts_inference_support, ts_batch_query], dim=1)
@@ -403,8 +403,6 @@ class TSPFNFineTuning(TSPFNSystem):
                     y_train.transpose(0, 1),
                     already_tokenized=already_tokenized,
                 )
-        else:
-            raise ValueError("During inference, both support ts and labels must be provided.")
 
         return out_features  # (B, Query, E)
 
@@ -487,6 +485,8 @@ class TSPFNFineTuning(TSPFNSystem):
                 ts_query,
                 already_tokenized=already_tokenized,
                 return_logits=self.return_logits,
+                y_inference_support=y_batch_support,
+                ts_inference_support=ts_support,
             )  # (B, S, E) -> (B, E)
 
         # Early return if requested task requires no prediction heads
@@ -510,23 +510,6 @@ class TSPFNFineTuning(TSPFNSystem):
 
         else:
             raise ValueError(f"Unknown task '{task}' requested for forward pass.")
-
-    @auto_move_data
-    def get_latent_vectors(
-        self,
-        batch: Tensor,
-        batch_idx: int,
-    ) -> Tensor:
-        """Extracts the latent vectors from the encoder for the given batch."""
-        time_series_input = batch  # (B, S, T)
-
-        y_batch_support, y_batch_query, ts_support, ts_query = self.process_data(
-            time_series_attrs=time_series_input
-        )  # (B, S, E), (B, S)
-        already_tokenized = self.ts_tokenizer is not None
-        return self.encode(
-            y_batch_support, ts_support, ts_query, already_tokenized=already_tokenized, evaluation=True
-        )  # (B, S, E) -> (B, E)
 
     def _shared_step(self, batch: Union[Tensor, Tuple[Tensor, ...]], batch_idx: int) -> Dict[str, Tensor]:
         # Shared step for training, validation and testing
