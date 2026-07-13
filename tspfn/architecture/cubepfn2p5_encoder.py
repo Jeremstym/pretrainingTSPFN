@@ -1204,6 +1204,7 @@ class TabPFNV2p5(Architecture):
         """
         for channel in range(num_channels):
             x_RiBCT[:, :, channel, :] = _remove_constant_features(x_RiBCT=x_RiBCT[:, :, channel, :])
+        print(f"x_RiBCT shape after removing constant features: {x_RiBCT.shape}")
         # x_RiBCT = _remove_constant_features(x_RiBCT=x_RiBCT)
         # Bg = folded batch size (B * G) and number of feature groups (G)
         x_RiBgCTg, num_feature_groups = _pad_and_reshape_feature_groups(
