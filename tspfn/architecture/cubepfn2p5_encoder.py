@@ -1070,7 +1070,7 @@ class TabPFNV2p5(Architecture):
 
         # Add the targets as an additional column.
         print(f"embedded_x_BRiCGX shape: {embedded_x_BRiCGX.shape}")
-        x_BRiCLD = torch.cat((embedded_x_BRiCGX, embedded_y_BRiCX[:, :, :, None]), dim=3)
+        x_BRiCLD = torch.cat((embedded_x_BRiCGX, embedded_y_BRiCX[:, :, :, None]), dim=-1)
         # This check results in a graph break with torch compile, so we only run it once
         # in the beginning and then disable it.
         if self._do_encoder_nan_check:
@@ -1511,14 +1511,11 @@ def _pad_and_reshape_feature_groups(
     x_RiBCT_padded = torch.nn.functional.pad(
         x_RiBCT, pad=(0, num_padding_features), value=0
     )
-    print(f"x_RiBCT_padded shape: {x_RiBCT_padded.shape}")
     num_rows, B, num_channels, num_padded_columns = x_RiBCT_padded.shape
     num_feature_groups = num_padded_columns // num_features_per_group
-    print(f"num_feature_groups: {num_feature_groups}")
     x_RiBgCTg = x_RiBCT_padded.reshape(
         num_rows, B * num_feature_groups, num_channels, num_features_per_group
     )
-    print(f"x_RiBgCTg shape: {x_RiBgCTg.shape}")
     return x_RiBgCTg, num_feature_groups
 
 
