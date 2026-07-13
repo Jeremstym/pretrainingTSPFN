@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=heavy
 ###SBATCH --nodelist=ac
-#SBATCH --job-name=CubePFN-pretraining
+#SBATCH --job-name=TabPFN3-pretraining
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --time=1-23:00:00
@@ -70,4 +70,4 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/TabPFN3-Med
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-MantisPretraining-v2' +experiment=pretrainingTSPFN/cubepfn3-mantis-pretraining seed=42
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-MantisPretraining-noDiff' +experiment=pretrainingTSPFN/cubepfn3-mantis-pretraining seed=42
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN2p5-MedPretrained' +experiment=pretrainingTSPFN/cubepfn2p5-pretraining seed=42 task.model.encoder.use_checkpoint=False
+# poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN2p5-MedPretrained' +experiment=pretrainingTSPFN/cubepfn2p5-pretraining seed=42 task.model.encoder.use_checkpoint=False
