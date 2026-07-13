@@ -1210,29 +1210,24 @@ class TabPFNV2p5(Architecture):
             x_RiBCT=x_RiBCT,
             num_features_per_group=self.features_per_group,
         )
-        print(f"x_RiBgCTg shape: {x_RiBgCTg.shape}")
         nan_and_inf_indicator_RiBgCTg = _generate_nan_and_inf_indicator(x=x_RiBgCTg)
         # For consistency with old base implementation, the imputation is done
         # before the standard scaling
         x_RiBgCTg, _ = _impute_nan_and_inf_with_mean(
             x=x_RiBgCTg, num_train_rows=num_train_labels
         )
-        print(f"x_RiBgCTg shape after imputation: {x_RiBgCTg.shape}")
         x_RiBgCTg = self.standard_scaler(x=x_RiBgCTg, num_train_rows=num_train_labels)
         x_RiBgCTg = _normalize_feature_groups(
             x_RiBCT=x_RiBgCTg, num_features_per_group=self.features_per_group
         )
-        print(f"x_RiBgCTg shape after normalization: {x_RiBgCTg.shape}")
         x_RiBgCTg_concat = torch.cat([x_RiBgCTg, nan_and_inf_indicator_RiBgCTg], dim=-1)
         # X = embedding size
         embedded_x_RiBgCX = self.feature_group_embedder(x_RiBgCTg_concat)
-        print(f"embedded_x_RiBgCX shape: {embedded_x_RiBgCX.shape}")
         # G = number of feature groups (the number of columns the model will see).
         embedded_x_RiBCGX = embedded_x_RiBgCX.unflatten(
             1, [batch_size, num_feature_groups]
         ).transpose(1, 2)
         embedded_x_BRiCGX = embedded_x_RiBCGX.transpose(0, 1)
-        print(f"embedded_x_BRiCGX shape: {embedded_x_BRiCGX.shape}")
 
         return self._add_column_embeddings(embedded_x_BRiCGX)
 
@@ -1516,12 +1511,14 @@ def _pad_and_reshape_feature_groups(
     x_RiBCT_padded = torch.nn.functional.pad(
         x_RiBCT, pad=(0, num_padding_features), value=0
     )
+    print(f"x_RiBCT_padded shape: {x_RiBCT_padded.shape}")
     num_rows, B, num_channels, num_padded_columns = x_RiBCT_padded.shape
     num_feature_groups = num_padded_columns // num_features_per_group
-
+    print(f"num_feature_groups: {num_feature_groups}")
     x_RiBgCTg = x_RiBCT_padded.reshape(
         num_rows, B * num_feature_groups, num_channels, num_features_per_group
     )
+    print(f"x_RiBgCTg shape: {x_RiBgCTg.shape}")
     return x_RiBgCTg, num_feature_groups
 
 
