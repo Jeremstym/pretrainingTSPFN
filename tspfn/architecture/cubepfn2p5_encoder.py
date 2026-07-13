@@ -1198,7 +1198,9 @@ class TabPFNV2p5(Architecture):
                 - G: number of feature groups
                 - X: embedding size
         """
-        x_RiBCT = _remove_constant_features(x_RiBCT=x_RiBCT)
+        for channel in range(num_channels):
+            x_RiBCT[:, :, :, channel] = _remove_constant_features(x_RiBCT=x_RiBCT[:, :, :, channel])
+        # x_RiBCT = _remove_constant_features(x_RiBCT=x_RiBCT)
         # Bg = folded batch size (B * G) and number of feature groups (G)
         x_RiBgCTg, num_feature_groups = _pad_and_reshape_feature_groups(
             x_RiBCT=x_RiBCT,
