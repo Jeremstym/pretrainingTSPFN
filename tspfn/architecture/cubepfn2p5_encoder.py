@@ -1251,6 +1251,7 @@ class TabPFNV2p5(Architecture):
                 - Ri: number of input rows (padded)
                 - X: embedding size
         """
+        y = y.float()
         y_RiB1 = _prepare_targets(
             y=y,
             num_train_rows=num_train_rows,
