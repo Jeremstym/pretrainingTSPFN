@@ -1,0 +1,113 @@
+# @package _global_
+
+defaults:
+  - /task/model/prediction_head: identity
+  - /task/model/encoder: tspfn3-encoder
+  - /task/model/tokenizer: null
+  - override /task/model: null
+  - override /task/optim: adamw
+  - override /data: pretraining-data
+
+
+resume: False
+test: True
+trainer:
+  devices: ${sys.num_gpus:}
+  accelerator: gpu
+  precision: 32 #16-mixed, 32
+  max_epochs: 500
+# profiler:
+#   _target_: pytorch_lightning.profilers.PyTorchProfiler
+#   dirpath: ${sys.getcwd:}
+#   filename: "oom_profile_report"
+#   profile_memory: True
+#   with_stack: True
+#   export_to_chrome: True
+  
+output_dir: ${sys.getcwd:}
+updated_pfn_path: null
+
+data:
+  meta_batch_size: 1 # Number of datasets to sample per training step
+
+task:
+  _target_: tspfn.pretraining.cubepfn_module.CubePFNPretraining
+  embed_dim: 128 # 192 for V2, 512 for V2.5
+  num_classes: 10 # As in TabPFN_v2 paper, not used for TabPFN-3 based models
+  # chunk_size: ${data.chunk_size}
+  split_finetuning: 0.5
+  predict_losses:
+    classification:
+      _target_: torch.nn.CrossEntropyLoss
+  time_series_positional_encoding: none
+  use_tokenizer: False
+  l2_sp_regularizer_coeff: 0.0
+  seed : ${seed}
+  crop_resize:
+    _target_: tspfn.augmentation.RandomCropResize
+    crop_rate_range: [0, 0.2]
+    size: null # By default, to the original sequence length.
+  fft:
+    _target_: tspfn.augmentation.FastFourierTransform
+  differentiate:
+    _target_: tspfn.augmentation.Differentiation
+    order: 1
+  # model:
+  #   freeze_encoder: False # Whether to freeze the TabPFN encoder during training
+  # optim:
+  #   optimizer:
+  #     _target_: torch.optim.AdamW
+  #     lr: 1.2e-3              # Large batch size in CubePFN: up to 2048
+  #     weight_decay: 0.01     # Stronger decay is essential for multi-dataset meta-learning
+  #     eps: 1e-6
+  #     betas: [0.9, 0.999]
+  #   scheduler:
+  #     _target_: transformers.get_cosine_schedule_with_warmup
+  #     warmup_ratio: 0.1
+  # optim:
+  #   optimizer:
+  #     _target_: torch.optim.AdamW
+  #     lr: 3e-7              # Large batch size in CubePFN: up to 2048
+  #   scheduler:
+  #     _target_: transformers.get_cosine_schedule_with_warmup
+  #     warmup_ratio: 0.1
+  optim:
+    optimizer:
+      _target_: torch.optim.AdamW
+      lr: 5e-5              # Slightly higher than single-set tuning, but still cautious
+      weight_decay: 0.1     # Stronger decay is essential for multi-dataset meta-learning
+      eps: 1e-8
+
+# Change checkpoint loading defaults to:
+ckpt: ??? # Make it mandatory to provide a checkpoint
+weights_only: True  # Only load the weights and ignore the hyperparameters
+strict: True # Only load weights where they match the defined network, to only some changes (e.g. heads, etc.)
+
+
+experiment_dirname: data=${hydra:runtime.choices.task/data}/contrastive=${oc.select:task.contrastive_loss_weight,0}/time_series_tokenizer=${hydra:runtime.choices.task/time_series_tokenizer/model}
+hydra:
+  job:
+    config:
+      override_dirname:
+        exclude_keys:
+          - hydra/launcher
+          - hydra.launcher.n_jobs
+          - hydra.run.dir
+          - hydra.sweep.dir
+          - hydra.sweep.subdir
+
+          - experiment
+          - trainer.enable_progress_bar
+          - trainer.max_epochs
+
+          - callbacks.learning_rate_finder
+
+          - ckpt
+
+          - data
+          - task.predict_losses
+
+          - task.embed_dim
+          - task/time_series_tokenizer/model
+
+          - task/model/encoder
