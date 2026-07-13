@@ -41,6 +41,7 @@ task:
       _target_: torch.nn.CrossEntropyLoss
   time_series_positional_encoding: none
   use_tokenizer: False
+  flatten_channel: False
   l2_sp_regularizer_coeff: 0.003
   seed : ${seed}
   crop_resize:

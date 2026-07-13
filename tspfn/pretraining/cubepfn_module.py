@@ -54,6 +54,7 @@ class CubePFNPretraining(TSPFNSystem):
         predict_losses: Optional[Dict[str, Callable[[Tensor, Tensor], Tensor]] | DictConfig] = None,
         chunk_size: int = 10000,
         use_tokenizer: bool = False,
+        flatten_channel: bool = False,
         adaptable_metrics: bool = True,
         return_logits: bool = True,
         l2_sp_regularizer_coeff: Optional[float] = 0.0,
@@ -82,6 +83,7 @@ class CubePFNPretraining(TSPFNSystem):
         self.adaptable_metrics = adaptable_metrics
         self.return_logits = return_logits
         self.alpha_l2_sp = l2_sp_regularizer_coeff
+        self.flatten_channel = flatten_channel
 
         # Supervised losses and metrics
         self.predict_losses = {}
@@ -209,6 +211,13 @@ class CubePFNPretraining(TSPFNSystem):
             y_batch_support = y_batch_support.unsqueeze(0)  # (1, Support)
         if y_batch_query.ndim == 1:
             y_batch_query = y_batch_query.unsqueeze(0)  # (1, Query)
+
+        if self.flatten_channel:
+            # Flatten the channel dimension into the time dimension
+            B, S, C, T = ts_batch_support.shape
+            ts_batch_support = ts_batch_support.view(B, S, C * T)  # (B, Support, C*T)
+            B, Q, C, T = ts_batch_query.shape
+            ts_batch_query = ts_batch_query.view(B, Q, C * T)  # (B, Query, C*T)
 
         return (
             y_batch_support,
