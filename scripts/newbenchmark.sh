@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=electronic
-#SBATCH --job-name=TabPFN3-Finetuning
+#SBATCH --job-name=CubePFN3-Eval
 ####BATCH --cpus-per-task=5
 ####SBATCH --mem-per-cpu=8G
 #SBATCH --nodes=1
@@ -53,115 +53,130 @@ UCR2019_univariate=(
     "ElectricDevices"
     "EOGHorizontalSignal"
     "EOGVerticalSignal"
-#     "EthanolLevel"
-#     "FaceAll"
-#     "FaceFour"
-#     "FacesUCR"
-#     "FiftyWords"
-#     "Fish"
-#     "FordA"
-#     "FordB"
-#     "FreezerRegularTrain"
-#     "FreezerSmallTrain"
-#     "Fungi"
-#     "GestureMidAirD1"
-#     "GestureMidAirD2"
-#     "GestureMidAirD3"
-#     "GesturePebbleZ1"
-#     "GesturePebbleZ2"
-#     "GunPoint"
-#     "GunPointAgeSpan"
-#     "GunPointMaleVersusFemale"
-#     "GunPointOldVersusYoung"
-#     "Ham"
-#     "HandOutlines"
-#     "Haptics"
-#     "Herring"
-#     "HouseTwenty"
-#     "InlineSkate"
-#     "InsectEPGRegularTrain"
-#     "InsectEPGSmallTrain"
-#     "InsectWingbeatSound"
-#     "ItalyPowerDemand"
-#     "LargeKitchenAppliances"
-#     "Lightning2"
-#     "Lightning7"
-#     "Mallat"
-#     "Meat"
-#     "MedicalImages"
-#     "MelbournePedestrian"
-#     "MiddlePhalanxOutlineCorrect"
-#     "MiddlePhalanxOutlineAgeGroup"
-#     "MiddlePhalanxTW"
-#     "MixedShapesRegularTrain"
-#     "MixedShapesSmallTrain"
-#     "MoteStrain"
-#     "NonInvasiveFetalECGThorax1"
-#     "NonInvasiveFetalECGThorax2"
-#     "OliveOil"
-#     "OSULeaf"
-#     "PhalangesOutlinesCorrect"
-#     "Phoneme"
-#     "PickupGestureWiimoteZ"
-#     "PigAirwayPressure"
-#     "PigArtPressure"
-#     "PigCVP"
-#     "PLAID"
-#     "Plane"
-#     "PowerCons"
-#     "ProximalPhalanxOutlineCorrect"
-#     "ProximalPhalanxOutlineAgeGroup"
-#     "ProximalPhalanxTW"
-#     "RefrigerationDevices"
-#     "Rock"
-#     "ScreenType"
-#     "SemgHandGenderCh2"
-#     "SemgHandMovementCh2"
-#     "SemgHandSubjectCh2"
-#     "ShakeGestureWiimoteZ"
-#     "ShapeletSim"
-#     "ShapesAll"
-#     "SmallKitchenAppliances"
-#     "SmoothSubspace"
-#     "SonyAIBORobotSurface1"
-    # "SonyAIBORobotSurface2"
-    # "StarLightCurves"
-    # "Strawberry"
-    # "SwedishLeaf"
-    # "Symbols"
-    # "SyntheticControl"
-    # "ToeSegmentation1"
-    # "ToeSegmentation2"
-    # "Trace"
-    # "TwoLeadECG"
-    # "TwoPatterns"
-    # "UMD"
-    # "UWaveGestureLibraryAll"
-    # "UWaveGestureLibraryX"
-    # "UWaveGestureLibraryY"
-    # "UWaveGestureLibraryZ"
-    # "Wafer"
-    # "Wine"
-    # "WordSynonyms"
-    # "Worms"
-    # "WormsTwoClass"
-    # "Yoga"
+    "EthanolLevel"
+    "FaceAll"
+    "FaceFour"
+    "FacesUCR"
+    "FiftyWords"
+    "Fish"
+    "FordA"
+    "FordB"
+    "FreezerRegularTrain"
+    "FreezerSmallTrain"
+    "Fungi"
+    "GestureMidAirD1"
+    "GestureMidAirD2"
+    "GestureMidAirD3"
+    "GesturePebbleZ1"
+    "GesturePebbleZ2"
+    "GunPoint"
+    "GunPointAgeSpan"
+    "GunPointMaleVersusFemale"
+    "GunPointOldVersusYoung"
+    "Ham"
+    "HandOutlines"
+    "Haptics"
+    "Herring"
+    "HouseTwenty"
+    "InlineSkate"
+    "InsectEPGRegularTrain"
+    "InsectEPGSmallTrain"
+    "InsectWingbeatSound"
+    "ItalyPowerDemand"
+    "LargeKitchenAppliances"
+    "Lightning2"
+    "Lightning7"
+    "Mallat"
+    "Meat"
+    "MedicalImages"
+    "MelbournePedestrian"
+    "MiddlePhalanxOutlineCorrect"
+    "MiddlePhalanxOutlineAgeGroup"
+    "MiddlePhalanxTW"
+    "MixedShapesRegularTrain"
+    "MixedShapesSmallTrain"
+    "MoteStrain"
+    "NonInvasiveFetalECGThorax1"
+    "NonInvasiveFetalECGThorax2"
+    "OliveOil"
+    "OSULeaf"
+    "PhalangesOutlinesCorrect"
+    "Phoneme"
+    "PickupGestureWiimoteZ"
+    "PigAirwayPressure"
+    "PigArtPressure"
+    "PigCVP"
+    "PLAID"
+    "Plane"
+    "PowerCons"
+    "ProximalPhalanxOutlineCorrect"
+    "ProximalPhalanxOutlineAgeGroup"
+    "ProximalPhalanxTW"
+    "RefrigerationDevices"
+    "Rock"
+    "ScreenType"
+    "SemgHandGenderCh2"
+    "SemgHandMovementCh2"
+    "SemgHandSubjectCh2"
+    "ShakeGestureWiimoteZ"
+    "ShapeletSim"
+    "ShapesAll"
+    "SmallKitchenAppliances"
+    "SmoothSubspace"
+    "SonyAIBORobotSurface1"
+    "SonyAIBORobotSurface2"
+    "StarLightCurves"
+    "Strawberry"
+    "SwedishLeaf"
+    "Symbols"
+    "SyntheticControl"
+    "ToeSegmentation1"
+    "ToeSegmentation2"
+    "Trace"
+    "TwoLeadECG"
+    "TwoPatterns"
+    "UMD"
+    "UWaveGestureLibraryAll"
+    "UWaveGestureLibraryX"
+    "UWaveGestureLibraryY"
+    "UWaveGestureLibraryZ"
+    "Wafer"
+    "Wine"
+    "WordSynonyms"
+    "Worms"
+    "WormsTwoClass"
+    "Yoga"
 )
 
 for dataset in "${UCR2019_univariate[@]}"; do
     poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune/seed\${seed}" \
-        +experiment=finetuningTSPFN/tspfn3-finetuning \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-Reg-MedPretrained/seed\${seed}" \
+        +experiment=finetuningTSPFN/cubepfn3-finetuning \
         data=benchmark/evaluating-ucrunivariate \
         data.dataset="$dataset" \
         task.adaptable_metrics=True \
         seed=42 \
         +dataset="$dataset" \
-        +task.optim.scheduler._target_=transformers.get_linear_schedule_with_warmup \
-        +task.optim.scheduler.num_warmup_steps=0.1 \
-        train=True \
-        test=True
+        train=False \
+        test=True \
+        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/CubePFN3-Reg-MedPretrained.ckpt" \
+        strict=False
 done
+
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TabPFN3-FineTune/seed\${seed}" \
+#         +experiment=finetuningTSPFN/tspfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         +task.optim.scheduler._target_=transformers.get_linear_schedule_with_warmup \
+#         +task.optim.scheduler.num_warmup_steps=0.1 \
+#         train=True \
+#         test=True
+# done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
