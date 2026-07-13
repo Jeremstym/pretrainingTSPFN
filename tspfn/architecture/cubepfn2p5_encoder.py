@@ -1024,6 +1024,9 @@ class TabPFNV2p5(Architecture):
             performance_options = self.get_default_performance_options()
         force_recompute_layer = performance_options.force_recompute_layer
         save_peak_memory_factor = performance_options.save_peak_memory_factor
+
+        print(f"x shape: {x.shape}")
+        print(f"y shape: {y.shape}")
         del categorical_inds
         if isinstance(x, dict):
             x = x["main"]
