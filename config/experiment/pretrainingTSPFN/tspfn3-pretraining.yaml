@@ -52,6 +52,7 @@ task:
   differentiate:
     _target_: tspfn.augmentation.Differentiation
     order: 1
+  model.encoder.tabpfn_kwargs.config.inference_row_chunk_size: 1024
   # model:
   #   freeze_encoder: False # Whether to freeze the TabPFN encoder during training
   # optim:
