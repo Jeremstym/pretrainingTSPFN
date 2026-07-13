@@ -150,8 +150,8 @@ UCR2019_univariate=(
 
 for dataset in "${UCR2019_univariate[@]}"; do
     poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-Reg-MedPretrained/seed\${seed}" \
-        +experiment=finetuningTSPFN/cubepfn3-finetuning \
+        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TSPFN/seed\${seed}" \
+        +experiment=finetuningTSPFN/tspfn-finetuning \
         data=benchmark/evaluating-ucrunivariate \
         data.dataset="$dataset" \
         task.adaptable_metrics=True \
@@ -159,9 +159,25 @@ for dataset in "${UCR2019_univariate[@]}"; do
         +dataset="$dataset" \
         train=False \
         test=True \
-        ckpt="/home/stympopper/pretrainingTSPFN/ckpts/CubePFN3-Reg-MedPretrained.ckpt" \
-        strict=False
+        updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" \
+        task.time_series_positional_encoding=cwpe+rope
 done
+
+
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-CubePFN3-Reg-MedPretrained/seed\${seed}" \
+#         +experiment=finetuningTSPFN/cubepfn3-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=False \
+#         test=True \
+#         ckpt="/home/stympopper/pretrainingTSPFN/ckpts/CubePFN3-Reg-MedPretrained.ckpt" \
+#         strict=False
+# done
 
 # for dataset in "${UCR2019_univariate[@]}"; do
 #     poetry run tspfn-pretrain \
@@ -412,20 +428,6 @@ done
 # done
 
 
-# for dataset in "${UCR2019_univariate[@]}"; do
-#     poetry run tspfn-pretrain \
-#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TSPFN/seed\${seed}" \
-#         +experiment=finetuningTSPFN/tspfn-finetuning \
-#         data=benchmark/evaluating-ucrunivariate \
-#         data.dataset="$dataset" \
-#         task.adaptable_metrics=True \
-#         seed=42 \
-#         +dataset="$dataset" \
-#         train=False \
-#         test=True \
-#         updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" \
-#         task.time_series_positional_encoding=cwpe+rope
-# done
 
 # TSICL test
 
