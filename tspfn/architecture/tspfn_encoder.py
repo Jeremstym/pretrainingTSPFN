@@ -211,6 +211,7 @@ class TSPFNEncoder(nn.Module, ABC):
 
         if not already_tokenized:
             X = einops.rearrange(X, "b s f n -> s (b f) n")
+            print(f"Input X shape before encoding: {X.shape}")
             embedded_x = einops.rearrange(
                 self.encoder(
                     {"main": X},
@@ -230,7 +231,6 @@ class TSPFNEncoder(nn.Module, ABC):
 
         if not already_tokenized:
             seq_len, batch_size, num_channels, num_features = X_full.shape
-            print(f"Original input shape: {X_full.shape}")
         else:
             num_channels, seq_len, num_features, embed_dim = X_full.shape
             batch_size = 1  # If already tokenized, we assume batch size of 1 for simplicity
@@ -242,7 +242,6 @@ class TSPFNEncoder(nn.Module, ABC):
         # Flatten on channels and/or tokenize
         if not already_tokenized:
             X_full = X_full.view(seq_len, batch_size, num_channels * num_features)  # (Seq, B, C*F)
-            print(f"Input X_full shape before encoding: {X_full.shape}")
             emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
         else:
             # print(f"Input X_full shape before encoding: {X_full.shape}")
