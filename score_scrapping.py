@@ -165,7 +165,7 @@ def main_mantis():
     # Iterate over each dataset directory
     for dataset_dir in tqdm(results_dir, desc="Processing datasets"):
         if dataset_dir.is_dir():
-            dataset_name = dataset_dir.name.split("-MantisV2-RF")[0]  # Extract dataset name
+            dataset_name = dataset_dir.name.split("-MantisV2-FineTune")[0]  # Extract dataset name
 
             # Iterate over each seed directory within the dataset directory
             for seed_dir in dataset_dir.iterdir():
@@ -200,4 +200,4 @@ def main_mantis():
 
 
 if __name__ == "__main__":
-    main_v3()
+    main_mantis()
