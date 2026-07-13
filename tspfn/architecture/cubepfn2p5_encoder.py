@@ -1066,6 +1066,7 @@ class TabPFNV2p5(Architecture):
         )
 
         # Add the targets as an additional column.
+        print(f"embedded_x_BRiCGX shape: {embedded_x_BRiCGX.shape}")
         x_BRiCLD = torch.cat((embedded_x_BRiCGX, embedded_y_BRiCX[:, :, :, None]), dim=3)
         # This check results in a graph break with torch compile, so we only run it once
         # in the beginning and then disable it.
