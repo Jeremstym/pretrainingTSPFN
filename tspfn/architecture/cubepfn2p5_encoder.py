@@ -1482,6 +1482,7 @@ def _remove_constant_features(x_RiBCT: torch.Tensor) -> torch.Tensor:
     """Removes constant features from the input data."""
     if x_RiBCT.shape[0] <= 1:
         return x_RiBCT
+    print(f"x_RiBCT.shape: {x_RiBCT.shape}")
     column_selection_mask = ~(x_RiBCT[1:] == x_RiBCT[0]).all(0)
     return select_features(x_RiBCT, column_selection_mask.type(torch.bool))
 

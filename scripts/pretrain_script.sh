@@ -69,4 +69,4 @@ nvidia-smi
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-MantisPretraining-v2' +experiment=pretrainingTSPFN/cubepfn3-mantis-pretraining seed=42
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-MantisPretraining-noDiff' +experiment=pretrainingTSPFN/cubepfn3-mantis-pretraining seed=42
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN-2p5-MedPretraining' +experiment=pretrainingTSPFN/cubepfn2p5-pretraining seed=42 task.model.encoder.use_checkpoint=False
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/CubePFN_FM/CubePFN2p5-MedPretraining' +experiment=pretrainingTSPFN/cubepfn2p5-pretraining seed=42 task.model.encoder.use_checkpoint=False
