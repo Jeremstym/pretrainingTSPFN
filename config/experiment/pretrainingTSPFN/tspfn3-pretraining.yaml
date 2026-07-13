@@ -32,7 +32,7 @@ data:
 
 task:
   _target_: tspfn.pretraining.cubepfn_module.CubePFNPretraining
-  embed_dim: 128 # 192 for V2, 512 for V2.5
+  embed_dim: 512 # 192 for V2, 512 for V2.5 and V3
   num_classes: 10 # As in TabPFN_v2 paper, not used for TabPFN-3 based models
   # chunk_size: ${data.chunk_size}
   split_finetuning: 0.5
