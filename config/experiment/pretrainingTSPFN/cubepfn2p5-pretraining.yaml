@@ -31,24 +31,13 @@ data:
   meta_batch_size: 1 # Number of datasets to sample per training step
 
 task:
-  _target_: tspfn.pretraining.cubepfn_pretraining.CubePFNPretraining
+  _target_: tspfn.pretraining.cubepfn_module.CubePFNPretraining
   embed_dim: 512 # 192 for V2, 512 for V2.5 and V3
-  # chunk_size: ${data.chunk_size}
-  contrastive_losses:
-    contrastive_mantis:
-      _target_: tspfn.losses.ContrastiveLoss
-      temperature: 0.1
-  time_series_positional_encoding: none
+  chunk_size: ${data.chunk_size}
   seed : ${seed}
-  crop_resize:
-    _target_: tspfn.augmentation.RandomCropResize
-    crop_rate_range: [0, 0.2]
-    size: null # By default, to the original sequence length.
-  differentiate:
-    _target_: tspfn.augmentation.Differentiation
-    order: 1
-  # model:
-  #   freeze_encoder: False # Whether to freeze the TabPFN encoder during training
+  predict_losses:
+    classification:
+      _target_: torch.nn.CrossEntropyLoss
   # optim:
   #   optimizer:
   #     _target_: torch.optim.AdamW
