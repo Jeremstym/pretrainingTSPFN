@@ -1199,7 +1199,7 @@ class TabPFNV2p5(Architecture):
                 - X: embedding size
         """
         for channel in range(num_channels):
-            x_RiBCT[:, :, :, channel] = _remove_constant_features(x_RiBCT=x_RiBCT[:, :, :, channel])
+            x_RiBCT[:, :, channel, :] = _remove_constant_features(x_RiBCT=x_RiBCT[:, :, channel, :])
         # x_RiBCT = _remove_constant_features(x_RiBCT=x_RiBCT)
         # Bg = folded batch size (B * G) and number of feature groups (G)
         x_RiBgCTg, num_feature_groups = _pad_and_reshape_feature_groups(
@@ -1485,7 +1485,6 @@ def _remove_constant_features(x_RiBCT: torch.Tensor) -> torch.Tensor:
     """Removes constant features from the input data."""
     if x_RiBCT.shape[0] <= 1:
         return x_RiBCT
-    print(f"x_RiBCT.shape: {x_RiBCT.shape}")
     column_selection_mask = ~(x_RiBCT[1:] == x_RiBCT[0]).all(0)
     return select_features(x_RiBCT, column_selection_mask.type(torch.bool))
 
