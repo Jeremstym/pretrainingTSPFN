@@ -200,4 +200,4 @@ def main_mantis():
 
 
 if __name__ == "__main__":
-    main_mantis()
+    main_v3()
