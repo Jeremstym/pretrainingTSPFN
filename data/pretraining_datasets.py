@@ -941,8 +941,8 @@ class TSPFNValidationDataset(Dataset):
         # self.n_query = n_query
         self.pairs = []
 
-        # self.n_support = int(chunk_size * 0.8)  # 80% for support
-        self.n_query = chunk_size
+        self.n_support = int(chunk_size * 0.8)  # 80% for support
+        self.n_query = chunk_size - self.n_support  # 20% for query
 
         for (train_dataset), (val_dataset) in zip(train_datasets_list.values(), val_datasets_list.values()):
             # 1. On découpe le Val en chunks de 2000 (les Query)
