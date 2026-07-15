@@ -2163,7 +2163,7 @@ class TabPFNV3(Architecture):
         preprocessing (on the cache-consumption path it is the passed-in cache).
         """
         num_train = y.shape[0]
-        if performance_options.use_chunkwise_inference:
+        if performance_options.use_chunkwise_inference and not self.training:
             row_chunk_size = self.inference_row_chunk_size
             col_chunk_size = self.inference_col_chunk_size
         else:
@@ -2569,7 +2569,6 @@ class TSPFNEncoder(nn.Module, ABC):
         torch.autograd.set_detect_anomaly(True)
         # ts is (Ri, B, Ch, T) and y is (train_size, B)
         ts = ts.flatten(-2)  # (Ri, B, Ch, T) -> (Ri, B, Ch*T)
-        print(f"Input shape: {ts.shape}, y shape: {y.shape}")
         output = self.model(ts, y, performance_options=self.performance_options)
         if isinstance(output, dict):
             return output["test_embeddings"]
