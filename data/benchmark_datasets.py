@@ -295,6 +295,7 @@ class ORCHIDDataset(Dataset):
                     data = np.load(patient)
                     patient_stacked = np.stack([data[channel] for channel in self.selected_channels], axis=0)
                     patient_dict[patient_name] = patient_stacked
+        
         elif fold is not None and split == "val":
             self.all_patients = sorted(glob(os.path.join(self.root, "data/*/*.npz")))
             test_index = np.loadtxt(os.path.join(self.root, "split_to_5", f"{fold}", "test.txt"), dtype=str)
@@ -314,8 +315,9 @@ class ORCHIDDataset(Dataset):
                 data = np.load(patient)
                 patient_stacked = np.stack([data[channel] for channel in self.selected_channels], axis=0)
                 patient_dict[Path(patient).stem[:4]] = patient_stacked
-            self.patient_dict = patient_dict
-            self.df_labels = pd.read_csv(self.label_file, index_col=0)
+       
+        self.patient_dict = patient_dict
+        self.df_labels = pd.read_csv(self.label_file, index_col=0)
 
     def __len__(self):
         return len(self.all_patients)
