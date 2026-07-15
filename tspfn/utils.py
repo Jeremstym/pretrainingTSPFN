@@ -137,7 +137,7 @@ def get_stratified_batch_split(data, labels):
     # query_ratio = (n_total - n_support) / n_total
     query_ratio = 0.5  # We keep a fixed query ratio to ensure a meaningful evaluation
 
-    print(f"data shape: {data.shape}, labels shape: {labels.shape}")
+    # print(f"data shape: {data.shape}, labels shape: {labels.shape}")
 
     data_np = data.squeeze().cpu().numpy()
     labels_np = labels.squeeze().cpu().numpy()
