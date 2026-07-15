@@ -532,6 +532,7 @@ class ORCHIDDataModule(TSPFNDataModule):
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
+        fold: Optional[int] = None,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -545,6 +546,8 @@ class ORCHIDDataModule(TSPFNDataModule):
             seed=seed,
         )
 
+        self.fold = fold
+
         print(f"num workers: {self.num_workers}")
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -552,9 +555,10 @@ class ORCHIDDataModule(TSPFNDataModule):
         self.train_dataset = ORCHIDDataset(
             root=self.data_roots,
             split="train",
+            fold=self.fold
         )
         # scaler = self.train_dataset.scaler
-        self.val_dataset = ORCHIDDataset(root=self.data_roots, split="val")
+        self.val_dataset = ORCHIDDataset(root=self.data_roots, split="val", fold=self.fold)
 
         return
 
