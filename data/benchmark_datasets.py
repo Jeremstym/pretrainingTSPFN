@@ -284,23 +284,23 @@ class ORCHIDDataset(Dataset):
             "myo_thickness_right",
         ]
         if fold is not None and split == "train":
-            self.all_patients = sorted(glob(os.path.join(self.root, "*/*.npz")))
+            self.all_patients = sorted(glob(os.path.join(self.root, "data/*/*.npz")))
             train_index = np.loadtxt(os.path.join(self.root, "split_to_5", f"{fold}", "train.txt"), dtype=str)
             val_index = np.loadtxt(os.path.join(self.root, "split_to_5", f"{fold}", "val.txt"), dtype=str)
             all_index = np.concatenate([train_index, val_index])
             patient_dict = {}
             for patient in self.all_patients:
-                patient_name = Path(patient).stem
+                patient_name = Path(patient).stem[:4]
                 if patient_name in all_index:
                     data = np.load(patient)
                     patient_stacked = np.stack([data[channel] for channel in self.selected_channels], axis=0)
                     patient_dict[patient_name] = patient_stacked
         elif fold is not None and split == "val":
-            self.all_patients = sorted(glob(os.path.join(self.root, "*/*.npz")))
+            self.all_patients = sorted(glob(os.path.join(self.root, "data/*/*.npz")))
             test_index = np.loadtxt(os.path.join(self.root, "split_to_5", f"{fold}", "test.txt"), dtype=str)
             patient_dict = {}
             for patient in self.all_patients:
-                patient_name = Path(patient).stem
+                patient_name = Path(patient).stem[:4]
                 if patient_name in test_index:
                     data = np.load(patient)
                     patient_stacked = np.stack([data[channel] for channel in self.selected_channels], axis=0)
@@ -313,7 +313,7 @@ class ORCHIDDataset(Dataset):
             for patient in self.all_patients:
                 data = np.load(patient)
                 patient_stacked = np.stack([data[channel] for channel in self.selected_channels], axis=0)
-                patient_dict[Path(patient).stem] = patient_stacked
+                patient_dict[Path(patient).stem[:4]] = patient_stacked
             self.patient_dict = patient_dict
             self.df_labels = pd.read_csv(self.label_file, index_col=0)
 
@@ -322,9 +322,9 @@ class ORCHIDDataset(Dataset):
 
     def __getitem__(self, index):
         file_path = self.all_patients[index]
-        file_name = Path(file_path).stem
+        file_name = Path(file_path).stem[:4]
         x_sample = self.patient_dict[file_name]
-        y_sample = self.df_labels.loc[int(file_name[:4]), "diagnosis"]  # Labels are indexed by file name
+        y_sample = self.df_labels.loc[int(file_name), "diagnosis"]  # Labels are indexed by file name
 
         x_tensor = torch.as_tensor(x_sample, dtype=torch.float32)
         y_tensor = torch.as_tensor(y_sample, dtype=torch.long)
