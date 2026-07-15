@@ -567,7 +567,6 @@ class ORCHIDDataModule(TSPFNDataModule):
         return
 
     def train_dataloader(self):
-        print(f"WHAT ?")
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=self.train_batch_size)
 
     def val_dataloader(self):
@@ -578,7 +577,6 @@ class ORCHIDDataModule(TSPFNDataModule):
             }
             return CombinedLoader(loaders, mode="max_size_cycle")
         else:
-            print(f"THIS LINE IS TRIGGERED for VALIDATION")
             return self._dataloader(self.train_dataset, shuffle=False, batch_size=self.train_batch_size)
 
     def test_dataloader(self):
@@ -590,7 +588,6 @@ class ORCHIDDataModule(TSPFNDataModule):
             }
             return CombinedLoader(loaders, mode="max_size_cycle")
         else:
-            print(f"THIS LINE IS TRIGGERED for TESTING")
             return self._dataloader(self.val_dataset, shuffle=False, batch_size=self.val_batch_size)
 
 
