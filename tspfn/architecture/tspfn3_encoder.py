@@ -2568,7 +2568,12 @@ class TSPFNEncoder(nn.Module, ABC):
     def forward(self, ts: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
         torch.autograd.set_detect_anomaly(True)
         # ts is (Ri, B, Ch, T) and y is (train_size, B)
-        ts = ts.flatten(-2)  # (Ri, B, Ch, T) -> (Ri, B, Ch*T)
+        if ts.ndim == 4:
+            ts = ts.flatten(-2)  # (Ri, B, Ch, T) -> (Ri, B, Ch*T)
+        elif ts.ndim <= 2:
+            raise ValueError(f"Expected ts to have at least 3 dimensions, got {ts.ndim}")
+        elif ts.ndim > 4:
+            raise ValueError(f"Expected ts to have at most 4 dimensions, got {ts.ndim}")
         output = self.model(ts, y, performance_options=self.performance_options)
         if isinstance(output, dict):
             return output["test_embeddings"]
