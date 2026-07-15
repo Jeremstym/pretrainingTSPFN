@@ -12,7 +12,7 @@ trainer:
   devices: ${sys.num_gpus:}
   accelerator: gpu
   precision: 32 #16-mixed, 32
-  max_epochs: 500
+  max_epochs: 2
   
 output_dir: ${sys.getcwd:}
 
