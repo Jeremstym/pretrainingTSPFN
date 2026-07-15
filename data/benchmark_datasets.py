@@ -320,7 +320,7 @@ class ORCHIDDataset(Dataset):
         self.df_labels = pd.read_csv(self.label_file, index_col=0)
 
     def __len__(self):
-        return len(self.all_patients)
+        return len(self.patient_dict)
 
     def __getitem__(self, index):
         print(f"Fetching sample at index {index} from ORCHIDDataset...")
