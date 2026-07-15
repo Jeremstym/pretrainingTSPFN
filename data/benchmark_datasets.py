@@ -323,8 +323,8 @@ class ORCHIDDataset(Dataset):
         return len(self.all_patients)
 
     def __getitem__(self, index):
-        file_path = self.all_patients[index]
-        file_name = Path(file_path).stem[:4]
+        file_name = list(self.patient_dict.keys())[index]
+        # file_name = Path(file_path).stem[:4]
         x_sample = self.patient_dict[file_name]
         y_sample = self.df_labels.loc[int(file_name), "diagnosis"]  # Labels are indexed by file name
 
