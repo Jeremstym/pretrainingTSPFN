@@ -913,17 +913,17 @@ class TSPFNMetaDataset(Dataset):
         for dataset in datasets.values():
             n = len(dataset.X)
             if n < chunk_size:
-                self.chunks.append((dataset))
+                self.chunks.append((dataset.X, dataset.Y))  # If the dataset is smaller than chunk_size, take the whole dataset
                 continue
 
             for i in range(0, n - chunk_size + 1, chunk_size):
                 # self.chunks.append((X[i : i + chunk_size], y[i : i + chunk_size]))
-                self.chunks.append((dataset[i : i + chunk_size]))
+                self.chunks.append((dataset.X[i : i + chunk_size], dataset.Y[i : i + chunk_size]))
 
             # (Overlapping last chunk)
             if n % chunk_size != 0:
                 # self.chunks.append((X[-chunk_size:], y[-chunk_size:]))
-                self.chunks.append((dataset[-chunk_size:]))
+                self.chunks.append((dataset.X[-chunk_size:], dataset.Y[-chunk_size:]))
 
     def __len__(self):
         return len(self.chunks)
@@ -941,13 +941,21 @@ class TSPFNValidationDataset(Dataset):
         # self.n_query = n_query
         self.pairs = []
 
-        self.n_support = int(chunk_size * 0.8)  # 80% for support
-        self.n_query = chunk_size - self.n_support  # 20% for query
+        # self.n_support = int(chunk_size * 0.8)  # 80% for support
+        self.n_query = chunk_size
 
         for (train_dataset), (val_dataset) in zip(train_datasets_list.values(), val_datasets_list.values()):
             # 1. On découpe le Val en chunks de 2000 (les Query)
             n_v = len(val_dataset.X)
-            # On utilise le sliding window pour ne rien perdre du Val
+            if n_v < self.n_query:
+                self.pairs.append(
+                    {
+                        "full_train": (train_dataset.X, train_dataset.Y),
+                        "query_chunk": (val_dataset.X, val_dataset.Y),
+                    }
+                )
+                continue
+
             indices = range(0, n_v - self.n_query + 1, self.n_query)
 
             for i in indices:
