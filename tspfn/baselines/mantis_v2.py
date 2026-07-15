@@ -95,8 +95,6 @@ class Mantis2_SOTA(pl.LightningModule):
         # Trigger fitting for both fit and validate stages
         assert stage in ["fit", "validate", "test"], f"Unexpected stage: {stage}"
         print("--- Fitting Mantis on Training Data ---")
-        print(f"Stage: {stage}, Finetuning: {self.finetuning}")
-        raise Exception("Setup method is not fully implemented yet. Please ensure that the training data is loaded correctly.")
         # Access the underlying train_dataloader from the datamodule
         train_loader = self.trainer.datamodule.train_dataloader()
 

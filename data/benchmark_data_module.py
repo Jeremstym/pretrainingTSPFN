@@ -588,6 +588,7 @@ class ORCHIDDataModule(TSPFNDataModule):
             }
             return CombinedLoader(loaders, mode="max_size_cycle")
         else:
+            print(f"THIS LINE IS TRIGGERED")
             return self._dataloader(self.val_dataset, shuffle=False, batch_size=self.val_batch_size)
 
 
