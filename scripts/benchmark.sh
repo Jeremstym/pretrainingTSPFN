@@ -117,4 +117,4 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-TSP
 
 #! EVALUATE MANTIS on ORCHID
 
-poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-Mantis-RF/seed${seed}/fold${fold}' +experiment=baselines/mantis_v2 data=evaluating-orchid data.fold=0 seed=42 train=False test=True +fold=0
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-Mantis-RF/seed${seed}/fold${fold}' +experiment=baselines/mantis_v2 data=evaluating-orchid data.mantis_training=True data.fold=0 seed=42 train=False test=True +fold=0

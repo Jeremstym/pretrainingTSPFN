@@ -532,6 +532,7 @@ class ORCHIDDataModule(TSPFNDataModule):
         pin_memory: bool = True,
         transform: Optional[Callable] = None,
         seed: int = 42,
+        mantis_training: bool = False,
         fold: Optional[int] = None,
         **kwargs,
     ) -> None:
@@ -545,7 +546,7 @@ class ORCHIDDataModule(TSPFNDataModule):
             transform=transform,
             seed=seed,
         )
-
+        self.mantis_training = mantis_training
         self.fold = fold
 
         print(f"num workers: {self.num_workers}")
@@ -566,17 +567,25 @@ class ORCHIDDataModule(TSPFNDataModule):
         return self._dataloader(self.train_dataset, shuffle=True, batch_size=len(self.train_dataset))
 
     def val_dataloader(self):
-        if self.test_batch_size is None:
-            self.test_batch_size = len(self.val_dataset)
-        loaders = {
-            "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=self.test_batch_size),
-            "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
-        }
-        return CombinedLoader(loaders, mode="max_size_cycle")
+        if not self.mantis_training:
+            loaders = {
+                "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset)),
+                "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
+            }
+            return CombinedLoader(loaders, mode="max_size_cycle")
+        else:
+            return self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset))
 
     def test_dataloader(self):
         # This is identical to val_dataloader for the final evaluation
-        return self.val_dataloader()
+        if not self.mantis_training:
+            loaders = {
+                "val": self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset)),
+                "train": self._dataloader(self.train_dataset, shuffle=False, batch_size=len(self.train_dataset)),
+            }
+            return CombinedLoader(loaders, mode="max_size_cycle")
+        else:
+            return self._dataloader(self.val_dataset, shuffle=False, batch_size=len(self.val_dataset))
 
 
 class EICUDatamodule(TSPFNDataModule):

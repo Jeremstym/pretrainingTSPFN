@@ -10,4 +10,5 @@ time_points: null
 predict_losses:
   classification:
     _target_: torch.nn.CrossEntropyLoss
+mantis_training: False
 fold: null
