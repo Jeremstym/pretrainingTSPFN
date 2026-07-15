@@ -299,6 +299,8 @@ class ORCHIDDataset(Dataset):
         elif fold is not None and split == "val":
             self.all_patients = sorted(glob(os.path.join(self.root, "data/*/*.npz")))
             test_index = np.loadtxt(os.path.join(self.root, "split_to_5", f"{fold}", "test.txt"), dtype=str)
+            print(f'test index: {test_index}')
+            raise Exception("Validation split not implemented yet. Please use train split with fold for now.")
             patient_dict = {}
             for patient in self.all_patients:
                 patient_name = Path(patient).stem[:4]
