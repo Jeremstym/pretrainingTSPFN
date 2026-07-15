@@ -122,7 +122,7 @@ class Mantis2_SOTA(pl.LightningModule):
             print(f"--- Random Forest Fit Complete ({len(X_train)} samples) ---")
         else:
             print("Fine-tuning Mantis on training data...")
-            self.encoder.fit(X_train.to(self.encoder_device), y_train)
+            self.encoder.fit(X_train.to(self.encoder_device), y_train, num_epochs=2)
             print("Fine-tuning complete.")
 
             print("Extracting fine-tuned embeddings for Random Forest...")
