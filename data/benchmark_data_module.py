@@ -561,14 +561,8 @@ class ORCHIDDataModule(TSPFNDataModule):
         # scaler = self.train_dataset.scaler
         self.val_dataset = ORCHIDDataset(root=self.data_roots, split="val", fold=self.fold)
 
-        if self.fold is not None:
-            train_batch_size = len(np.loadtxt(os.path.join(self.data_roots, "split_to_5", f"{self.fold}", "train.txt"), dtype=str))
-            self.train_batch_size = train_batch_size
-            val_batch_size = len(np.loadtxt(os.path.join(self.data_roots, "split_to_5", f"{self.fold}", "val.txt"), dtype=str))
-            self.val_batch_size = val_batch_size
-        else:
-            self.train_batch_size = len(self.train_dataset)
-            self.val_batch_size = len(self.val_dataset)
+        self.train_batch_size = len(self.train_dataset)
+        self.val_batch_size = len(self.val_dataset)
 
         return
 
