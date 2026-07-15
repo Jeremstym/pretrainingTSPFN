@@ -114,3 +114,7 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-TSP
 poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-TSPFNFM-RoPE-zscoring-5chans+hirid/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-cpsc seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE-zscoring-5CHANS+hird-nowarmup.pt" task.time_series_positional_encoding=rope
 # poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-TSPFNFM-RoPE+CWPE-zscoring-shuffle-5chans+hirid/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-cpsc seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle.pt" task.time_series_positional_encoding=cwpe+rope
 poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-TSPFNFM-RoPE+CWPE-zscoring-shuffle-5chans+hirid-v2/seed${seed}' +experiment=finetuningTSPFN/tspfn-finetuning data=evaluating-cpsc seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" task.time_series_positional_encoding=cwpe+rope
+
+#! EVALUATE MANTIS on ORCHID
+
+poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-Mantis-RF/seed${seed}/fold${fold}' +experiment=baselines/mantis_v2 data=evaluating-orchid data.fold=0 seed=42 train=False test=True +fold=0
