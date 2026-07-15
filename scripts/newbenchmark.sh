@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=electronic
-#SBATCH --job-name=CubePFN3-Eval
+#SBATCH --job-name=Mantis-ORCHID-Eval
 ####BATCH --cpus-per-task=5
 ####SBATCH --mem-per-cpu=8G
 #SBATCH --nodes=1
@@ -148,20 +148,20 @@ UCR2019_univariate=(
     "Yoga"
 )
 
-for dataset in "${UCR2019_univariate[@]}"; do
-    poetry run tspfn-pretrain \
-        "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TSPFN/seed\${seed}" \
-        +experiment=finetuningTSPFN/tspfn-finetuning \
-        data=benchmark/evaluating-ucrunivariate \
-        data.dataset="$dataset" \
-        task.adaptable_metrics=True \
-        seed=42 \
-        +dataset="$dataset" \
-        train=False \
-        test=True \
-        updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" \
-        task.time_series_positional_encoding=cwpe+rope
-done
+# for dataset in "${UCR2019_univariate[@]}"; do
+#     poetry run tspfn-pretrain \
+#         "hydra.run.dir=/data/stympopper/TSPFN-Benchmark/UCRUnivariate/${dataset}-TSPFN/seed\${seed}" \
+#         +experiment=finetuningTSPFN/tspfn-finetuning \
+#         data=benchmark/evaluating-ucrunivariate \
+#         data.dataset="$dataset" \
+#         task.adaptable_metrics=True \
+#         seed=42 \
+#         +dataset="$dataset" \
+#         train=False \
+#         test=True \
+#         updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" \
+#         task.time_series_positional_encoding=cwpe+rope
+# done
 
 
 # for dataset in "${UCR2019_univariate[@]}"; do
@@ -463,3 +463,15 @@ done
 #         train=True \
 #         test=True
 # done
+
+#! EVALUATE MANTIS on ORCHID
+# for fold in 0 1 2 3 4; do
+#     for seed in 42; do
+#         poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-Mantis-RF/seed${seed}/fold${fold}' +experiment=baselines/mantis_v2 data=benchmark/evaluating-orchid data.mantis_training=True 'data.fold=${fold}' seed=42 train=False test=True +fold=$fold
+#     done
+# done
+for fold in 0 1 2 3 4; do
+    for seed in 42; do
+        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-Mantis-FineTune/seed${seed}/fold${fold}' +experiment=baselines/mantis_v2 data=benchmark/evaluating-orchid data.mantis_training=True task.finetuning=True 'data.fold=${fold}' seed=42 train=False test=True +fold=$fold
+    done
+done
