@@ -175,8 +175,8 @@ class PretrainingTSPFNFullDataModule(pl.LightningDataModule):
             # On instancie les datasets de val
             val_instances = {name: instantiate(cfg) for name, cfg in self.val_datasets.items()}
 
-            self.train_ds = TSPFNFullDataset(train_instances)
-            self.val_ds = TSPFNFullValidationDataset(train_instances, val_instances)
+            self.train_ds = TSPFNMetaDataset(train_instances, chunk_size=self.chunk_size)
+            self.val_ds = TSPFNValidationDataset(train_instances, val_instances, chunk_size=self.chunk_size)
 
     def train_dataloader(self):
         return DataLoader(
