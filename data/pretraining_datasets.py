@@ -374,7 +374,6 @@ class TUEV2ChannelDataset(Dataset):
                 all_y.append(sample["label"])
 
         self.X = torch.stack(all_x)
-        print(f"Loaded TUEV 2 channels dataset with shape {self.X.shape}")
         self.Y = torch.tensor(all_y, dtype=torch.long) - 1  # Convert labels from 1-6 to 0-5
         self.Y = self.Y.unsqueeze(1)  # Shape [Batch, 1]
 
@@ -419,7 +418,6 @@ class TUEV3ChannelDataset(Dataset):
                 all_y.append(sample["label"])
 
         self.X = torch.stack(all_x)
-        print(f"Loaded TUEV 3 channels dataset with shape {self.X.shape}")
         self.Y = torch.tensor(all_y, dtype=torch.long) - 1  # Convert labels from 1-6 to 0-5
         self.Y = self.Y.unsqueeze(1)  # Shape [Batch, 1]
 
