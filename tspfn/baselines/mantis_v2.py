@@ -137,10 +137,11 @@ class Mantis2_SOTA(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         if not self.finetuning:
-            batch_dict, _, _ = batch if isinstance(batch, (tuple, list)) else (batch, None, None)
-            if "val" not in batch_dict:
-                raise ValueError("Expected 'val' key in batch for validation data.")
-            x, y = batch_dict["val"]
+            # batch_dict, _, _ = batch if isinstance(batch, (tuple, list)) else (batch, None, None)
+            # if "val" not in batch_dict:
+            #     raise ValueError("Expected 'val' key in batch for validation data.")
+            # x, y = batch_dict["val"]
+            x, y = batch if isinstance(batch, (tuple, list)) else batch["val"]
         else:
             x, y = batch
 
