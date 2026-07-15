@@ -123,6 +123,6 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-TSP
 # done
 for fold in 0 1 2 3 4; do
     for seed in 42; do
-        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-Mantis-FineTune/seed${seed}/fold${fold}' +experiment=baselines/mantis_v2 data=evaluating-orchid data.mantis_training=True task.finetuning=True 'data.fold=${fold}' seed=42 train=False test=True +fold=$fold
+        poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-Mantis-FineTune/seed${seed}/fold${fold}' +experiment=baselines/mantis_v2 data=benchmark/evaluating-orchid data.mantis_training=True task.finetuning=True 'data.fold=${fold}' seed=42 train=False test=True +fold=$fold
     done
 done
