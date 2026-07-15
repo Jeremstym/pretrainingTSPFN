@@ -8,18 +8,18 @@ train_datasets:
     _target_: data.pretraining_datasets.TUEV2ChannelDataset
     root: ${oc.env:TWOCHANS_TUEV_DATA_PATH}
     split: train
-  3ChannelTUEV:
-    _target_: data.pretraining_datasets.TUEV3ChannelDataset
-    root: ${oc.env:THREECHANS_TUEV_DATA_PATH}
+  3ChannelPTB:
+    _target_: data.pretraining_datasets.PTB3ChannelDataset
+    root: ${oc.env:THREECHANS_PTB_DATA_PATH}
     split: train
 val_datasets:
   2ChannelTUEV:
     _target_: data.pretraining_datasets.TUEV2ChannelDataset
     root: ${oc.env:TWOCHANS_TUEV_DATA_PATH}
     split: val
-  3ChannelTUEV:
-    _target_: data.pretraining_datasets.TUEV3ChannelDataset
-    root: ${oc.env:THREECHANS_TUEV_DATA_PATH}
+  3ChannelPTB:
+    _target_: data.pretraining_datasets.PTB3ChannelDataset
+    root: ${oc.env:THREECHANS_PTB_DATA_PATH}
     split: val
 
 # test_datasets:
