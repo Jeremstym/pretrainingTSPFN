@@ -160,9 +160,9 @@ class TSPFNRunner(ABC):
 
         # Instantiate system (which will handle instantiating the model and optimizer).
         model = hydra.utils.instantiate(cfg.task, choices=None, _recursive_=False)
-        if cfg.get("compile", False):
-            logger.info("Compiling model with torch.compile()")
-            model = torch.compile(model, mode="max-autotune")
+        # if cfg.get("compile", False):
+        #     logger.info("Compiling model with torch.compile()")
+        #     model = torch.compile(model, mode="max-autotune")
         # assert hasattr(model, "encoder"), "The model must have an encoder attribute for pretraining."
         # original_forward = model.encoder.forward
         # def checkpointed_forward(*args, **kwargs):
