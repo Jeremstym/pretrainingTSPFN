@@ -25,6 +25,7 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 from pathlib import Path
 import argparse
+from typing import Optional, List, Tuple, Dict, Any 
 
 import torch
 import torch.distributed as dist
@@ -270,29 +271,51 @@ class ESRDataset(Dataset):
 
 
 class ORCHIDDataset(Dataset):
-    def __init__(self, root, split: str):
+    def __init__(self, root, split: str, fold: Optional[int] = None):
         self.root = root
-        self.file_dir = os.path.join(self.root, f"data/{split}")
         self.label_file = os.path.join(self.root, "labels.csv")
         self.selected_channels = [
             "gls",
             "ls_left",
-            # "ls_right",
+            "ls_right",
             "lv_area",
-            # "lv_length",
+            "lv_length",
             "myo_thickness_left",
             "myo_thickness_right",
         ]
-
-        self.all_patients = sorted(glob(os.path.join(self.file_dir, "*.npz")))
-        print(f"Found {len(self.all_patients)} files in {self.file_dir}")
-        patient_dict = {}
-        for patient in self.all_patients:
-            data = np.load(patient)
-            patient_stacked = np.stack([data[channel] for channel in self.selected_channels], axis=0)
-            patient_dict[Path(patient).stem] = patient_stacked
-        self.patient_dict = patient_dict
-        self.df_labels = pd.read_csv(self.label_file, index_col=0)
+        if fold is not None and split == "train":
+            self.all_patients = sorted(glob(os.path.join(self.root, "*/*.npz")))
+            train_index = np.loadtxt(os.path.join(self.root, "split_to_5", f"{fold}", "train.txt"), dtype=str)
+            val_index = np.loadtxt(os.path.join(self.root, "split_to_5", f"{fold}", "val.txt"), dtype=str)
+            all_index = np.concatenate([train_index, val_index])
+            patient_dict = {}
+            for patient in self.all_patients:
+                patient_name = Path(patient).stem
+                if patient_name in all_index:
+                    data = np.load(patient)
+                    patient_stacked = np.stack([data[channel] for channel in self.selected_channels], axis=0)
+                    patient_dict[patient_name] = patient_stacked
+        elif fold is not None and split == "val":
+            self.all_patients = sorted(glob(os.path.join(self.root, "*/*.npz")))
+            test_index = np.loadtxt(os.path.join(self.root, "split_to_5", f"{fold}", "test.txt"), dtype=str)
+            patient_dict = {}
+            for patient in self.all_patients:
+                patient_name = Path(patient).stem
+                if patient_name in test_index:
+                    data = np.load(patient)
+                    patient_stacked = np.stack([data[channel] for channel in self.selected_channels], axis=0)
+                    patient_dict[patient_name] = patient_stacked
+        else:
+            self.file_dir = os.path.join(self.root, f"data/{split}")
+            self.all_patients = sorted(glob(os.path.join(self.file_dir, "*.npz")))
+            print(f"Found {len(self.all_patients)} files in {self.file_dir}")
+            patient_dict = {}
+            for patient in self.all_patients:
+                data = np.load(patient)
+                patient_stacked = np.stack([data[channel] for channel in self.selected_channels], axis=0)
+                patient_dict[Path(patient).stem] = patient_stacked
+            self.patient_dict = patient_dict
+            self.df_labels = pd.read_csv(self.label_file, index_col=0)
 
     def __len__(self):
         return len(self.all_patients)
