@@ -323,6 +323,8 @@ class ORCHIDDataset(Dataset):
         return len(self.all_patients)
 
     def __getitem__(self, index):
+        print(f"Fetching sample at index {index} from ORCHIDDataset...")
+        print(f'{list(self.patient_dict.keys())}')
         file_name = list(self.patient_dict.keys())[index]
         # file_name = Path(file_path).stem[:4]
         x_sample = self.patient_dict[file_name]
