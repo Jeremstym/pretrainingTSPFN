@@ -2003,7 +2003,7 @@ class TabPFNV3(Architecture):
         (chunked path, where it is always computed as an intermediate).
         """
         num_train = y.shape[0]
-        if performance_options.use_chunkwise_inference:
+        if performance_options.use_chunkwise_inference and not self.training:
             row_chunk_size = self.inference_row_chunk_size
             col_chunk_size = self.inference_col_chunk_size
         else:
