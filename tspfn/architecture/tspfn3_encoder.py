@@ -2163,7 +2163,7 @@ class TabPFNV3(Architecture):
         preprocessing (on the cache-consumption path it is the passed-in cache).
         """
         num_train = y.shape[0]
-        if performance_options.use_chunkwise_inference and not self.training:
+        if performance_options.use_chunkwise_inference:
             row_chunk_size = self.inference_row_chunk_size
             col_chunk_size = self.inference_col_chunk_size
         else:
