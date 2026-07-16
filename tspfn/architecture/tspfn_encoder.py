@@ -271,6 +271,7 @@ class TSPFNEncoder(nn.Module, ABC):
                     seq_len=seq_len,
                 )
             # Add channel-wise positional encodings
+            print(f"emb_x shape before adding channel-wise positional encodings: {emb_x.shape}")
             emb_x = emb_x.reshape(batch_size, seq_len, num_channels, num_features, self.embed_dim)  # (B, Seq, C, L, E)
             if num_channels <= 5:
                 channel_indices = torch.arange(num_channels, device=emb_x.device)  # (C,)
