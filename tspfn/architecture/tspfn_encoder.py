@@ -243,7 +243,7 @@ class TSPFNEncoder(nn.Module, ABC):
 
         # Flatten on channels and/or tokenize
         if not already_tokenized:
-            X_full = X_full.view(seq_len, batch_size, num_channels * num_features)  # (Seq, B, C*F)
+            X_full = X_full.view(seq_len, batch_size, num_channels * num_features * self.features_per_group)  # (Seq, B, C*F)
             emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train)
         else:
             # print(f"Input X_full shape before encoding: {X_full.shape}")
