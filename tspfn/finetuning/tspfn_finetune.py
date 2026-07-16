@@ -660,7 +660,8 @@ class TSPFNFineTuning(TSPFNSystem):
                 if "ConfusionMatrix" not in metric_name:
                     tag = f"{metric_name}/{target_task}"
                     self.log(f"test_{tag}", value)  # Log to logger
-                output_data.append({"metric": tag, "value": value.item()})
+                    value = value.item() if isinstance(value, torch.Tensor) else value
+                output_data.append({"metric": tag, "value": value})
 
             # Reset is handled by Lightning if logged, but manual reset is safe here
             collection.reset()
