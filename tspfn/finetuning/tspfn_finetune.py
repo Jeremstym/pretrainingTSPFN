@@ -28,7 +28,7 @@ from torchmetrics.classification import (
     MulticlassRecall,
 )
 from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError
-from torchmetrics import MetricCollection
+from torchmetrics import MetricCollection, ConfusionMatrix
 
 from data.utils.decorators import auto_move_data
 from tspfn.system import TSPFNSystem
@@ -171,6 +171,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 MulticlassF1Score(num_classes=self.num_classes, average="macro"),
                 MulticlassCohenKappa(num_classes=self.num_classes),
                 MulticlassRecall(num_classes=self.num_classes, average="macro"),
+                ConfusionMatrix(task="multiclass", num_classes=self.num_classes),
             ]
         )
         # Store them in a dict of ModuleDicts
@@ -192,6 +193,7 @@ class TSPFNFineTuning(TSPFNSystem):
                 BinaryF1Score(),
                 BinaryCohenKappa(),
                 BinaryRecall(),
+                ConfusionMatrix(task="binary", num_classes=2),
             ]
         )
         self.metrics_binary = nn.ModuleDict(
@@ -655,8 +657,9 @@ class TSPFNFineTuning(TSPFNSystem):
             results = collection.compute()
 
             for metric_name, value in results.items():
-                tag = f"{metric_name}/{target_task}"
-                self.log(f"test_{tag}", value)  # Log to logger
+                if "ConfusionMatrix" not in metric_name:
+                    tag = f"{metric_name}/{target_task}"
+                    self.log(f"test_{tag}", value)  # Log to logger
                 output_data.append({"metric": tag, "value": value.item()})
 
             # Reset is handled by Lightning if logged, but manual reset is safe here
