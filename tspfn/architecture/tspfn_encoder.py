@@ -234,6 +234,8 @@ class TSPFNEncoder(nn.Module, ABC):
         else:
             num_channels, seq_len, num_features, embed_dim = X_full.shape
             batch_size = 1  # If already tokenized, we assume batch size of 1 for simplicity
+        
+        num_features = num_features // self.features_per_group  # Adjust for features per group
         if self.positional_encoding == "rope" or self.positional_encoding == "cwpe+rope":
             for layer in self.transformer_encoder.layers:
                 layer.self_attn_between_features.time_points = num_features * num_channels
@@ -271,7 +273,6 @@ class TSPFNEncoder(nn.Module, ABC):
                     seq_len=seq_len,
                 )
             # Add channel-wise positional encodings
-            print(f"emb_x shape before adding channel-wise positional encodings: {emb_x.shape}")
             emb_x = emb_x.reshape(batch_size, seq_len, num_channels, num_features, self.embed_dim)  # (B, Seq, C, L, E)
             if num_channels <= 5:
                 channel_indices = torch.arange(num_channels, device=emb_x.device)  # (C,)
