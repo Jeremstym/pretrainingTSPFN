@@ -210,9 +210,6 @@ class TSPFNEncoder(nn.Module, ABC):
         assert not torch.isnan(embedded_y).any(), f"{torch.isnan(embedded_y).any()=}, Make sure to add nan handlers"
 
         if not already_tokenized:
-            if self.num_features_per_group != self.features_per_group:
-                print(f"Warning: Inconsistent feature grouping. Expected {self.features_per_group}, got {self.num_features_per_group}")
-                self.encoder.num_features_per_group = self.features_per_group
             X = einops.rearrange(X, "b s f n -> s (b f) n")
             print(f"Input X shape before encoding: {X.shape}")
             embedded_x = einops.rearrange(
