@@ -249,7 +249,7 @@ class TSPFNEncoder(nn.Module, ABC):
             # print(f"Input X_full shape before encoding: {X_full.shape}")
             X_full = X_full.transpose(0, 1)  # (C, Seq, F, E) -> (Seq, C, F, E)
             X_full = X_full.unsqueeze(1)  # (Seq, 1, C, F, E)
-            X_full = X_full.view(seq_len, 1, num_channels * num_features, embed_dim)  # (Seq, B, C*T, E)
+            X_full = X_full.view(seq_len, 1, num_channels * num_features * self.features_per_group, embed_dim)  # (Seq, B, C*T, E)
             emb_x, emb_y, single_eval_pos = self.encode_x_and_y(X_full, y_train, already_tokenized=True)
 
         if self.positional_encoding == "none" or self.positional_encoding == "rope":
