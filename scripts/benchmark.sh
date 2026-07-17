@@ -126,6 +126,9 @@ poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/cpsc-TSP
 #         poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-Mantis-FineTune/seed${seed}/fold${fold}' +experiment=baselines/mantis_v2 data=benchmark/evaluating-orchid data.mantis_training=True task.finetuning=True 'data.fold=${fold}' seed=42 train=False test=True +fold=$fold
 #     done
 # done
-for fold in 0 1 2 3 4; do
-    poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-TSPFN-MICCAI/seed${seed}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning data=benchmark/evaluating-orchid seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" task.time_series_positional_encoding=cwpe+rope 'data.fold=${fold}' +fold=$fold
-done
+# for fold in 0 1 2 3 4; do
+#     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-TSPFN-MICCAI/seed${seed}/fold${fold}' +experiment=finetuningTSPFN/tspfn-finetuning data=benchmark/evaluating-orchid seed=42 train=False test=True updated_pfn_path="/home/stympopper/pretrainingTSPFN/ckpts/TSPFN-RoPE+CWPE-zscoring-5CHANS+hirid-nowarmup-shuffle-2.pt" task.time_series_positional_encoding=cwpe+rope 'data.fold=${fold}' +fold=$fold
+# done
+# for fold in 0 1 2 3 4; do
+#     poetry run tspfn-pretrain 'hydra.run.dir=/data/stympopper/TSPFN_results/orchid-TabPFN3/seed${seed}/fold${fold}' +experiment=finetuningTSPFN/tspfn3-finetuning data=benchmark/evaluating-orchid seed=42 train=False test=True 'data.fold=${fold}' +fold=$fold
+# done
