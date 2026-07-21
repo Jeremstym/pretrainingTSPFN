@@ -483,37 +483,50 @@ class _DtypeMatchingRMSNorm(nn.RMSNorm):
         return super().forward(input)
 
 
-class ConvolutionEncoder(nn.Module):
+class ConvolutionalEncoder(nn.Module):
     """Convolutional encoder for time series data.
     This encoder uses a series of convolutional layers to extract features from the input time series data.
     Meant to replace linear encoder for time series data. Expect non-overlapped patches of time series data as input.
     """
 
     def __init__(
-        self, input_channels: int, output_channels: int, kernel_size: int = 3, stride: int = 1, padding: int = 1
+        self,
+        patch_size: int,
+        num_ts_channels: int,
+        input_channels: int,
+        output_channels: int,
+        kernel_size: int,
+        stride: int = 1,
+        padding: int = 1,
     ):
-        super(ConvolutionEncoder, self).__init__()
-        self.conv1 = nn.Conv1d(input_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding)
-        self.relu = nn.ReLU()
-        self.conv2 = nn.Conv1d(
-            output_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding
+        super(ConvolutionalEncoder, self).__init__()
+        self.patch_size = patch_size
+        self.cnn = nn.Sequential(
+            nn.Conv1d(input_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.ReLU(),
+            nn.Conv1d(output_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the convolutional encoder.
 
         Args:
-            x (torch.Tensor): Input tensor of shape (B, C_in, L), where B is the batch size,
-                              C_in is the number of input channels (features), and L is the length of the time series.
+            x (torch.Tensor): Input tensor of shape (Ri, B, Ch, T), where Ri is number of time series inputs (batch size),
+                              Ch is the number of input channels, and T is the length of the time series.
 
         Returns:
-            torch.Tensor: Output tensor of shape (B, C_out, L_out), where C_out is the number of output channels
-                          and L_out is the length of the output time series after convolution.
+            torch.Tensor: Output tensor of shape (Ri, B, num_patches, emsize), where emsize is the number of output channels.
         """
-        x = self.conv1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        return x
+        Ri, B, Ch, T = x.shape
+        if T % self.patch_size != 0:
+            x = F.pad(x, (0, self.patch_size - T % self.patch_size), "constant", 0)
+        num_patches = torch.ceil(T / self.patch_size).int()
+        x_RiBChPTp = x.reshape(Ri, B, Ch, num_patches, self.patch_size)  # Reshape to (Ri, B, Ch, num_patches, patch_size)
+        x_flat = x_RiBChPTp.flatten(0, -2)  # Flatten Ri, B, Ch and num_patches into a single dimension for CNN processing
+        x_flat = x_flat.unsqueeze(1) # Add a channel dimension for CNN input
+        x_emb = self.cnn(x_flat).mean(dim=-1)  # Apply CNN and average pool over the time dimension
+        x_RiBChPE = x_emb.reshape(Ri, B, Ch, num_patches, -1)  # Reshape back to (Ri, B, Ch, num_patches, emsize)
+        return x_RiBChPE
 
 
 class ManyClassDecoder(nn.Module):
