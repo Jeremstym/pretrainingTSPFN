@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram name="Page-1" id="vCv3W-yyY2ylaLdDaPLr">
-    <mxGraphModel dx="5334" dy="1846" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="2" pageWidth="827" pageHeight="1169" math="1" shadow="0">
+    <mxGraphModel dx="5734" dy="1846" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="2" pageWidth="827" pageHeight="1169" math="1" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -4902,6 +4902,15 @@
         </mxCell>
         <mxCell id="rO18q_h6XdyCfac9HcKK-164" parent="1" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;legacyAnchorPoints=0;strokeWidth=3;" value="" vertex="1">
           <mxGeometry height="206.01" width="39" x="-1235" y="7406.36" as="geometry" />
+        </mxCell>
+        <mxCell id="rO18q_h6XdyCfac9HcKK-172" edge="1" parent="1" source="rO18q_h6XdyCfac9HcKK-167" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="rO18q_h6XdyCfac9HcKK-153">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rO18q_h6XdyCfac9HcKK-167" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;Grouped linear projection&lt;/font&gt;" vertex="1">
+          <mxGeometry height="71.75" width="176" x="-2577" y="6816.5" as="geometry" />
+        </mxCell>
+        <mxCell id="rO18q_h6XdyCfac9HcKK-170" parent="1" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.x;fillColor=#080808;" value="" vertex="1">
+          <mxGeometry height="36" width="44" x="-2347" y="6834.25" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
