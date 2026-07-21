@@ -504,7 +504,7 @@ class UCRUnivariateDataset(Dataset):
                 Y_safe = self.Y[~lonely_mask]
 
                 X_train, X_test, Y_train, Y_test = train_test_split(
-                    X_safe, Y_safe, test_size=0.2, random_state=42, stratify=Y_safe
+                    X_safe, Y_safe, test_size=0.5, random_state=42, stratify=Y_safe
                 )
 
                 all_safe_classes = np.unique(Y_safe)
@@ -528,7 +528,7 @@ class UCRUnivariateDataset(Dataset):
             else:
                 try:
                     X_train, X_test, Y_train, Y_test = train_test_split(
-                        self.X, self.Y, test_size=0.2, random_state=42, stratify=self.Y
+                        self.X, self.Y, test_size=0.5, random_state=42, stratify=self.Y
                     )
                     all_classes = np.unique(self.Y)
                     test_classes = np.unique(Y_test)
