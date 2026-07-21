@@ -184,9 +184,7 @@ class TabPFNV3Config(ArchitectureConfig):
 
     def __post_init__(self) -> None:
         """Validate config constraints."""
-        if self.icl_num_kv_heads is not None and (
-            self.icl_num_heads % self.icl_num_kv_heads != 0
-        ):
+        if self.icl_num_kv_heads is not None and (self.icl_num_heads % self.icl_num_kv_heads != 0):
             raise ValueError(
                 f"icl_num_heads ({self.icl_num_heads}) must be divisible by "
                 f"icl_num_kv_heads ({self.icl_num_kv_heads})"
@@ -197,11 +195,7 @@ class TabPFNV3Config(ArchitectureConfig):
                     f"icl_num_heads ({self.icl_num_heads}) must be divisible by "
                     f"icl_num_kv_heads_test ({self.icl_num_kv_heads_test})"
                 )
-            effective_kv = (
-                self.icl_num_kv_heads
-                if self.icl_num_kv_heads is not None
-                else self.icl_num_heads
-            )
+            effective_kv = self.icl_num_kv_heads if self.icl_num_kv_heads is not None else self.icl_num_heads
             if self.icl_num_kv_heads_test > effective_kv:
                 raise ValueError(
                     f"icl_num_kv_heads_test ({self.icl_num_kv_heads_test}) must be "
@@ -244,11 +238,7 @@ class TabPFNV3Cache(KVCache):
         """Move all cached tensors to the given device."""
         return TabPFNV3Cache(
             kv=self._kv_to(device),
-            train_embeddings=(
-                self.train_embeddings.to(device)
-                if self.train_embeddings is not None
-                else None
-            ),
+            train_embeddings=(self.train_embeddings.to(device) if self.train_embeddings is not None else None),
             train_shape=self.train_shape,
             scaler_cache=self._dict_of_tensors_to(self.scaler_cache, device),
             inducing_hidden=self._list_of_tensors_to(self.inducing_hidden, device),
@@ -264,8 +254,7 @@ class TabPFNV3Cache(KVCache):
             dtype: Target integer dtype (default :data:`QUANTIZED_KV_DTYPE`).
         """
         quantized_kv = {
-            idx: (entry.quantize(dtype) if isinstance(entry, KVCacheEntry) else entry)
-            for idx, entry in self.kv.items()
+            idx: (entry.quantize(dtype) if isinstance(entry, KVCacheEntry) else entry) for idx, entry in self.kv.items()
         }
         return TabPFNV3Cache(
             kv=quantized_kv,
@@ -495,16 +484,20 @@ class _DtypeMatchingRMSNorm(nn.RMSNorm):
 
 
 class ConvolutionEncoder(nn.Module):
-    """ Convolutional encoder for time series data.
+    """Convolutional encoder for time series data.
     This encoder uses a series of convolutional layers to extract features from the input time series data.
     Meant to replace linear encoder for time series data. Expect non-overlapped patches of time series data as input.
     """
 
-    def __init__(self, input_channels: int, output_channels: int, kernel_size: int = 3, stride: int = 1, padding: int = 1):
+    def __init__(
+        self, input_channels: int, output_channels: int, kernel_size: int = 3, stride: int = 1, padding: int = 1
+    ):
         super(ConvolutionEncoder, self).__init__()
         self.conv1 = nn.Conv1d(input_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding)
         self.relu = nn.ReLU()
-        self.conv2 = nn.Conv1d(output_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding)
+        self.conv2 = nn.Conv1d(
+            output_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the convolutional encoder.
@@ -587,11 +580,7 @@ class ManyClassDecoder(nn.Module):
 
         q_BMHD = q_BME.view(B, M, self.num_heads, self.head_dim).contiguous()
         k_BNHD = k_BNE.view(B, -1, self.num_heads, self.head_dim).contiguous()
-        one_hot_targets_BNHT = (
-            one_hot_targets_BNT.unsqueeze(2)
-            .expand(-1, -1, self.num_heads, -1)
-            .contiguous()
-        )
+        one_hot_targets_BNHT = one_hot_targets_BNT.unsqueeze(2).expand(-1, -1, self.num_heads, -1).contiguous()
 
         test_output_BMHT = _chunked_class_attention(
             q_BMHD,
@@ -640,23 +629,10 @@ def _chunked_class_attention(
     # Fold chunk index into batch dimension
     J = v_BJHT.shape[1]
     v_folded = (
-        v_BJHT.reshape(B, J, H, num_chunks, D)
-        .permute(0, 3, 1, 2, 4)
-        .reshape(B * num_chunks, J, H, D)
-        .contiguous()
+        v_BJHT.reshape(B, J, H, num_chunks, D).permute(0, 3, 1, 2, 4).reshape(B * num_chunks, J, H, D).contiguous()
     )
-    q_folded = (
-        q_BSHD.unsqueeze(1)
-        .expand(-1, num_chunks, -1, -1, -1)
-        .reshape(B * num_chunks, S, H, D)
-        .contiguous()
-    )
-    k_folded = (
-        k_BJHD.unsqueeze(1)
-        .expand(-1, num_chunks, -1, -1, -1)
-        .reshape(B * num_chunks, J, H, D)
-        .contiguous()
-    )
+    q_folded = q_BSHD.unsqueeze(1).expand(-1, num_chunks, -1, -1, -1).reshape(B * num_chunks, S, H, D).contiguous()
+    k_folded = k_BJHD.unsqueeze(1).expand(-1, num_chunks, -1, -1, -1).reshape(B * num_chunks, J, H, D).contiguous()
 
     # Single flash-attention call across all chunks
     out_folded = _batched_scaled_dot_product_attention(
@@ -664,11 +640,7 @@ def _chunked_class_attention(
     )
 
     # Unfold and trim padding: (B*K, S, H, D) -> (B, S, H, T)
-    return (
-        out_folded.reshape(B, num_chunks, S, H, D)
-        .permute(0, 2, 3, 1, 4)
-        .reshape(B, S, H, num_chunks * D)[..., :T]
-    )
+    return out_folded.reshape(B, num_chunks, S, H, D).permute(0, 2, 3, 1, 4).reshape(B, S, H, num_chunks * D)[..., :T]
 
 
 class TrainableOrthogonalEmbedding(nn.Module):
@@ -755,12 +727,8 @@ class SoftmaxScalingMLP(nn.Module):
         base_out_dim = num_heads * head_dim
         query_out_dim = head_dim
 
-        self.base_mlp = nn.Sequential(
-            nn.Linear(1, n_hidden), nn.GELU(), nn.Linear(n_hidden, base_out_dim)
-        )
-        self.query_mlp = nn.Sequential(
-            nn.Linear(head_dim, n_hidden), nn.GELU(), nn.Linear(n_hidden, query_out_dim)
-        )
+        self.base_mlp = nn.Sequential(nn.Linear(1, n_hidden), nn.GELU(), nn.Linear(n_hidden, base_out_dim))
+        self.query_mlp = nn.Sequential(nn.Linear(head_dim, n_hidden), nn.GELU(), nn.Linear(n_hidden, query_out_dim))
         # ensures initial modulation is zero
         nn.init.zeros_(self.query_mlp[-1].weight)  # type: ignore
         nn.init.zeros_(self.query_mlp[-1].bias)  # type: ignore
@@ -847,9 +815,7 @@ class Attention(nn.Module):
             q = rope.rotate_queries_or_keys(q.transpose(1, 2)).transpose(1, 2)
             k = rope.rotate_queries_or_keys(k.transpose(1, 2)).transpose(1, 2)
 
-        out = _batched_scaled_dot_product_attention(q, k, v).reshape(
-            B, S, self.head_dim * self.num_heads
-        )
+        out = _batched_scaled_dot_product_attention(q, k, v).reshape(B, S, self.head_dim * self.num_heads)
         return self.out_projection(out)
 
 
@@ -893,9 +859,7 @@ class CrossAttention(nn.Module):
         k = self.k_projection(x_for_key_and_value_BVE).view(B, V, -1, self.head_dim)
         v = self.v_projection(x_for_key_and_value_BVE).view(B, V, -1, self.head_dim)
 
-        out = _batched_scaled_dot_product_attention(
-            q, k, v, softmax_scaling_layer=self.softmax_scaling_layer
-        )
+        out = _batched_scaled_dot_product_attention(q, k, v, softmax_scaling_layer=self.softmax_scaling_layer)
 
         return self.out_projection(out.reshape(B, Q, self.head_dim * self.num_heads))
 
@@ -1007,11 +971,7 @@ class ICLAttention(nn.Module):
             k = self.k_projection(x_train).view(B, N, self.num_kv_heads, self.head_dim)
             v = self.v_projection(x_train).view(B, N, self.num_kv_heads, self.head_dim)
 
-            if (
-                self.num_kv_heads_test is not None
-                and single_eval_pos is not None
-                and N < R
-            ):
+            if self.num_kv_heads_test is not None and single_eval_pos is not None and N < R:
                 # Train rows: full KV heads
                 out_train = _batched_scaled_dot_product_attention(
                     q[:, :N],
@@ -1170,24 +1130,16 @@ class TransformerBlock(nn.Module):
         norm_q = self.layernorm(query_BRQE)
         q_flat = norm_q.view(B * R, Q, E)
         c_flat = self.layernorm(context_BRCE).view(B * R, V, E)
-        q_proj = self.attention.q_projection(q_flat).view(
-            B * R, Q, -1, self.attention.head_dim
-        )
-        k_flat = self.attention.k_projection(c_flat).view(
-            B * R, V, -1, self.attention.head_dim
-        )
-        v_flat = self.attention.v_projection(c_flat).view(
-            B * R, V, -1, self.attention.head_dim
-        )
+        q_proj = self.attention.q_projection(q_flat).view(B * R, Q, -1, self.attention.head_dim)
+        k_flat = self.attention.k_projection(c_flat).view(B * R, V, -1, self.attention.head_dim)
+        v_flat = self.attention.v_projection(c_flat).view(B * R, V, -1, self.attention.head_dim)
 
         if rope is not None:
             q_proj = rope.rotate_queries_or_keys(q_proj.transpose(1, 2)).transpose(1, 2)
             k_flat = rope.rotate_queries_or_keys(k_flat.transpose(1, 2)).transpose(1, 2)
 
         attn_out = _batched_scaled_dot_product_attention(q_proj, k_flat, v_flat)
-        attn_out = attn_out.reshape(
-            B * R, Q, self.attention.head_dim * self.attention.num_heads
-        )
+        attn_out = attn_out.reshape(B * R, Q, self.attention.head_dim * self.attention.num_heads)
         attn_out = self.attention.out_projection(attn_out).view(B, R, Q, E)
 
         x_out = query_BRQE + attn_out
@@ -1350,9 +1302,7 @@ class InducedSelfAttentionBlock(nn.Module):
             **kw,
         }
 
-        self.cross_attn_block1 = CrossAttentionBlock(
-            **block_kw, softmax_scaling_layer=softmax_scaling_layer
-        )
+        self.cross_attn_block1 = CrossAttentionBlock(**block_kw, softmax_scaling_layer=softmax_scaling_layer)
         self.cross_attn_block2 = CrossAttentionBlock(**block_kw)
 
         self.num_inducing_points = num_inducing_points
@@ -1458,9 +1408,7 @@ class FeatureDistributionEmbedder(nn.Module):
                 dim_feedforward=dim_feedforward,
                 norm_factory=norm_factory,
                 softmax_scaling_layer=(
-                    softmax_scaling_layer_factory()
-                    if softmax_scaling_layer_factory is not None
-                    else None
+                    softmax_scaling_layer_factory() if softmax_scaling_layer_factory is not None else None
                 ),
                 device=device,
                 dtype=dtype,
@@ -1486,9 +1434,7 @@ class FeatureDistributionEmbedder(nn.Module):
             unless ``return_hidden`` is True.
         """
         hidden_states: list[torch.Tensor] | None = [] if return_hidden else None
-        assert not (return_hidden and force_recompute_layer), (
-            "return_hidden is incompatible with force_recompute_layer"
-        )
+        assert not (return_hidden and force_recompute_layer), "return_hidden is incompatible with force_recompute_layer"
         for i, layer in enumerate(self.layers):
             if force_recompute_layer:
                 x_BRiCE, _ = torch.utils.checkpoint.checkpoint(  # type: ignore
@@ -1602,9 +1548,7 @@ class ColumnAggregator(nn.Module):
                     use_reentrant=False,
                 )
             else:
-                x = block(
-                    x, rope=self.rope, save_peak_memory_factor=save_peak_memory_factor
-                )
+                x = block(x, rope=self.rope, save_peak_memory_factor=save_peak_memory_factor)
 
         # Last block: CLS tokens as query, full sequence as key/value (v2 readout)
         last_block = cast("TransformerBlock", self.blocks[-1])
@@ -1798,11 +1742,7 @@ class TabPFNV3(Architecture):
         # TODO: test_targets_MB needed because model_loading has a condition
         # on its presence. Clean this up.
         test_targets_MB: torch.Tensor | None = None,
-    ) -> (
-        torch.Tensor
-        | dict[str, torch.Tensor]
-        | tuple[torch.Tensor | dict[str, torch.Tensor], TabPFNV3Cache | None]
-    ):
+    ) -> torch.Tensor | dict[str, torch.Tensor] | tuple[torch.Tensor | dict[str, torch.Tensor], TabPFNV3Cache | None]:
         """Main forward pass for TabPFN v3.
 
         When a KV cache is provided, ``x_is_test_only=True`` lets the
@@ -1830,9 +1770,7 @@ class TabPFNV3(Architecture):
         if performance_options.enable_torch_compile:
             # We increase the limit, since we compile a couple of subgraphs for
             # chunking and different batched_sdpa configs.
-            torch._dynamo.config.cache_size_limit = max(
-                32, torch._dynamo.config.cache_size_limit
-            )
+            torch._dynamo.config.cache_size_limit = max(32, torch._dynamo.config.cache_size_limit)
 
         if x_is_test_only and (kv_cache is None or kv_cache.is_empty()):
             raise ValueError(
@@ -1840,11 +1778,7 @@ class TabPFNV3(Architecture):
                 "the non-cache forward needs the full train+test tensor."
             )
 
-        if (
-            not self.training
-            and self.task_type == "multiclass"
-            and (y > self.n_out - 1).any()
-        ):
+        if not self.training and self.task_type == "multiclass" and (y > self.n_out - 1).any():
             raise ValueError(
                 "Target is out of range. Make sure to use an ordinal encoded target. "
                 f"Expected target values between 0 and {self.n_out - 1}, but got "
@@ -1943,11 +1877,7 @@ class TabPFNV3(Architecture):
                     train_embeddings=train_emb.detach().to(cache_dtype),
                     train_shape=(B, num_train),
                     scaler_cache={k: v.detach() for k, v in scaler_stats.items()},
-                    inducing_hidden=(
-                        [h.detach() for h in inducing_hidden]
-                        if inducing_hidden is not None
-                        else None
-                    ),
+                    inducing_hidden=([h.detach() for h in inducing_hidden] if inducing_hidden is not None else None),
                 )
 
         # ---- Decoder -----------------------------------------------------------
@@ -2064,9 +1994,7 @@ class TabPFNV3(Architecture):
         x_grouped = [torch.roll(x_BRiC, shifts=-(2**i), dims=2) for i in range(size)]
         x_grouped = torch.stack(x_grouped, dim=-1)
         if nan_ind_BRiC is not None:
-            ind_grouped = [
-                torch.roll(nan_ind_BRiC, shifts=-(2**i), dims=2) for i in range(size)
-            ]
+            ind_grouped = [torch.roll(nan_ind_BRiC, shifts=-(2**i), dims=2) for i in range(size)]
             ind_grouped = torch.stack(ind_grouped, dim=-1)
             x_grouped = torch.cat([x_grouped, ind_grouped], dim=-1)
         return x_grouped
@@ -2095,11 +2023,7 @@ class TabPFNV3(Architecture):
         hidden_per_block: list[list[torch.Tensor]] = [[] for _ in range(num_blocks)]
 
         x_grouped_train_BNCG = x_grouped_BRiCG[:, :num_train]
-        process_col_fn = (
-            self._compiled(self._process_col_chunk)
-            if enable_torch_compile
-            else self._process_col_chunk
-        )
+        process_col_fn = self._compiled(self._process_col_chunk) if enable_torch_compile else self._process_col_chunk
 
         for c0 in range(0, num_columns, col_chunk_size):
             c1 = min(c0 + col_chunk_size, num_columns)
@@ -2161,9 +2085,7 @@ class TabPFNV3(Architecture):
         during preprocessing (for reuse in the inference cache).
         """
         B = rows_RiBC.shape[1]
-        x_BRiC, nan_ind_BRiC, scaler_stats = self._preprocess_raw(
-            rows_RiBC, num_train, scaler_cache
-        )
+        x_BRiC, nan_ind_BRiC, scaler_stats = self._preprocess_raw(rows_RiBC, num_train, scaler_cache)
         y_col_emb_BNE: torch.Tensor | None = None
         if scaler_cache is None and num_train > 0:
             y_col_BN = self._prepare_y(y, num_train, B)
@@ -2219,9 +2141,7 @@ class TabPFNV3(Architecture):
             if performance_options.enable_torch_compile
             else self._preprocess_and_group
         )
-        x_grouped_BRiCG, y_col_emb_BNE, scaler_stats = preprocess_fn(
-            rows_RiBC, y, num_train, scaler_cache
-        )
+        x_grouped_BRiCG, y_col_emb_BNE, scaler_stats = preprocess_fn(rows_RiBC, y, num_train, scaler_cache)
         num_rows, C = x_grouped_BRiCG.shape[1], x_grouped_BRiCG.shape[2]
 
         # --- Phase 1: compute inducing hidden when chunking w/o a pre-built cache. ---
@@ -2266,9 +2186,7 @@ class TabPFNV3(Architecture):
             inducing_hidden: list[torch.Tensor] | None = None
             try:
                 for row_chunk_start in range(0, num_rows, effective_chunk_size):
-                    row_chunk_end = min(
-                        row_chunk_start + effective_chunk_size, num_rows
-                    )
+                    row_chunk_end = min(row_chunk_start + effective_chunk_size, num_rows)
                     x_grouped_chunk = x_grouped_BRiCG[:, row_chunk_start:row_chunk_end]
                     if performance_options.enable_torch_compile:
                         torch._dynamo.mark_dynamic(x_grouped_chunk, index=0)
@@ -2300,9 +2218,7 @@ class TabPFNV3(Architecture):
                 parts.clear()
                 torch.cuda.empty_cache()
                 effective_chunk_size //= 2
-                _logger.warning(
-                    "OOM: halving row_chunk_size to %d", effective_chunk_size
-                )
+                _logger.warning("OOM: halving row_chunk_size to %d", effective_chunk_size)
                 self.inference_row_chunk_size = effective_chunk_size
 
         if use_chunks:
@@ -2502,9 +2418,7 @@ def _generate_nan_and_inf_indicator(x: torch.Tensor) -> torch.Tensor:
     ).to(x.dtype)
 
 
-def _safe_log_seqlen(
-    n: int | torch.Tensor, device: torch.device, dtype: torch.dtype
-) -> torch.Tensor:
+def _safe_log_seqlen(n: int | torch.Tensor, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
     """Compute log(n) safely, avoiding fp16 overflow for large `n`."""
     if isinstance(n, torch.Tensor):
         return n.to(torch.float32).clamp(min=1).log().to(dtype)
@@ -2539,16 +2453,13 @@ def _spline_based_regression_borders(num_buckets: int) -> torch.Tensor:
     ]
     # The original model had 5000 buckets.
     border_reference_points = (
-        border_reference_points
-        + [(2500, 0)]
-        + [(5000 - x, -y) for x, y in border_reference_points[::-1]]
+        border_reference_points + [(2500, 0)] + [(5000 - x, -y) for x, y in border_reference_points[::-1]]
     )
     x_scale = num_buckets / 5000
     xp = np.array([x for x, _ in border_reference_points]) * x_scale
     yp = np.array([y for _, y in border_reference_points])
-    return torch.tensor(
-        np.interp(x=np.arange(num_buckets + 1), xp=xp, fp=yp), dtype=torch.float32
-    )
+    return torch.tensor(np.interp(x=np.arange(num_buckets + 1), xp=xp, fp=yp), dtype=torch.float32)
+
 
 class TSPFNEncoder(nn.Module, ABC):
     def __init__(
@@ -2559,7 +2470,6 @@ class TSPFNEncoder(nn.Module, ABC):
         **kwargs,
     ):
         super().__init__()
-
 
         # resolved = str(tabpfn_kwargs["model_path"].resolve())
         resolved = str(tabpfn_kwargs.pop("model_path"))
