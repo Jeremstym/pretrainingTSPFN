@@ -494,6 +494,35 @@ class _DtypeMatchingRMSNorm(nn.RMSNorm):
         return super().forward(input)
 
 
+class ConvolutionEncoder(nn.Module):
+    """ Convolutional encoder for time series data.
+    This encoder uses a series of convolutional layers to extract features from the input time series data.
+    Meant to replace linear encoder for time series data. Expect non-overlapped patches of time series data as input.
+    """
+
+    def __init__(self, input_channels: int, output_channels: int, kernel_size: int = 3, stride: int = 1, padding: int = 1):
+        super(ConvolutionEncoder, self).__init__()
+        self.conv1 = nn.Conv1d(input_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding)
+        self.relu = nn.ReLU()
+        self.conv2 = nn.Conv1d(output_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass through the convolutional encoder.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (B, C_in, L), where B is the batch size,
+                              C_in is the number of input channels (features), and L is the length of the time series.
+
+        Returns:
+            torch.Tensor: Output tensor of shape (B, C_out, L_out), where C_out is the number of output channels
+                          and L_out is the length of the output time series after convolution.
+        """
+        x = self.conv1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        return x
+
+
 class ManyClassDecoder(nn.Module):
     """Attention-based retrieval decoder for many-class classification.
 
