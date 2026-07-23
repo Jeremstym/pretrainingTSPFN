@@ -498,13 +498,15 @@ class ConvolutionalEncoder(nn.Module):
         kernel_size: int,
         stride: int = 1,
         padding: int = 1,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ):
         super(ConvolutionalEncoder, self).__init__()
         self.patch_size = patch_size
         self.cnn = nn.Sequential(
-            nn.Conv1d(input_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.Conv1d(input_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding, device=device, dtype=dtype),
             nn.ReLU(),
-            nn.Conv1d(output_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.Conv1d(output_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding, device=device, dtype=dtype),
         )
 
     def forward(self, x_grouped_chunk_BRjChTG: torch.Tensor) -> torch.Tensor:
