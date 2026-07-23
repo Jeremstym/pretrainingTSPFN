@@ -1448,7 +1448,7 @@ class FeatureDistributionEmbedder(nn.Module):
     @override
     def forward(
         self,
-        x_BRiCE: torch.Tensor,
+        x_BRiPE: torch.Tensor,
         num_train_rows: int | None = None,
         save_peak_memory_factor: int | None = None,
         *,
@@ -1466,17 +1466,17 @@ class FeatureDistributionEmbedder(nn.Module):
         assert not (return_hidden and force_recompute_layer), "return_hidden is incompatible with force_recompute_layer"
         for i, layer in enumerate(self.layers):
             if force_recompute_layer:
-                x_BRiCE, _ = torch.utils.checkpoint.checkpoint(  # type: ignore
+                x_BRiPE, _ = torch.utils.checkpoint.checkpoint(  # type: ignore
                     layer,
-                    x_BRiCE,
+                    x_BRiPE,
                     num_train_rows,
                     use_reentrant=False,
                     save_peak_memory_factor=save_peak_memory_factor,
                 )
             else:
                 layer_cached = cached_hidden[i] if cached_hidden is not None else None
-                x_BRiCE, h = layer(
-                    x_BRiCE,
+                x_BRiPE, h = layer(
+                    x_BRiPE,
                     single_eval_pos=num_train_rows,
                     save_peak_memory_factor=save_peak_memory_factor,
                     cached_hidden=layer_cached,
@@ -1484,7 +1484,7 @@ class FeatureDistributionEmbedder(nn.Module):
                 )
                 if hidden_states is not None:
                     hidden_states.append(h)
-        return x_BRiCE, hidden_states
+        return x_BRiPE, hidden_states
 
 
 # ---------------------------------------------------------------------------
@@ -1547,24 +1547,24 @@ class ColumnAggregator(nn.Module):
     @override
     def forward(
         self,
-        x_BRiCE: torch.Tensor,
+        x_BRiPE: torch.Tensor,
         save_peak_memory_factor: int | None = None,
         force_recompute_layer: bool = False,
     ) -> torch.Tensor:
         """Transform feature embeddings into per-row CLS representations.
 
         Args:
-            x_BRiCE: (B, Ri, C, E)
+            x_BRiPE: (B, Ri, C, E)
             save_peak_memory_factor: If set, chunk the evaluation to save memory.
             force_recompute_layer: If True, force gradient checkpointing.
 
         Returns:
             (B, Ri, num_cls_tokens, E)
         """
-        B, Ri, _, E = x_BRiCE.shape
-        cls = self.cls_tokens.expand(B, Ri, self.num_cls_tokens, E).to(x_BRiCE.device)
+        B, Ri, _, E = x_BRiPE.shape
+        cls = self.cls_tokens.expand(B, Ri, self.num_cls_tokens, E).to(x_BRiPE.device)
         # Prepend CLS tokens: (B, Ri, num_cls + C, E)
-        x = torch.cat((cls, x_BRiCE), dim=2)
+        x = torch.cat((cls, x_BRiPE), dim=2)
 
         # Run all blocks except the last
         for block in self.blocks[:-1]:
@@ -2282,25 +2282,26 @@ class TabPFNV3(Architecture):
         print(f"x input shape: {x_grouped_chunk_BNChTjG.shape}")
 
         # Embed this column chunk → (B, Rt, Tj, E)
-        x_emb_BNTjE = self.x_embed(x_grouped_chunk_BNChTjG)
-        print(f"x_emb_BNTjE shape: {x_emb_BNTjE.shape}")
-        E = x_emb_BNTjE.shape[-1]
+        x_emb_BNPE = self.x_embed(x_grouped_chunk_BNChTjG)
+        print(f"x_emb_BNPE shape: {x_emb_BNPE.shape}")
+        E = x_emb_BNPE.shape[-1]
+        P = x_emb_BNPE.shape[-2]
 
         # Target-aware y (broadcasts over the Tj columns)
         if y_col_emb_BNE is not None and num_train > 0:
-            x_emb_BNTjE = x_emb_BNTjE + y_col_emb_BNE.unsqueeze(2)
+            x_emb_BNPE = x_emb_BNPE + y_col_emb_BNE.unsqueeze(2)
 
         # (B, Rt, Tj, E) → (B*Tj, Rt, E)
-        x_flat = x_emb_BNTjE.transpose(1, 2).contiguous().reshape(B * Tj, num_train, E)
+        x_flat = x_emb_BNPE.transpose(1, 2).contiguous().reshape(B * P, num_train, E)
 
         layers = self.feature_distribution_embedder.layers
         num_blocks = len(layers)
         chunk_outputs: list[torch.Tensor] = []
         for blk_idx, blk in enumerate(layers):
-            ind = blk.inducing_vectors.unsqueeze(0).expand(B * Tj, -1, -1)
+            ind = blk.inducing_vectors.unsqueeze(0).expand(B * P, -1, -1)
             hidden = blk.cross_attn_block1(ind, x_flat)  # (B*cc, n_ind, E)
             # Reshape for correct batch-column ordering when concatenated
-            chunk_outputs.append(hidden.reshape(B, Tj, -1, E))
+            chunk_outputs.append(hidden.reshape(B, P, -1, E))
             # Update train embeddings for next block's Step 1
             if blk_idx < num_blocks - 1:
                 x_flat = blk.cross_attn_block2(x_flat, hidden)
@@ -2339,7 +2340,7 @@ class TabPFNV3(Architecture):
             x_emb[:, :num_train_rows] = x_emb[:, :num_train_rows] + y_emb.unsqueeze(2)
 
         x_emb, chunk_hidden = self.feature_distribution_embedder(
-            x_BRiCE=x_emb,
+            x_BRiPE=x_emb,
             num_train_rows=num_train_rows,
             cached_hidden=precomputed_hidden,
             save_peak_memory_factor=(save_peak_memory_factor if is_full_path else None),
@@ -2347,7 +2348,7 @@ class TabPFNV3(Architecture):
             return_hidden=return_inducing_hidden and is_full_path,
         )
         row_embedding_chunk = self.column_aggregator(
-            x_BRiCE=x_emb,
+            x_BRiPE=x_emb,
             save_peak_memory_factor=save_peak_memory_factor,
             force_recompute_layer=force_recompute_layer and is_full_path,
         )
