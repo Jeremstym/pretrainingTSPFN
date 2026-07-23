@@ -498,16 +498,18 @@ class ConvolutionalEncoder(nn.Module):
         output_channels: int,
         kernel_size: int,
         stride: int = 1,
-        padding: int = 1,
+        dilation: int = 1,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ):
         super(ConvolutionalEncoder, self).__init__()
         self.patch_size = patch_size
+        self.receptive_field = (kernel_size - 1) * dilation + 1
+        padding = self.receptive_field // 2
         self.cnn = nn.Sequential(
-            nn.Conv1d(input_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding, device=device, dtype=dtype),
+            nn.Conv1d(input_channels, output_channels, kernel_size=kernel_size, stride=stride, dilation=dilation, padding=padding, device=device, dtype=dtype),
             nn.ReLU(),
-            nn.Conv1d(output_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding, device=device, dtype=dtype),
+            nn.Conv1d(output_channels, output_channels, kernel_size=kernel_size, stride=stride, dilation=dilation, padding=padding, device=device, dtype=dtype),
         )
 
     def forward(self, x_grouped_chunk_BRjChTG: torch.Tensor) -> torch.Tensor:
@@ -526,14 +528,17 @@ class ConvolutionalEncoder(nn.Module):
             x = F.pad(
                 x_grouped_chunk_BRjChTG.transpose(-1, -2), (0, self.patch_size - T % self.patch_size), "constant", 0
             ).transpose(-1, -2)
-        num_patches = int(math.ceil(T / self.patch_size))
-        x_BRjChPTpG = x.reshape(
-            B, Rj, Ch, num_patches, self.patch_size, G
-        )  # Reshape to (B, Rj, Ch, num_patches, patch_size)
-        x_flat = x_BRjChPTpG.flatten(0, -3) # Shape (Rj * B * Ch * num_patches, patch_size, G)
-        x_flat = x_flat.transpose(-1, -2)  # Shape (Rj * B * Ch * num_patches, G, patch_size)
-        x_emb = self.cnn(x_flat).mean(dim=-1)  # Apply CNN and average pool over the time dimension
-        x_BRjChPE = x_emb.reshape(B, Rj, Ch, num_patches, -1)  # Reshape back to (B, Rj, Ch, num_patches, emsize)
+        # x_BRjChPTpG = x.reshape(
+        #     B, Rj, Ch, num_patches, self.patch_size, G
+        # )  # Reshape to (B, Rj, Ch, num_patches, patch_size)
+        x_flat = x.flatten(0, -3) # Shape (B * Rj * Ch, T, G)
+        x_flat = x_flat.transpose(-1, -2)  # Shape (B * Rj * Ch, G, T)
+        x_emb = self.cnn(x_flat)  # Shape (B * Rj * Ch, emsize, T)
+        assert T % self.patch_size == 0, f"T ({T}) must be divisible by patch_size ({self.patch_size})"
+        num_patches = T // self.patch_size
+        # num_patches = int(math.ceil(T / self.patch_size))
+        x_BRjChEPTp = x_emb.reshape(B, Rj, Ch, -1, num_patches, self.patch_size)  # Reshape back to (B, Rj, Ch, emsize, num_patches, patch_size)
+        x_BRjChPE = x_BRjChEPTp.mean(-1).transpose(-1, -2)  # Shape (B, Rj, Ch, num_patches, emsize)
         x_BRjCE = x_BRjChPE.reshape(B, Rj, Ch * num_patches, -1)  # Reshape to (B, Rj, Ch * num_patches (=C), emsize)
         return x_BRjCE
 
