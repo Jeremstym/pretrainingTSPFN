@@ -534,7 +534,7 @@ class ConvolutionalEncoder(nn.Module):
         # x_BRjChPTpG = x.reshape(
         #     B, Rj, Ch, num_patches, self.patch_size, G
         # )  # Reshape to (B, Rj, Ch, num_patches, patch_size)
-        x_flat = x.flatten(0, -3) # Shape (B * Rj * Ch, T, G)
+        x_flat = x_grouped_chunk_BRjChTG.flatten(0, -3) # Shape (B * Rj * Ch, T, G)
         x_flat = x_flat.transpose(-1, -2)  # Shape (B * Rj * Ch, G, T)
         x_emb = self.cnn(x_flat)  # Shape (B * Rj * Ch, emsize, T)
         num_patches = T // self.patch_size
