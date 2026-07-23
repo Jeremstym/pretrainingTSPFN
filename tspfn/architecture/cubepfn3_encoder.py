@@ -1913,22 +1913,22 @@ class TabPFNV3(Architecture):
         # Collect (B, Cj, I, E) per column-chunk, per block
         hidden_per_block: list[list[torch.Tensor]] = [[] for _ in range(num_blocks)]
 
-        x_grouped_train_BNCG = x_grouped_BRiACG[:, :num_train]
+        x_grouped_train_BNACG = x_grouped_BRiACG[:, :num_train]
         process_col_fn = self._compiled(self._process_col_chunk) if enable_torch_compile else self._process_col_chunk
 
         for c0 in range(0, num_columns, col_chunk_size):
             c1 = min(c0 + col_chunk_size, num_columns)
-            x_grouped_chunk_BNCjG = x_grouped_train_BNCG[:, :, c0:c1]
+            x_grouped_chunk_BNACjG = x_grouped_train_BNACG[:, :, c0:c1]
             if enable_torch_compile:
-                torch._dynamo.mark_dynamic(x_grouped_chunk_BNCjG, index=0)
-                torch._dynamo.mark_dynamic(x_grouped_chunk_BNCjG, index=1)
+                torch._dynamo.mark_dynamic(x_grouped_chunk_BNACjG, index=0)
+                torch._dynamo.mark_dynamic(x_grouped_chunk_BNACjG, index=1)
                 # Will compile two versions: one with cols dynamic and one with
                 # cols static for the fixed chunk size.
                 if (c1 - c0) != col_chunk_size:
-                    torch._dynamo.mark_dynamic(x_grouped_chunk_BNCjG, index=2)
+                    torch._dynamo.mark_dynamic(x_grouped_chunk_BNACjG, index=2)
 
             chunk_outputs_BCjIE = process_col_fn(
-                x_grouped_chunk_BNCjG=x_grouped_chunk_BNCjG,
+                x_grouped_chunk_BNACjG=x_grouped_chunk_BNACjG,
                 y_col_emb_BNE=y_col_emb_BNE,
                 num_train=num_train,
             )
@@ -2178,20 +2178,20 @@ class TabPFNV3(Architecture):
     def _process_col_chunk(
         self,
         *,
-        x_grouped_chunk_BNCjG: torch.Tensor,
+        x_grouped_chunk_BNACjG: torch.Tensor,
         y_col_emb_BNE: torch.Tensor | None,
         num_train: int,
     ) -> list[torch.Tensor]:
         """Compute inducing hidden for one column chunk across all dist-embedder blocks.
 
-        ``x_grouped_chunk_BNCjG`` has shape ``(B, train rows, Cj, G)`` — a slice of the
+        ``x_grouped_chunk_BNACjG`` has shape ``(B, train rows, Cj, G)`` — a slice of the
         pre-grouped tensor with Cj << C, so the chunked op never sees the full ``C``
         dim. Returns one ``(B, Cj, n_ind, embedding_size)`` tensor per block.
         """
-        B, _, Cj, _ = x_grouped_chunk_BNCjG.shape
+        B, _, A, Cj, _ = x_grouped_chunk_BNACjG.shape
 
         # Embed this column chunk → (B, Rt, Cj, E)
-        x_emb_BNCjE = self.x_embed(x_grouped_chunk_BNCjG)
+        x_emb_BNCjE = self.x_embed(x_grouped_chunk_BNACjG)
         E = x_emb_BNCjE.shape[-1]
 
         # Target-aware y (broadcasts over the Cj columns)
@@ -2199,16 +2199,16 @@ class TabPFNV3(Architecture):
             x_emb_BNCjE = x_emb_BNCjE + y_col_emb_BNE.unsqueeze(2)
 
         # (B, Rt, Cj, E) → (B*Cj, Rt, E)
-        x_flat = x_emb_BNCjE.transpose(1, 2).contiguous().reshape(B * Cj, num_train, E)
+        x_flat = x_emb_BNCjE.transpose(1, 2).contiguous().reshape(B * A * Cj, num_train, E)
 
         layers = self.feature_distribution_embedder.layers
         num_blocks = len(layers)
         chunk_outputs: list[torch.Tensor] = []
         for blk_idx, blk in enumerate(layers):
-            ind = blk.inducing_vectors.unsqueeze(0).expand(B * Cj, -1, -1)
+            ind = blk.inducing_vectors.unsqueeze(0).expand(B * A * Cj, -1, -1)
             hidden = blk.cross_attn_block1(ind, x_flat)  # (B*cc, n_ind, E)
             # Reshape for correct batch-column ordering when concatenated
-            chunk_outputs.append(hidden.reshape(B, Cj, -1, E))
+            chunk_outputs.append(hidden.reshape(B, A, Cj, -1, E))
             # Update train embeddings for next block's Step 1
             if blk_idx < num_blocks - 1:
                 x_flat = blk.cross_attn_block2(x_flat, hidden)
