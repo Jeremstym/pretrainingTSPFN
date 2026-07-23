@@ -8,6 +8,7 @@ from abc import ABC
 import einops
 import torch
 import torch.nn as nn
+import math
 from functools import partial
 import types
 from tabpfn.checkpoint import Checkpoint
@@ -525,7 +526,7 @@ class ConvolutionalEncoder(nn.Module):
             x = F.pad(
                 x_grouped_chunk_BRjChTG.transpose(-1, -2), (0, self.patch_size - T % self.patch_size), "constant", 0
             ).transpose(-1, -2)
-        num_patches = torch.ceil(T / self.patch_size).int()
+        num_patches = math.ceil(T / self.patch_size).int()
         x_BRjChPTpG = x.reshape(
             B, Rj, Ch, num_patches, self.patch_size, G
         )  # Reshape to (B, Rj, Ch, num_patches, patch_size)
