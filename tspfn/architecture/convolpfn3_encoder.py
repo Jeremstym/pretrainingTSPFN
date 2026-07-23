@@ -2279,11 +2279,9 @@ class TabPFNV3(Architecture):
         dim. Returns one ``(B, Tj, n_ind, embedding_size)`` tensor per block.
         """
         B, _, _, Tj, _ = x_grouped_chunk_BNChTjG.shape
-        print(f"x input shape: {x_grouped_chunk_BNChTjG.shape}")
 
         # Embed this column chunk → (B, Rt, Tj, E)
         x_emb_BNPE = self.x_embed(x_grouped_chunk_BNChTjG)
-        print(f"x_emb_BNPE shape: {x_emb_BNPE.shape}")
         E = x_emb_BNPE.shape[-1]
         P = x_emb_BNPE.shape[-2]
 
