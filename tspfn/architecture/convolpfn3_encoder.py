@@ -492,7 +492,7 @@ class ConvolutionalEncoder(nn.Module):
     def __init__(
         self,
         patch_size: int,
-        num_ts_channels: int,
+        # num_ts_channels: int,
         input_channels: int,
         output_channels: int,
         kernel_size: int,
@@ -1637,8 +1637,9 @@ class TabPFNV3(Architecture):
         if self.use_nan_indicators:
             in_features *= 2
         self.x_embed = ConvolutionalEncoder(
-            in_features=in_features,
-            out_features=config.embed_dim,
+            patch_size=16,
+            input_channels=in_features,
+            output_channels=config.embed_dim,
             # kernel_size=config.conv_kernel_size,
             # stride=config.conv_stride,
             # padding=config.conv_padding,
