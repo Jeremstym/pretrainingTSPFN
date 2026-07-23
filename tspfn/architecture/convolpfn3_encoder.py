@@ -2489,7 +2489,7 @@ def _spline_based_regression_borders(num_buckets: int) -> torch.Tensor:
     return torch.tensor(np.interp(x=np.arange(num_buckets + 1), xp=xp, fp=yp), dtype=torch.float32)
 
 
-class TSPFNEncoder(nn.Module, ABC):
+class CubePFNEncoder(nn.Module, ABC):
     def __init__(
         self,
         seed: int,
