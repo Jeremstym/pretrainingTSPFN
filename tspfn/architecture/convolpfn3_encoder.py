@@ -2527,7 +2527,7 @@ class TSPFNEncoder(nn.Module, ABC):
                 _logger.warning("Missing keys in model state dict: %s", missing_keys)
             if unexpected_keys:
                 _logger.warning("Unexpected keys in model state dict: %s", unexpected_keys)
-            model.load_state_dict(model_state, strict=True)
+            model.load_state_dict(model_state, strict=False)
 
         self.model = model
         self.performance_options = PerformanceOptions(**performance_options)
