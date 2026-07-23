@@ -1642,7 +1642,7 @@ class TabPFNV3(Architecture):
             patch_size=16,
             input_channels=in_features,
             output_channels=config.embed_dim,
-            # kernel_size=config.conv_kernel_size,
+            kernel_size=41,
             # stride=config.conv_stride,
             # padding=config.conv_padding,
             # dilation=config.conv_dilation,
