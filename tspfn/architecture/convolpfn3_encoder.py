@@ -524,17 +524,19 @@ class ConvolutionalEncoder(nn.Module):
             torch.Tensor: Output tensor of shape (Rj, B, num_patches, emsize), where emsize is the number of output channels.
         """
         B, Rj, Ch, T, G = x_grouped_chunk_BRjChTG.shape
-        if T % self.patch_size != 0:
-            x = F.pad(
-                x_grouped_chunk_BRjChTG.transpose(-1, -2), (0, self.patch_size - T % self.patch_size), "constant", 0
-            ).transpose(-1, -2)
+        pad_amt = (self.patch_size - (T % self.patch_size)) % self.patch_size
+        if pad_amt > 0:
+            # Original shape: (B, Rj, Ch, T, G) -> permute to (B, Rj, Ch, G, T)
+            x_padded = x_grouped_chunk_BRjChTG.permute(0, 1, 2, 4, 3)
+            x_padded = F.pad(x_padded, (0, pad_amt), mode="constant", value=0)
+            x_grouped_chunk_BRjChTG = x_padded.permute(0, 1, 2, 4, 3)
+            T = x_grouped_chunk_BRjChTG.shape[3]
         # x_BRjChPTpG = x.reshape(
         #     B, Rj, Ch, num_patches, self.patch_size, G
         # )  # Reshape to (B, Rj, Ch, num_patches, patch_size)
         x_flat = x.flatten(0, -3) # Shape (B * Rj * Ch, T, G)
         x_flat = x_flat.transpose(-1, -2)  # Shape (B * Rj * Ch, G, T)
         x_emb = self.cnn(x_flat)  # Shape (B * Rj * Ch, emsize, T)
-        assert T % self.patch_size == 0, f"T ({T}) must be divisible by patch_size ({self.patch_size})"
         num_patches = T // self.patch_size
         # num_patches = int(math.ceil(T / self.patch_size))
         x_BRjChEPTp = x_emb.reshape(B, Rj, Ch, -1, num_patches, self.patch_size)  # Reshape back to (B, Rj, Ch, emsize, num_patches, patch_size)
