@@ -2274,31 +2274,31 @@ class TabPFNV3(Architecture):
     ) -> list[torch.Tensor]:
         """Compute inducing hidden for one column chunk across all dist-embedder blocks.
 
-        ``x_grouped_chunk_BNChTjG`` has shape ``(B, train rows, Cj, G)`` — a slice of the
-        pre-grouped tensor with Cj << C, so the chunked op never sees the full ``C``
-        dim. Returns one ``(B, Cj, n_ind, embedding_size)`` tensor per block.
+        ``x_grouped_chunk_BNChTjG`` has shape ``(B, train rows, Ch, Tj, G)`` — a slice of the
+        pre-grouped tensor with Tj << C, so the chunked op never sees the full ``C``
+        dim. Returns one ``(B, Tj, n_ind, embedding_size)`` tensor per block.
         """
-        B, _, Cj, _ = x_grouped_chunk_BNChTjG.shape
+        B, _, Ch, Tj, _ = x_grouped_chunk_BNChTjG.shape
 
-        # Embed this column chunk → (B, Rt, Cj, E)
+        # Embed this column chunk → (B, Rt, Tj, E)
         x_emb_BNCE = self.x_embed(x_grouped_chunk_BNChTjG)
         E = x_emb_BNCE.shape[-1]
 
-        # Target-aware y (broadcasts over the Cj columns)
+        # Target-aware y (broadcasts over the Tj columns)
         if y_col_emb_BNE is not None and num_train > 0:
             x_emb_BNCE = x_emb_BNCE + y_col_emb_BNE.unsqueeze(2)
 
-        # (B, Rt, Cj, E) → (B*Cj, Rt, E)
-        x_flat = x_emb_BNCE.transpose(1, 2).contiguous().reshape(B * Cj, num_train, E)
+        # (B, Rt, Tj, E) → (B*Tj, Rt, E)
+        x_flat = x_emb_BNCE.transpose(1, 2).contiguous().reshape(B * Tj, num_train, E)
 
         layers = self.feature_distribution_embedder.layers
         num_blocks = len(layers)
         chunk_outputs: list[torch.Tensor] = []
         for blk_idx, blk in enumerate(layers):
-            ind = blk.inducing_vectors.unsqueeze(0).expand(B * Cj, -1, -1)
+            ind = blk.inducing_vectors.unsqueeze(0).expand(B * Tj, -1, -1)
             hidden = blk.cross_attn_block1(ind, x_flat)  # (B*cc, n_ind, E)
             # Reshape for correct batch-column ordering when concatenated
-            chunk_outputs.append(hidden.reshape(B, Cj, -1, E))
+            chunk_outputs.append(hidden.reshape(B, Tj, -1, E))
             # Update train embeddings for next block's Step 1
             if blk_idx < num_blocks - 1:
                 x_flat = blk.cross_attn_block2(x_flat, hidden)
