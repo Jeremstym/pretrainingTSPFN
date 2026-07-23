@@ -507,26 +507,32 @@ class ConvolutionalEncoder(nn.Module):
             nn.Conv1d(output_channels, output_channels, kernel_size=kernel_size, stride=stride, padding=padding),
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x_grouped_chunk_BRjChTG: torch.Tensor) -> torch.Tensor:
         """Forward pass through the convolutional encoder.
 
         Args:
-            x (torch.Tensor): Input tensor of shape (Ri, B, Ch, T), where Ri is number of time series inputs (batch size),
-                              Ch is the number of input channels, and T is the length of the time series.
+            x_grouped_chunk_BRjChTG (torch.Tensor): Input tensor of shape (B, N, C, j, G), where B is the batch size,
+                                                  N is the number of time series inputs, C is the number of input channels,
+                                                  j is the number of features, and G is the length of each time series.
 
         Returns:
-            torch.Tensor: Output tensor of shape (Ri, B, num_patches, emsize), where emsize is the number of output channels.
+            torch.Tensor: Output tensor of shape (Rj, B, num_patches, emsize), where emsize is the number of output channels.
         """
-        Ri, B, Ch, T = x.shape
+        B, Rj, Ch, T, G = x_grouped_chunk_BRjChTG.shape
         if T % self.patch_size != 0:
-            x = F.pad(x, (0, self.patch_size - T % self.patch_size), "constant", 0)
+            x = F.pad(
+                x_grouped_chunk_BRjChTG.transpose(-1, -2), (0, self.patch_size - T % self.patch_size), "constant", 0
+            ).transpose(-1, -2)
         num_patches = torch.ceil(T / self.patch_size).int()
-        x_RiBChPTp = x.reshape(Ri, B, Ch, num_patches, self.patch_size)  # Reshape to (Ri, B, Ch, num_patches, patch_size)
-        x_flat = x_RiBChPTp.flatten(0, -2)  # Flatten Ri, B, Ch and num_patches into a single dimension for CNN processing
-        x_flat = x_flat.unsqueeze(1) # Add a channel dimension for CNN input
+        x_BRjChPTpG = x.reshape(
+            B, Rj, Ch, num_patches, self.patch_size, G
+        )  # Reshape to (B, Rj, Ch, num_patches, patch_size)
+        x_flat = x_BRjChPTpG.flatten(0, -3) # Shape (Rj * B * Ch * num_patches, patch_size, G)
+        x_flat = x_flat.transpose(-1, -2)  # Shape (Rj * B * Ch * num_patches, G, patch_size)
         x_emb = self.cnn(x_flat).mean(dim=-1)  # Apply CNN and average pool over the time dimension
-        x_RiBChPE = x_emb.reshape(Ri, B, Ch, num_patches, -1)  # Reshape back to (Ri, B, Ch, num_patches, emsize)
-        return x_RiBChPE
+        x_BRjChPE = x_emb.reshape(B, Rj, Ch, num_patches, -1)  # Reshape back to (B, Rj, Ch, num_patches, emsize)
+        x_BRjCE = x_BRjChPE.reshape(B, Rj, Ch * num_patches, -1)  # Reshape to (B, Rj, Ch * num_patches (=C), emsize)
+        return x_BRjCE
 
 
 class ManyClassDecoder(nn.Module):
@@ -1630,7 +1636,16 @@ class TabPFNV3(Architecture):
         in_features = config.feature_group_size
         if self.use_nan_indicators:
             in_features *= 2
-        self.x_embed = nn.Linear(in_features, config.embed_dim, **kw)
+        self.x_embed = ConvolutionalEncoder(
+            in_features=in_features,
+            out_features=config.embed_dim,
+            # kernel_size=config.conv_kernel_size,
+            # stride=config.conv_stride,
+            # padding=config.conv_padding,
+            # dilation=config.conv_dilation,
+            # groups=config.conv_groups,
+            **kw,
+        )
 
         # ---- Target-aware col embedding ----
         if task_type == "multiclass":
@@ -1797,16 +1812,16 @@ class TabPFNV3(Architecture):
                 f"Expected target values between 0 and {self.n_out - 1}, but got "
                 f"values greater than {self.n_out - 1}."
             )
-        x_RiBC = x
-        B = x_RiBC.shape[1]
+        x_RiBChT = x
+        B = x_RiBChT.shape[1]
         num_train = y.shape[0]
         if performance_options.enable_torch_compile:
-            torch._dynamo.mark_dynamic(x_RiBC, index=0)
-            torch._dynamo.mark_dynamic(x_RiBC, index=1)
-            torch._dynamo.mark_dynamic(x_RiBC, index=2)
+            torch._dynamo.mark_dynamic(x_RiBChT, index=0)
+            torch._dynamo.mark_dynamic(x_RiBChT, index=1)
+            torch._dynamo.mark_dynamic(x_RiBChT, index=2)
 
         x_BRiClE, inducing_hidden, scaler_stats = self._stages_0_to_2(
-            x_RiBC,
+            x_RiBChT,
             y,
             performance_options=performance_options,
             return_inducing_hidden=return_kv_cache,
@@ -1879,7 +1894,7 @@ class TabPFNV3(Architecture):
                 built_cache = kv_cache  # pass through unchanged
             else:
                 # Reuse the statistics fitted during preprocessing (on the
-                # imputed train rows). Re-fitting on ``x_RiBC`` here would use the
+                # imputed train rows). Re-fitting on ``x_RiBChT`` here would use the
                 # raw input, whose passed-through +/-inf would poison the mean/std
                 # and turn every standardised test cell into NaN at predict time.
                 assert kv_out
@@ -1963,7 +1978,7 @@ class TabPFNV3(Architecture):
 
     def _preprocess_raw(
         self,
-        x_RiBC: torch.Tensor,
+        x_RiBChT: torch.Tensor,
         num_train: int,
         scaler_cache: dict[str, torch.Tensor] | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor | None, dict[str, torch.Tensor]]:
@@ -1974,40 +1989,40 @@ class TabPFNV3(Architecture):
         *after* imputation, so the statistics are finite even when the raw input
         carried +/-inf (the ``passthrough_inf`` path).
 
-        Returns ``(x_BRiC, nan_ind_BRiC, scaler_stats)`` where the first two are
+        Returns ``(x_BRiChT, nan_ind_BRiChT, scaler_stats)`` where the first two are
         of shape ``(B, Ri, C)`` and ``scaler_stats`` is the (finite) scaler cache
         used for the standardisation. Returning it lets the caller store exactly
         these statistics in the inference cache, so test rows are standardised
         with the same statistics the train rows were — see :meth:`forward`.
         """
-        nan_ind_BRiC: torch.Tensor | None = None
+        nan_ind_BRiChT: torch.Tensor | None = None
         if self.use_nan_indicators:
             # Note: Indicators need to be computed before imputation.
-            nan_indicator_RiBC = _generate_nan_and_inf_indicator(x_RiBC)
-            nan_ind_BRiC = nan_indicator_RiBC.transpose(0, 1)
+            nan_indicator_RiBC = _generate_nan_and_inf_indicator(x_RiBChT)
+            nan_ind_BRiChT = nan_indicator_RiBC.transpose(0, 1)
 
-        x_RiBC, _ = _impute_nan_and_inf_with_mean(x_RiBC, num_train, scaler_cache)
+        x_RiBChT, _ = _impute_nan_and_inf_with_mean(x_RiBChT, num_train, scaler_cache)
         if scaler_cache is None:
             # Fit on the imputed train rows (matching ``__call__``'s split), so the
             # returned statistics are exactly those applied here and can be reused.
-            fit_data = x_RiBC[:num_train] if num_train > 0 else x_RiBC
+            fit_data = x_RiBChT[:num_train] if num_train > 0 else x_RiBChT
             scaler_cache = self.standard_scaler.fit(fit_data)
-        x_RiBC = self.standard_scaler.transform(x_RiBC, fitted_cache=scaler_cache)
-        x_BRiC = x_RiBC.transpose(0, 1)
+        x_RiBChT = self.standard_scaler.transform(x_RiBChT, fitted_cache=scaler_cache)
+        x_BRiChT = x_RiBChT.transpose(0, 1)
 
-        return x_BRiC, nan_ind_BRiC, scaler_cache
+        return x_BRiChT, nan_ind_BRiChT, scaler_cache
 
     def _group_features(
         self,
-        x_BRiC: torch.Tensor,
-        nan_ind_BRiC: torch.Tensor | None,
+        x_BRiChT: torch.Tensor,
+        nan_ind_BRiChT: torch.Tensor | None,
     ) -> torch.Tensor:
         """Build the full grouped + indicator-concatenated tensor."""
         size = self.feature_group_size
-        x_grouped = [torch.roll(x_BRiC, shifts=-(2**i), dims=2) for i in range(size)]
+        x_grouped = [torch.roll(x_BRiChT, shifts=-(2**i), dims=3) for i in range(size)]
         x_grouped = torch.stack(x_grouped, dim=-1)
-        if nan_ind_BRiC is not None:
-            ind_grouped = [torch.roll(nan_ind_BRiC, shifts=-(2**i), dims=2) for i in range(size)]
+        if nan_ind_BRiChT is not None:
+            ind_grouped = [torch.roll(nan_ind_BRiChT, shifts=-(2**i), dims=3) for i in range(size)]
             ind_grouped = torch.stack(ind_grouped, dim=-1)
             x_grouped = torch.cat([x_grouped, ind_grouped], dim=-1)
         return x_grouped
@@ -2015,7 +2030,7 @@ class TabPFNV3(Architecture):
     def _compute_all_inducing_hidden(
         self,
         dist_embedder_layers: nn.ModuleList,
-        x_grouped_BRiCG: torch.Tensor,
+        x_grouped_BRiChTG: torch.Tensor,
         num_train: int,
         y_col_emb_BNE: torch.Tensor | None,
         col_chunk_size: int,
@@ -2029,28 +2044,28 @@ class TabPFNV3(Architecture):
 
         Returns one ``(B*C, num_inducing, embedding_size)`` tensor per block.
         """
-        num_columns = x_grouped_BRiCG.shape[2]
+        num_columns = x_grouped_BRiChTG.shape[2]
         num_blocks = len(dist_embedder_layers)
         # I: num inducing vectors.
         # Collect (B, Cj, I, E) per column-chunk, per block
         hidden_per_block: list[list[torch.Tensor]] = [[] for _ in range(num_blocks)]
 
-        x_grouped_train_BNCG = x_grouped_BRiCG[:, :num_train]
+        x_grouped_train_BNCG = x_grouped_BRiChTG[:, :num_train]
         process_col_fn = self._compiled(self._process_col_chunk) if enable_torch_compile else self._process_col_chunk
 
         for c0 in range(0, num_columns, col_chunk_size):
             c1 = min(c0 + col_chunk_size, num_columns)
-            x_grouped_chunk_BNCjG = x_grouped_train_BNCG[:, :, c0:c1]
+            x_grouped_chunk_BNChTjG = x_grouped_train_BNCG[:, :, c0:c1]
             if enable_torch_compile:
-                torch._dynamo.mark_dynamic(x_grouped_chunk_BNCjG, index=0)
-                torch._dynamo.mark_dynamic(x_grouped_chunk_BNCjG, index=1)
+                torch._dynamo.mark_dynamic(x_grouped_chunk_BNChTjG, index=0)
+                torch._dynamo.mark_dynamic(x_grouped_chunk_BNChTjG, index=1)
                 # Will compile two versions: one with cols dynamic and one with
                 # cols static for the fixed chunk size.
                 if (c1 - c0) != col_chunk_size:
-                    torch._dynamo.mark_dynamic(x_grouped_chunk_BNCjG, index=2)
+                    torch._dynamo.mark_dynamic(x_grouped_chunk_BNChTjG, index=2)
 
             chunk_outputs_BCjIE = process_col_fn(
-                x_grouped_chunk_BNCjG=x_grouped_chunk_BNCjG,
+                x_grouped_chunk_BNChTjG=x_grouped_chunk_BNChTjG,
                 y_col_emb_BNE=y_col_emb_BNE,
                 num_train=num_train,
             )
@@ -2085,7 +2100,7 @@ class TabPFNV3(Architecture):
 
     def _preprocess_and_group(
         self,
-        rows_RiBC: torch.Tensor,
+        rows_RiBChT: torch.Tensor,
         y: torch.Tensor,
         num_train: int,
         scaler_cache: dict[str, torch.Tensor] | None,
@@ -2097,19 +2112,19 @@ class TabPFNV3(Architecture):
         the `(B, N_train, E)` y embedding, and the scaler statistics fitted
         during preprocessing (for reuse in the inference cache).
         """
-        B = rows_RiBC.shape[1]
-        x_BRiC, nan_ind_BRiC, scaler_stats = self._preprocess_raw(rows_RiBC, num_train, scaler_cache)
+        B = rows_RiBChT.shape[1]
+        x_BRiChT, nan_ind_BRiChT, scaler_stats = self._preprocess_raw(rows_RiBChT, num_train, scaler_cache)
         y_col_emb_BNE: torch.Tensor | None = None
         if scaler_cache is None and num_train > 0:
             y_col_BN = self._prepare_y(y, num_train, B)
             y_col_emb_BNE = self._embed_col_y(y_col_BN)
 
-        x_grouped_BRiCG = self._group_features(x_BRiC, nan_ind_BRiC)
-        return x_grouped_BRiCG, y_col_emb_BNE, scaler_stats
+        x_grouped_BRiChTG = self._group_features(x_BRiChT, nan_ind_BRiChT)
+        return x_grouped_BRiChTG, y_col_emb_BNE, scaler_stats
 
     def _stages_0_to_2(
         self,
-        x_RiBC: torch.Tensor,
+        x_RiBChT: torch.Tensor,
         y: torch.Tensor,
         *,
         performance_options: PerformanceOptions,
@@ -2138,12 +2153,12 @@ class TabPFNV3(Architecture):
         save_peak_memory_factor = performance_options.save_peak_memory_factor
 
         if kv_cache is not None and not kv_cache.is_empty():
-            rows_RiBC = x_RiBC if x_is_test_only else x_RiBC[num_train:]
+            rows_RiBChT = x_RiBChT if x_is_test_only else x_RiBChT[num_train:]
             scaler_cache = kv_cache.scaler_cache
             precomputed_hidden: list[torch.Tensor] | None = kv_cache.inducing_hidden
             effective_num_train = 0
         else:
-            rows_RiBC = x_RiBC
+            rows_RiBChT = x_RiBChT
             scaler_cache = None
             precomputed_hidden = None
             effective_num_train = num_train
@@ -2154,8 +2169,8 @@ class TabPFNV3(Architecture):
             if performance_options.enable_torch_compile
             else self._preprocess_and_group
         )
-        x_grouped_BRiCG, y_col_emb_BNE, scaler_stats = preprocess_fn(rows_RiBC, y, num_train, scaler_cache)
-        num_rows, C = x_grouped_BRiCG.shape[1], x_grouped_BRiCG.shape[2]
+        x_grouped_BRiChTG, y_col_emb_BNE, scaler_stats = preprocess_fn(rows_RiBChT, y, num_train, scaler_cache)
+        num_rows, C = x_grouped_BRiChTG.shape[1], x_grouped_BRiChTG.shape[2]
 
         # --- Phase 1: compute inducing hidden when chunking w/o a pre-built cache. ---
         use_chunks = row_chunk_size is not None and row_chunk_size < num_rows
@@ -2166,7 +2181,7 @@ class TabPFNV3(Architecture):
                 try:
                     precomputed_hidden = self._compute_all_inducing_hidden(
                         self.feature_distribution_embedder.layers,
-                        x_grouped_BRiCG,
+                        x_grouped_BRiChTG,
                         num_train,
                         y_col_emb_BNE,
                         eff_col_chunk,
@@ -2200,7 +2215,7 @@ class TabPFNV3(Architecture):
             try:
                 for row_chunk_start in range(0, num_rows, effective_chunk_size):
                     row_chunk_end = min(row_chunk_start + effective_chunk_size, num_rows)
-                    x_grouped_chunk = x_grouped_BRiCG[:, row_chunk_start:row_chunk_end]
+                    x_grouped_chunk = x_grouped_BRiChTG[:, row_chunk_start:row_chunk_end]
                     if performance_options.enable_torch_compile:
                         torch._dynamo.mark_dynamic(x_grouped_chunk, index=0)
                         torch._dynamo.mark_dynamic(x_grouped_chunk, index=2)
@@ -2210,7 +2225,7 @@ class TabPFNV3(Architecture):
                             torch._dynamo.mark_dynamic(x_grouped_chunk, index=1)
 
                     row_embedding_chunk, chunk_hidden = process_row_chunk(
-                        x_grouped_chunk_BRjCG=x_grouped_chunk,
+                        x_grouped_chunk_BRjChTG=x_grouped_chunk,
                         y_col_emb=y_col_emb_BNE,
                         chunk_start=row_chunk_start,
                         chunk_end=row_chunk_end,
@@ -2242,28 +2257,28 @@ class TabPFNV3(Architecture):
     def _process_col_chunk(
         self,
         *,
-        x_grouped_chunk_BNCjG: torch.Tensor,
+        x_grouped_chunk_BNChTjG: torch.Tensor,
         y_col_emb_BNE: torch.Tensor | None,
         num_train: int,
     ) -> list[torch.Tensor]:
         """Compute inducing hidden for one column chunk across all dist-embedder blocks.
 
-        ``x_grouped_chunk_BNCjG`` has shape ``(B, train rows, Cj, G)`` — a slice of the
+        ``x_grouped_chunk_BNChTjG`` has shape ``(B, train rows, Cj, G)`` — a slice of the
         pre-grouped tensor with Cj << C, so the chunked op never sees the full ``C``
         dim. Returns one ``(B, Cj, n_ind, embedding_size)`` tensor per block.
         """
-        B, _, Cj, _ = x_grouped_chunk_BNCjG.shape
+        B, _, Cj, _ = x_grouped_chunk_BNChTjG.shape
 
         # Embed this column chunk → (B, Rt, Cj, E)
-        x_emb_BNCjE = self.x_embed(x_grouped_chunk_BNCjG)
-        E = x_emb_BNCjE.shape[-1]
+        x_emb_BNCE = self.x_embed(x_grouped_chunk_BNChTjG)
+        E = x_emb_BNCE.shape[-1]
 
         # Target-aware y (broadcasts over the Cj columns)
         if y_col_emb_BNE is not None and num_train > 0:
-            x_emb_BNCjE = x_emb_BNCjE + y_col_emb_BNE.unsqueeze(2)
+            x_emb_BNCE = x_emb_BNCE + y_col_emb_BNE.unsqueeze(2)
 
         # (B, Rt, Cj, E) → (B*Cj, Rt, E)
-        x_flat = x_emb_BNCjE.transpose(1, 2).contiguous().reshape(B * Cj, num_train, E)
+        x_flat = x_emb_BNCE.transpose(1, 2).contiguous().reshape(B * Cj, num_train, E)
 
         layers = self.feature_distribution_embedder.layers
         num_blocks = len(layers)
@@ -2281,7 +2296,7 @@ class TabPFNV3(Architecture):
 
     def _process_row_chunk(
         self,
-        x_grouped_chunk_BRjCG: torch.Tensor,
+        x_grouped_chunk_BRjChTG: torch.Tensor,
         y_col_emb: torch.Tensor | None,
         chunk_start: int,
         chunk_end: int,
@@ -2304,7 +2319,7 @@ class TabPFNV3(Architecture):
         # Number of train rows in this chunk, not overall dataset.
         num_train_rows = max(0, min(effective_num_train - chunk_start, row_chunk_range))
 
-        x_emb = self.x_embed(x_grouped_chunk_BRjCG)
+        x_emb = self.x_embed(x_grouped_chunk_BRjChTG)
 
         if y_col_emb is not None and num_train_rows > 0:
             y_emb = y_col_emb[:, chunk_start : chunk_start + num_train_rows]
